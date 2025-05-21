@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  openbadges-server:
+    image: ghcr.io/rollercoaster-dev/openbadges-modular-server:main
+    container_name: openbadges_modular_server
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_TYPE=sqlite
+      - PORT=3000
+      # For SQLite, the database will be created in the container.
+      # If you need to persist it, you can map a volume to /app/data or where the DB is stored.
+      # Example: - DATABASE_URL=sqlite:/app/data/openbadges.sqlite
+    volumes:
+      - ./openbadges_server_data:/app/data # Persistent storage for SQLite DB
