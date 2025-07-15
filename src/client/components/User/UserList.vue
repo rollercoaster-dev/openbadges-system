@@ -2,14 +2,12 @@
   <div class="bg-white rounded-lg shadow-md">
     <div class="px-6 py-4 border-b border-gray-200">
       <div class="flex items-center justify-between">
-        <h2 class="text-lg font-semibold text-gray-900">
-          Users ({{ totalUsers }})
-        </h2>
+        <h2 class="text-lg font-semibold text-gray-900">Users ({{ totalUsers }})</h2>
         <div class="flex items-center space-x-2">
           <select
             v-model="itemsPerPage"
-            @change="changePage(1)"
             class="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            @change="changePage(1)"
           >
             <option value="10">10 per page</option>
             <option value="25">25 per page</option>
@@ -17,8 +15,8 @@
             <option value="100">100 per page</option>
           </select>
           <button
-            @click="toggleViewMode"
             class="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-md"
+            @click="toggleViewMode"
           >
             {{ viewMode === 'grid' ? 'List View' : 'Grid View' }}
           </button>
@@ -38,7 +36,7 @@
 
     <div v-else>
       <!-- Grid View -->
-      <div 
+      <div
         v-if="viewMode === 'grid'"
         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-6"
       >
@@ -57,22 +55,34 @@
         <table class="w-full">
           <thead class="bg-gray-50">
             <tr>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 User
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Role
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Status
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Credentials
               </th>
-              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Created
               </th>
-              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th
+                class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+              >
                 Actions
               </th>
             </tr>
@@ -82,13 +92,13 @@
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
                   <div class="flex-shrink-0 w-10 h-10">
-                    <div 
-                      v-if="user.avatar" 
+                    <div
+                      v-if="user.avatar"
                       class="w-10 h-10 rounded-full bg-cover bg-center"
                       :style="{ backgroundImage: `url(${user.avatar})` }"
                     ></div>
-                    <div 
-                      v-else 
+                    <div
+                      v-else
                       class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm"
                     >
                       {{ getInitials(user.firstName, user.lastName) }}
@@ -98,9 +108,7 @@
                     <div class="text-sm font-medium text-gray-900">
                       {{ user.firstName }} {{ user.lastName }}
                     </div>
-                    <div class="text-sm text-gray-500">
-                      @{{ user.username }}
-                    </div>
+                    <div class="text-sm text-gray-500">@{{ user.username }}</div>
                     <div class="text-sm text-gray-500">
                       {{ user.email }}
                     </div>
@@ -108,21 +116,23 @@
                 </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <span 
-                  v-if="user.isAdmin" 
+                <span
+                  v-if="user.isAdmin"
                   class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
                 >
                   Admin
                 </span>
-                <span 
-                  v-else 
+                <span
+                  v-else
                   class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
                 >
                   User
                 </span>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                <span
+                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                >
                   Active
                 </span>
               </td>
@@ -137,22 +147,16 @@
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <div class="flex items-center justify-end space-x-2">
-                  <button
-                    @click="$emit('view', user)"
-                    class="text-blue-600 hover:text-blue-900"
-                  >
+                  <button class="text-blue-600 hover:text-blue-900" @click="$emit('view', user)">
                     View
                   </button>
                   <button
-                    @click="$emit('edit', user)"
                     class="text-indigo-600 hover:text-indigo-900"
+                    @click="$emit('edit', user)"
                   >
                     Edit
                   </button>
-                  <button
-                    @click="$emit('delete', user)"
-                    class="text-red-600 hover:text-red-900"
-                  >
+                  <button class="text-red-600 hover:text-red-900" @click="$emit('delete', user)">
                     Delete
                   </button>
                 </div>
@@ -167,39 +171,38 @@
     <div v-if="totalPages > 1" class="px-6 py-4 border-t border-gray-200">
       <div class="flex items-center justify-between">
         <div class="text-sm text-gray-700">
-          Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to 
-          {{ Math.min(currentPage * itemsPerPage, totalUsers) }} of 
-          {{ totalUsers }} results
+          Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to
+          {{ Math.min(currentPage * itemsPerPage, totalUsers) }} of {{ totalUsers }} results
         </div>
         <div class="flex items-center space-x-2">
           <button
-            @click="changePage(currentPage - 1)"
             :disabled="currentPage === 1"
             class="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+            @click="changePage(currentPage - 1)"
           >
             Previous
           </button>
-          
+
           <div class="flex items-center space-x-1">
             <button
               v-for="page in visiblePages"
               :key="page"
-              @click="changePage(page)"
               :class="[
                 'px-3 py-1 text-sm rounded-md',
-                page === currentPage 
-                  ? 'bg-blue-600 text-white' 
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                page === currentPage
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100',
               ]"
+              @click="changePage(page)"
             >
               {{ page }}
             </button>
           </div>
-          
+
           <button
-            @click="changePage(currentPage + 1)"
             :disabled="currentPage === totalPages"
             class="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+            @click="changePage(currentPage + 1)"
           >
             Next
           </button>
@@ -227,7 +230,7 @@ const props = withDefaults(defineProps<Props>(), {
   loading: false,
   currentPage: 1,
   totalUsers: 0,
-  itemsPerPage: 10
+  itemsPerPage: 10,
 })
 
 const emits = defineEmits<{
@@ -241,18 +244,18 @@ const emits = defineEmits<{
 const viewMode = ref<'grid' | 'table'>('grid')
 const itemsPerPage = ref(props.itemsPerPage)
 
-const totalPages = computed(() => 
-  Math.ceil(props.totalUsers / itemsPerPage.value)
-)
+const totalPages = computed(() => Math.ceil(props.totalUsers / itemsPerPage.value))
 
 const visiblePages = computed(() => {
   const delta = 2
   const range = []
   const rangeWithDots = []
 
-  for (let i = Math.max(2, props.currentPage - delta); 
-       i <= Math.min(totalPages.value - 1, props.currentPage + delta); 
-       i++) {
+  for (
+    let i = Math.max(2, props.currentPage - delta);
+    i <= Math.min(totalPages.value - 1, props.currentPage + delta);
+    i++
+  ) {
     range.push(i)
   }
 
@@ -270,8 +273,8 @@ const visiblePages = computed(() => {
     rangeWithDots.push(totalPages.value)
   }
 
-  return rangeWithDots.filter((page, index, arr) => 
-    arr.indexOf(page) === index && page !== '...' || page === '...'
+  return rangeWithDots.filter(
+    (page, index, arr) => (arr.indexOf(page) === index && page !== '...') || page === '...'
   )
 })
 
@@ -285,9 +288,7 @@ function changePage(page: number) {
   }
 }
 
-function changeItemsPerPage() {
-  emits('changeItemsPerPage', itemsPerPage.value)
-}
+// changeItemsPerPage function removed as it's not used
 
 function getInitials(firstName: string, lastName: string): string {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()
@@ -295,10 +296,10 @@ function getInitials(firstName: string, lastName: string): string {
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric' 
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
   })
 }
 </script>

@@ -4,30 +4,30 @@
       <h1 class="text-2xl font-bold text-gray-900">Badge Management</h1>
       <div class="flex items-center space-x-3">
         <button
-          @click="activeTab = 'classes'"
           :class="[
             'px-4 py-2 rounded-md text-sm font-medium transition-colors',
-            activeTab === 'classes' 
-              ? 'bg-blue-600 text-white' 
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            activeTab === 'classes'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
           ]"
+          @click="activeTab = 'classes'"
         >
           Badge Classes
         </button>
         <button
-          @click="activeTab = 'assertions'"
           :class="[
             'px-4 py-2 rounded-md text-sm font-medium transition-colors',
-            activeTab === 'assertions' 
-              ? 'bg-blue-600 text-white' 
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            activeTab === 'assertions'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200',
           ]"
+          @click="activeTab = 'assertions'"
         >
           Issued Badges
         </button>
         <button
-          @click="showCreateForm = true"
           class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center space-x-2"
+          @click="showCreateForm = true"
         >
           <PlusIcon class="w-5 h-5" />
           <span>Create Badge</span>
@@ -41,10 +41,7 @@
       <div class="bg-white rounded-lg shadow-md p-6">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-gray-900">Search & Filter Badge Classes</h2>
-          <button
-            @click="clearFilters"
-            class="text-sm text-gray-600 hover:text-gray-900"
-          >
+          <button class="text-sm text-gray-600 hover:text-gray-900" @click="clearFilters">
             Clear Filters
           </button>
         </div>
@@ -89,22 +86,20 @@
       <div class="bg-white rounded-lg shadow-md">
         <div class="px-6 py-4 border-b border-gray-200">
           <div class="flex items-center justify-between">
-            <h2 class="text-lg font-semibold text-gray-900">
-              Badge Classes ({{ totalBadges }})
-            </h2>
+            <h2 class="text-lg font-semibold text-gray-900">Badge Classes ({{ totalBadges }})</h2>
             <div class="flex items-center space-x-2">
               <select
                 v-model="itemsPerPage"
-                @change="changeItemsPerPage(itemsPerPage)"
                 class="px-3 py-1 border border-gray-300 rounded-md text-sm"
+                @change="changeItemsPerPage(itemsPerPage)"
               >
                 <option value="10">10 per page</option>
                 <option value="25">25 per page</option>
                 <option value="50">50 per page</option>
               </select>
               <button
-                @click="toggleLayout"
                 class="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-md"
+                @click="toggleLayout"
               >
                 {{ layout === 'grid' ? 'List View' : 'Grid View' }}
               </button>
@@ -138,23 +133,23 @@
               <div class="relative">
                 <div class="absolute top-2 right-2 flex items-center space-x-1">
                   <button
-                    @click.stop="handleEditBadge(badge)"
                     class="p-1 text-gray-400 hover:text-blue-600 bg-white rounded-full shadow-sm"
                     title="Edit badge"
+                    @click.stop="handleEditBadge(badge)"
                   >
                     <PencilIcon class="w-4 h-4" />
                   </button>
                   <button
-                    @click.stop="handleIssueBadge(badge)"
                     class="p-1 text-gray-400 hover:text-green-600 bg-white rounded-full shadow-sm"
                     title="Issue badge"
+                    @click.stop="handleIssueBadge(badge)"
                   >
                     <ShareIcon class="w-4 h-4" />
                   </button>
                   <button
-                    @click.stop="handleDeleteBadge(badge)"
                     class="p-1 text-gray-400 hover:text-red-600 bg-white rounded-full shadow-sm"
                     title="Delete badge"
+                    @click.stop="handleDeleteBadge(badge)"
                   >
                     <TrashIcon class="w-4 h-4" />
                   </button>
@@ -171,9 +166,7 @@
       <!-- Assertions List -->
       <div class="bg-white rounded-lg shadow-md">
         <div class="px-6 py-4 border-b border-gray-200">
-          <h2 class="text-lg font-semibold text-gray-900">
-            Issued Badges ({{ totalAssertions }})
-          </h2>
+          <h2 class="text-lg font-semibold text-gray-900">Issued Badges ({{ totalAssertions }})</h2>
         </div>
 
         <div v-if="isLoading" class="p-8 text-center">
@@ -190,19 +183,29 @@
           <table class="w-full">
             <thead class="bg-gray-50">
               <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
                   Badge
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
                   Recipient
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
                   Issued Date
                 </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
                   Status
                 </th>
-                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
                   Actions
                 </th>
               </tr>
@@ -224,18 +227,20 @@
                   </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm text-gray-900">{{ assertion.recipient.identity }}</div>
+                  <div class="text-sm text-gray-900">
+                    {{ assertion.recipient.identity }}
+                  </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm text-gray-900">{{ formatDate(assertion.issuedOn) }}</div>
+                  <div class="text-sm text-gray-900">
+                    {{ formatDate(assertion.issuedOn) }}
+                  </div>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <span 
+                  <span
                     :class="[
                       'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                      assertion.revoked 
-                        ? 'bg-red-100 text-red-800' 
-                        : 'bg-green-100 text-green-800'
+                      assertion.revoked ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800',
                     ]"
                   >
                     {{ assertion.revoked ? 'Revoked' : 'Active' }}
@@ -244,15 +249,15 @@
                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div class="flex items-center justify-end space-x-2">
                     <button
-                      @click="handleViewAssertion(assertion)"
                       class="text-blue-600 hover:text-blue-900"
+                      @click="handleViewAssertion(assertion)"
                     >
                       View
                     </button>
                     <button
                       v-if="!assertion.revoked"
-                      @click="handleRevokeAssertion(assertion)"
                       class="text-red-600 hover:text-red-900"
+                      @click="handleRevokeAssertion(assertion)"
                     >
                       Revoke
                     </button>
@@ -266,7 +271,7 @@
     </div>
 
     <!-- Create Badge Modal -->
-    <div 
+    <div
       v-if="showCreateForm"
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
     >
@@ -274,24 +279,18 @@
         <div class="p-6">
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-xl font-semibold text-gray-900">Create New Badge</h2>
-            <button 
-              @click="showCreateForm = false"
-              class="text-gray-400 hover:text-gray-600"
-            >
+            <button class="text-gray-400 hover:text-gray-600" @click="showCreateForm = false">
               <XMarkIcon class="w-6 h-6" />
             </button>
           </div>
 
-          <BadgeIssuerForm
-            @badge-issued="handleBadgeCreated"
-            @reset="showCreateForm = false"
-          />
+          <BadgeIssuerForm @badge-issued="handleBadgeCreated" @reset="showCreateForm = false" />
         </div>
       </div>
     </div>
 
     <!-- Issue Badge Modal -->
-    <div 
+    <div
       v-if="showIssueForm && selectedBadge"
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
     >
@@ -299,27 +298,18 @@
         <div class="p-6">
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-xl font-semibold text-gray-900">Issue Badge</h2>
-            <button 
-              @click="showIssueForm = false"
-              class="text-gray-400 hover:text-gray-600"
-            >
+            <button class="text-gray-400 hover:text-gray-600" @click="showIssueForm = false">
               <XMarkIcon class="w-6 h-6" />
             </button>
           </div>
 
           <div class="mb-6">
-            <BadgeDisplay
-              :badge="selectedBadge"
-              :show-description="true"
-              :simplified-view="true"
-            />
+            <BadgeDisplay :badge="selectedBadge" :show-description="true" :simplified-view="true" />
           </div>
 
-          <form @submit.prevent="handleSubmitIssue" class="space-y-4">
+          <form class="space-y-4" @submit.prevent="handleSubmitIssue">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Recipient Email *
-              </label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Recipient Email *</label>
               <input
                 v-model="issueForm.recipientEmail"
                 type="email"
@@ -355,8 +345,8 @@
             <div class="flex justify-end space-x-3 pt-4">
               <button
                 type="button"
-                @click="showIssueForm = false"
                 class="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+                @click="showIssueForm = false"
               >
                 Cancel
               </button>
@@ -374,27 +364,27 @@
     </div>
 
     <!-- Success/Error Messages -->
-    <div 
+    <div
       v-if="error"
       class="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg z-50"
     >
       <div class="flex items-center space-x-2">
         <ExclamationTriangleIcon class="w-5 h-5" />
         <span>{{ error }}</span>
-        <button @click="clearError" class="ml-2 hover:text-gray-200">
+        <button class="ml-2 hover:text-gray-200" @click="clearError">
           <XMarkIcon class="w-4 h-4" />
         </button>
       </div>
     </div>
 
-    <div 
+    <div
       v-if="successMessage"
       class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg z-50"
     >
       <div class="flex items-center space-x-2">
         <CheckCircleIcon class="w-5 h-5" />
         <span>{{ successMessage }}</span>
-        <button @click="successMessage = null" class="ml-2 hover:text-gray-200">
+        <button class="ml-2 hover:text-gray-200" @click="successMessage = null">
           <XMarkIcon class="w-4 h-4" />
         </button>
       </div>
@@ -404,16 +394,16 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import { 
-  PlusIcon, 
-  XMarkIcon, 
-  PencilIcon, 
-  ShareIcon, 
+import {
+  PlusIcon,
+  XMarkIcon,
+  PencilIcon,
+  ShareIcon,
   TrashIcon,
   TrophyIcon,
   CheckBadgeIcon,
   ExclamationTriangleIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
 } from '@heroicons/vue/24/outline'
 import { BadgeList, BadgeDisplay, BadgeIssuerForm } from 'openbadges-ui'
 import { useBadges } from '@/composables/useBadges'
@@ -437,13 +427,13 @@ const {
   filters,
   fetchBadges,
   fetchAssertions,
-  createBadge,
+  // createBadge, // Not used in this component
   issueBadge,
   revokeBadge,
   deleteBadge,
   changePage,
   changeItemsPerPage,
-  clearError
+  clearError,
 } = useBadges()
 
 // Component state
@@ -458,7 +448,7 @@ const availableIssuers = ref<string[]>([])
 const issueForm = ref({
   recipientEmail: '',
   evidence: '',
-  narrative: ''
+  narrative: '',
 })
 
 // Load data on component mount
@@ -468,7 +458,7 @@ onMounted(() => {
 })
 
 // Watch for tab changes
-watch(activeTab, (newTab) => {
+watch(activeTab, newTab => {
   if (newTab === 'classes') {
     fetchBadges()
   } else {
@@ -477,14 +467,18 @@ watch(activeTab, (newTab) => {
 })
 
 // Watch for search changes
-watch([searchQuery, filters], () => {
-  if (activeTab.value === 'classes') {
-    fetchBadges(1, itemsPerPage.value, searchQuery.value, filters.value)
-  }
-}, { deep: true })
+watch(
+  [searchQuery, filters],
+  () => {
+    if (activeTab.value === 'classes') {
+      fetchBadges(1, itemsPerPage.value, searchQuery.value, filters.value)
+    }
+  },
+  { deep: true }
+)
 
 // Auto-clear success message
-watch(successMessage, (message) => {
+watch(successMessage, message => {
   if (message) {
     setTimeout(() => {
       successMessage.value = null
@@ -505,7 +499,7 @@ function clearFilters() {
     dateTo: '',
     tags: [],
     sortBy: 'createdAt',
-    sortOrder: 'desc'
+    sortOrder: 'desc',
   }
 }
 
@@ -525,7 +519,7 @@ function handleIssueBadge(badge: OB2.BadgeClass) {
   issueForm.value = {
     recipientEmail: '',
     evidence: '',
-    narrative: ''
+    narrative: '',
   }
 }
 
@@ -554,7 +548,7 @@ function handleSubmitIssue() {
     badgeClassId: selectedBadge.value.id,
     recipientEmail: issueForm.value.recipientEmail,
     evidence: issueForm.value.evidence || undefined,
-    narrative: issueForm.value.narrative || undefined
+    narrative: issueForm.value.narrative || undefined,
   }).then(assertion => {
     if (assertion) {
       showIssueForm.value = false
@@ -566,7 +560,7 @@ function handleSubmitIssue() {
   })
 }
 
-function handleViewAssertion(assertion: BadgeAssertion) {
+function handleViewAssertion(_assertion: BadgeAssertion) {
   // TODO: Show assertion details modal
 }
 
@@ -584,10 +578,10 @@ function handleRevokeAssertion(assertion: BadgeAssertion) {
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric' 
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
   })
 }
 </script>

@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { Hono } from 'hono'
 
 // Mock the JWT service
 vi.mock('../services/jwt', () => ({
@@ -7,11 +6,11 @@ vi.mock('../services/jwt', () => ({
     createOpenBadgesApiClient: vi.fn(() => ({
       token: 'mock-jwt-token',
       headers: {
-        'Authorization': 'Bearer mock-jwt-token',
-        'Content-Type': 'application/json'
-      }
-    }))
-  }
+        Authorization: 'Bearer mock-jwt-token',
+        'Content-Type': 'application/json',
+      },
+    })),
+  },
 }))
 
 // Mock fetch for OpenBadges server requests
@@ -24,7 +23,7 @@ describe('Server Endpoints', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
     mockFetch = vi.mocked(fetch)
-    
+
     // Import the server app dynamically to ensure mocks are applied
     const serverModule = await import('../index')
     app = { fetch: serverModule.default.fetch }
@@ -34,7 +33,7 @@ describe('Server Endpoints', () => {
     it('should return health status', async () => {
       const req = new Request('http://localhost/api/health')
       const res = await app.fetch(req)
-      
+
       expect(res.status).toBe(200)
       const data = await res.json()
       expect(data.status).toBe('ok')
@@ -50,17 +49,17 @@ describe('Server Endpoints', () => {
         email: 'test@example.com',
         firstName: 'Test',
         lastName: 'User',
-        isAdmin: false
+        isAdmin: false,
       }
 
       const req = new Request('http://localhost/api/auth/platform-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user: mockUser })
+        body: JSON.stringify({ user: mockUser }),
       })
 
       const res = await app.fetch(req)
-      
+
       expect(res.status).toBe(200)
       const data = await res.json()
       expect(data.success).toBe(true)
@@ -72,11 +71,11 @@ describe('Server Endpoints', () => {
       const req = new Request('http://localhost/api/auth/platform-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user: { id: null } })
+        body: JSON.stringify({ user: { id: null } }),
       })
 
       const res = await app.fetch(req)
-      
+
       expect(res.status).toBe(400)
       const data = await res.json()
       expect(data.error).toBe('Invalid user data')
@@ -86,11 +85,11 @@ describe('Server Endpoints', () => {
       const req = new Request('http://localhost/api/auth/platform-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({})
+        body: JSON.stringify({}),
       })
 
       const res = await app.fetch(req)
-      
+
       expect(res.status).toBe(400)
       const data = await res.json()
       expect(data.error).toBe('Invalid user data')
@@ -100,48 +99,43 @@ describe('Server Endpoints', () => {
   describe('OpenBadges proxy endpoint', () => {
     it('should proxy requests to OpenBadges server with authentication', async () => {
       const mockOpenBadgesResponse = {
-        assertions: [
-          { id: 'assertion-1', badgeClass: 'badge-1', recipient: 'test@example.com' }
-        ],
-        total: 1
+        assertions: [{ id: 'assertion-1', badgeClass: 'badge-1', recipient: 'test@example.com' }],
+        total: 1,
       }
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: () => Promise.resolve(mockOpenBadgesResponse)
+        json: () => Promise.resolve(mockOpenBadgesResponse),
       })
 
       const req = new Request('http://localhost/api/badges/api/v1/assertions', {
         method: 'GET',
-        headers: { 'Authorization': 'Bearer test-platform-token' }
+        headers: { Authorization: 'Bearer test-platform-token' },
       })
 
       const res = await app.fetch(req)
-      
+
       expect(res.status).toBe(200)
       const data = await res.json()
       expect(data).toEqual(mockOpenBadgesResponse)
-      
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3000/api/v1/assertions',
-        {
-          method: 'GET',
-          headers: expect.objectContaining({
-            'Authorization': 'Bearer test-platform-token'
-          }),
-          body: undefined
-        }
-      )
+
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/assertions', {
+        method: 'GET',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer test-platform-token',
+        }),
+        body: undefined,
+      })
     })
 
     it('should return 401 for requests without authentication', async () => {
       const req = new Request('http://localhost/api/badges/api/v1/assertions', {
-        method: 'GET'
+        method: 'GET',
       })
 
       const res = await app.fetch(req)
-      
+
       expect(res.status).toBe(401)
       const data = await res.json()
       expect(data.error).toBe('Platform token required')
@@ -150,11 +144,11 @@ describe('Server Endpoints', () => {
     it('should return 401 for requests with invalid authentication format', async () => {
       const req = new Request('http://localhost/api/badges/api/v1/assertions', {
         method: 'GET',
-        headers: { 'Authorization': 'Invalid token-format' }
+        headers: { Authorization: 'Invalid token-format' },
       })
 
       const res = await app.fetch(req)
-      
+
       expect(res.status).toBe(401)
       const data = await res.json()
       expect(data.error).toBe('Platform token required')
@@ -165,16 +159,16 @@ describe('Server Endpoints', () => {
         ok: false,
         status: 500,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: () => Promise.resolve({ error: 'Internal server error' })
+        json: () => Promise.resolve({ error: 'Internal server error' }),
       })
 
       const req = new Request('http://localhost/api/badges/api/v1/assertions', {
         method: 'GET',
-        headers: { 'Authorization': 'Bearer test-platform-token' }
+        headers: { Authorization: 'Bearer test-platform-token' },
       })
 
       const res = await app.fetch(req)
-      
+
       expect(res.status).toBe(500)
     })
 
@@ -183,16 +177,16 @@ describe('Server Endpoints', () => {
         ok: true,
         status: 200,
         headers: new Headers({ 'content-type': 'text/plain' }),
-        text: () => Promise.resolve('Plain text response')
+        text: () => Promise.resolve('Plain text response'),
       })
 
       const req = new Request('http://localhost/api/badges/api/v1/assertions', {
         method: 'GET',
-        headers: { 'Authorization': 'Bearer test-platform-token' }
+        headers: { Authorization: 'Bearer test-platform-token' },
       })
 
       const res = await app.fetch(req)
-      
+
       expect(res.status).toBe(200)
       const text = await res.text()
       expect(text).toBe('Plain text response')
@@ -203,11 +197,11 @@ describe('Server Endpoints', () => {
 
       const req = new Request('http://localhost/api/badges/api/v1/assertions', {
         method: 'GET',
-        headers: { 'Authorization': 'Bearer test-platform-token' }
+        headers: { Authorization: 'Bearer test-platform-token' },
       })
 
       const res = await app.fetch(req)
-      
+
       expect(res.status).toBe(500)
       const data = await res.json()
       expect(data.error).toBe('Failed to communicate with OpenBadges server')
@@ -218,45 +212,42 @@ describe('Server Endpoints', () => {
         badgeClass: 'badge-class-1',
         recipient: 'test@example.com',
         evidence: 'Test evidence',
-        narrative: 'Test narrative'
+        narrative: 'Test narrative',
       }
 
       const mockOpenBadgesResponse = {
         id: 'new-assertion-id',
-        ...requestBody
+        ...requestBody,
       }
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: () => Promise.resolve(mockOpenBadgesResponse)
+        json: () => Promise.resolve(mockOpenBadgesResponse),
       })
 
       const req = new Request('http://localhost/api/badges/api/v1/assertions', {
         method: 'POST',
-        headers: { 
-          'Authorization': 'Bearer test-platform-token',
-          'Content-Type': 'application/json'
+        headers: {
+          Authorization: 'Bearer test-platform-token',
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify(requestBody),
       })
 
       const res = await app.fetch(req)
-      
+
       expect(res.status).toBe(200)
       const data = await res.json()
       expect(data).toEqual(mockOpenBadgesResponse)
-      
-      expect(mockFetch).toHaveBeenCalledWith(
-        'http://localhost:3000/api/v1/assertions',
-        {
-          method: 'POST',
-          headers: expect.objectContaining({
-            'Authorization': 'Bearer test-platform-token'
-          }),
-          body: expect.any(ReadableStream)
-        }
-      )
+
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/assertions', {
+        method: 'POST',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer test-platform-token',
+        }),
+        body: expect.any(ReadableStream),
+      })
     })
   })
 
@@ -264,30 +255,30 @@ describe('Server Endpoints', () => {
     it('should proxy requests to OpenBadges server with basic auth', async () => {
       const mockOpenBadgesResponse = {
         status: 'ok',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       }
 
       mockFetch.mockResolvedValueOnce({
         ok: true,
         headers: new Headers({ 'content-type': 'application/json' }),
-        json: () => Promise.resolve(mockOpenBadgesResponse)
+        json: () => Promise.resolve(mockOpenBadgesResponse),
       })
 
       const req = new Request('http://localhost/api/bs/health', {
-        method: 'GET'
+        method: 'GET',
       })
 
       const res = await app.fetch(req)
-      
+
       expect(res.status).toBe(200)
       const data = await res.json()
       expect(data).toEqual(mockOpenBadgesResponse)
-      
+
       expect(mockFetch).toHaveBeenCalledWith(
         'http://localhost:3000/health',
         expect.objectContaining({
           method: 'GET',
-          headers: expect.any(Headers)
+          headers: expect.any(Headers),
         })
       )
     })
@@ -296,11 +287,11 @@ describe('Server Endpoints', () => {
       mockFetch.mockRejectedValueOnce(new Error('Connection failed'))
 
       const req = new Request('http://localhost/api/bs/health', {
-        method: 'GET'
+        method: 'GET',
       })
 
       const res = await app.fetch(req)
-      
+
       expect(res.status).toBe(500)
       const data = await res.json()
       expect(data.error).toBe('Failed to communicate with local OpenBadges server')
@@ -310,11 +301,11 @@ describe('Server Endpoints', () => {
   describe('CORS handling', () => {
     it('should handle OPTIONS requests', async () => {
       const req = new Request('http://localhost/api/health', {
-        method: 'OPTIONS'
+        method: 'OPTIONS',
       })
 
       const res = await app.fetch(req)
-      
+
       expect(res.status).toBe(204)
     })
   })
@@ -322,11 +313,11 @@ describe('Server Endpoints', () => {
   describe('Error scenarios', () => {
     it('should handle 404 for non-existent endpoints', async () => {
       const req = new Request('http://localhost/api/nonexistent', {
-        method: 'GET'
+        method: 'GET',
       })
 
       const res = await app.fetch(req)
-      
+
       expect(res.status).toBe(404)
     })
 
@@ -334,11 +325,11 @@ describe('Server Endpoints', () => {
       const req = new Request('http://localhost/api/auth/platform-token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: 'invalid json'
+        body: 'invalid json',
       })
 
       const res = await app.fetch(req)
-      
+
       expect(res.status).toBe(500)
     })
   })

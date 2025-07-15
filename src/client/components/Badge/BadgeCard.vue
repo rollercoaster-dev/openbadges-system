@@ -16,7 +16,7 @@
             <TrophyIcon class="w-8 h-8 text-white" />
           </div>
         </div>
-        
+
         <div class="flex-1 min-w-0">
           <h3 class="text-lg font-semibold text-gray-900 truncate">
             {{ badge.name }}
@@ -26,43 +26,43 @@
           </p>
         </div>
       </div>
-      
+
       <div class="flex items-center space-x-2">
-        <button 
-          @click="$emit('edit', badge)"
+        <button
           class="p-2 text-gray-400 hover:text-blue-600 transition-colors"
           title="Edit badge"
+          @click="$emit('edit', badge)"
         >
           <PencilIcon class="w-4 h-4" />
         </button>
-        <button 
-          @click="$emit('view', badge)"
+        <button
           class="p-2 text-gray-400 hover:text-green-600 transition-colors"
           title="View badge"
+          @click="$emit('view', badge)"
         >
           <EyeIcon class="w-4 h-4" />
         </button>
-        <button 
-          @click="$emit('delete', badge)"
+        <button
           class="p-2 text-gray-400 hover:text-red-600 transition-colors"
           title="Delete badge"
+          @click="$emit('delete', badge)"
         >
           <TrashIcon class="w-4 h-4" />
         </button>
       </div>
     </div>
-    
+
     <div class="space-y-3">
       <div class="flex items-center justify-between text-sm">
         <span class="text-gray-500">Issuer:</span>
         <span class="font-medium text-gray-900">{{ getIssuerName(badge.issuer) }}</span>
       </div>
-      
+
       <div class="flex items-center justify-between text-sm">
         <span class="text-gray-500">Created:</span>
         <span class="text-gray-700">{{ formatDate(badge.createdAt) }}</span>
       </div>
-      
+
       <div v-if="badge.tags && badge.tags.length > 0" class="flex flex-wrap gap-1">
         <span
           v-for="tag in badge.tags.slice(0, 3)"
@@ -78,7 +78,7 @@
           +{{ badge.tags.length - 3 }} more
         </span>
       </div>
-      
+
       <div class="flex items-center justify-between pt-2 border-t border-gray-200">
         <div class="flex items-center space-x-4 text-sm text-gray-600">
           <div class="flex items-center space-x-1">
@@ -90,17 +90,17 @@
             <span>{{ badge.earnedCount || 0 }} earned</span>
           </div>
         </div>
-        
+
         <div class="flex items-center space-x-2">
           <button
-            @click="$emit('issue', badge)"
             class="text-xs text-blue-600 hover:text-blue-800 font-medium"
+            @click="$emit('issue', badge)"
           >
             Issue
           </button>
           <button
-            @click="$emit('duplicate', badge)"
             class="text-xs text-gray-600 hover:text-gray-800 font-medium"
+            @click="$emit('duplicate', badge)"
           >
             Duplicate
           </button>
@@ -111,13 +111,13 @@
 </template>
 
 <script setup lang="ts">
-import { 
-  PencilIcon, 
-  EyeIcon, 
-  TrashIcon, 
+import {
+  PencilIcon,
+  EyeIcon,
+  TrashIcon,
   TrophyIcon,
   UserGroupIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
 } from '@heroicons/vue/24/outline'
 import type { OB2 } from 'openbadges-types'
 
@@ -130,9 +130,9 @@ interface BadgeCardProps {
   }
 }
 
-const props = defineProps<BadgeCardProps>()
+defineProps<BadgeCardProps>()
 
-const emits = defineEmits<{
+defineEmits<{
   edit: [badge: BadgeCardProps['badge']]
   view: [badge: BadgeCardProps['badge']]
   delete: [badge: BadgeCardProps['badge']]
@@ -149,12 +149,12 @@ function getIssuerName(issuer: OB2.Profile | string): string {
 
 function formatDate(dateString?: string): string {
   if (!dateString) return 'Unknown'
-  
+
   const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric' 
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
   })
 }
 </script>
@@ -163,6 +163,7 @@ function formatDate(dateString?: string): string {
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

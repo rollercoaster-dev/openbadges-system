@@ -2,10 +2,7 @@
   <div class="bg-white rounded-lg shadow-md p-6">
     <div class="flex items-center justify-between mb-6">
       <h2 class="text-lg font-semibold text-gray-900">Search & Filter Users</h2>
-      <button
-        @click="clearFilters"
-        class="text-sm text-gray-600 hover:text-gray-900"
-      >
+      <button class="text-sm text-gray-600 hover:text-gray-900" @click="clearFilters">
         Clear Filters
       </button>
     </div>
@@ -13,9 +10,7 @@
     <div class="space-y-4">
       <!-- Search Input -->
       <div>
-        <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
-          Search
-        </label>
+        <label for="search" class="block text-sm font-medium text-gray-700 mb-2">Search</label>
         <div class="relative">
           <input
             id="search"
@@ -32,9 +27,7 @@
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <!-- Role Filter -->
         <div>
-          <label for="role" class="block text-sm font-medium text-gray-700 mb-2">
-            Role
-          </label>
+          <label for="role" class="block text-sm font-medium text-gray-700 mb-2">Role</label>
           <select
             id="role"
             v-model="filters.role"
@@ -48,9 +41,7 @@
 
         <!-- Status Filter -->
         <div>
-          <label for="status" class="block text-sm font-medium text-gray-700 mb-2">
-            Status
-          </label>
+          <label for="status" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
           <select
             id="status"
             v-model="filters.status"
@@ -91,11 +82,11 @@
       <!-- Advanced Filters (Collapsible) -->
       <div class="border-t pt-4">
         <button
-          @click="showAdvanced = !showAdvanced"
           class="flex items-center space-x-2 text-sm text-gray-600 hover:text-gray-900"
+          @click="showAdvanced = !showAdvanced"
         >
           <span>Advanced Filters</span>
-          <ChevronDownIcon 
+          <ChevronDownIcon
             :class="['w-4 h-4 transition-transform', showAdvanced && 'rotate-180']"
           />
         </button>
@@ -178,8 +169,8 @@
       <!-- Action Buttons -->
       <div class="flex justify-end space-x-3 pt-4 border-t">
         <button
-          @click="exportUsers"
           class="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+          @click="exportUsers"
         >
           <div class="flex items-center space-x-2">
             <ArrowDownTrayIcon class="w-4 h-4" />
@@ -187,8 +178,8 @@
           </div>
         </button>
         <button
-          @click="applyFilters"
           class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+          @click="applyFilters"
         >
           Apply Filters
         </button>
@@ -219,7 +210,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   initialQuery: '',
-  initialFilters: () => ({})
+  initialFilters: () => ({}),
 })
 
 const emits = defineEmits<{
@@ -239,27 +230,33 @@ const filters = ref<SearchFilters>({
   lastLogin: '',
   sortBy: 'createdAt',
   sortOrder: 'desc',
-  ...props.initialFilters
+  ...props.initialFilters,
 })
 
 const hasActiveFilters = computed(() => {
-  return searchQuery.value.trim() !== '' ||
-         filters.value.role !== '' ||
-         filters.value.status !== '' ||
-         filters.value.dateFrom !== '' ||
-         filters.value.dateTo !== '' ||
-         filters.value.credentials !== '' ||
-         filters.value.lastLogin !== '' ||
-         filters.value.sortBy !== 'createdAt' ||
-         filters.value.sortOrder !== 'desc'
+  return (
+    searchQuery.value.trim() !== '' ||
+    filters.value.role !== '' ||
+    filters.value.status !== '' ||
+    filters.value.dateFrom !== '' ||
+    filters.value.dateTo !== '' ||
+    filters.value.credentials !== '' ||
+    filters.value.lastLogin !== '' ||
+    filters.value.sortBy !== 'createdAt' ||
+    filters.value.sortOrder !== 'desc'
+  )
 })
 
 // Watch for changes and emit search
-watch([searchQuery, filters], () => {
-  if (searchQuery.value.trim() !== '' || hasActiveFilters.value) {
-    emits('search', searchQuery.value, filters.value)
-  }
-}, { deep: true })
+watch(
+  [searchQuery, filters],
+  () => {
+    if (searchQuery.value.trim() !== '' || hasActiveFilters.value) {
+      emits('search', searchQuery.value, filters.value)
+    }
+  },
+  { deep: true }
+)
 
 function clearFilters() {
   searchQuery.value = ''
@@ -271,7 +268,7 @@ function clearFilters() {
     credentials: '',
     lastLogin: '',
     sortBy: 'createdAt',
-    sortOrder: 'desc'
+    sortOrder: 'desc',
   }
 }
 

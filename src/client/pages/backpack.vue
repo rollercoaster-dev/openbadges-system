@@ -3,11 +3,9 @@
     <div class="flex justify-between items-center mb-6">
       <div>
         <h1 class="text-3xl font-bold text-gray-900">My Badge Backpack</h1>
-        <p class="text-gray-600 mt-1">
-          Your earned badges and achievements
-        </p>
+        <p class="text-gray-600 mt-1">Your earned badges and achievements</p>
       </div>
-      
+
       <div class="flex items-center space-x-3">
         <div class="bg-white rounded-lg shadow-md px-4 py-2">
           <div class="flex items-center space-x-2">
@@ -17,45 +15,45 @@
             </span>
           </div>
         </div>
-        
+
         <button
-          @click="showShareModal = true"
           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center space-x-2"
+          @click="showShareModal = true"
         >
           <ShareIcon class="w-5 h-5" />
           <span>Share Backpack</span>
         </button>
-        
+
         <div class="relative">
           <button
-            @click="showExportMenu = !showExportMenu"
             class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-md flex items-center space-x-2"
+            @click="showExportMenu = !showExportMenu"
           >
             <ArrowDownTrayIcon class="w-5 h-5" />
             <span>Export</span>
             <ChevronDownIcon class="w-4 h-4" />
           </button>
-          
-          <div 
+
+          <div
             v-if="showExportMenu"
             class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50"
           >
             <div class="py-1">
               <button
-                @click="exportBadges('json')"
                 class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                @click="exportBadges('json')"
               >
                 Export as JSON
               </button>
               <button
-                @click="exportBadges('pdf')"
                 class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                @click="exportBadges('pdf')"
               >
                 Export as PDF
               </button>
               <button
-                @click="exportBadges('png')"
                 class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                @click="exportBadges('png')"
               >
                 Export as Images
               </button>
@@ -80,7 +78,7 @@
             <MagnifyingGlassIcon class="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
           </div>
         </div>
-        
+
         <div class="w-full md:w-48">
           <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Issuer</label>
           <select
@@ -93,7 +91,7 @@
             </option>
           </select>
         </div>
-        
+
         <div class="w-full md:w-48">
           <label class="block text-sm font-medium text-gray-700 mb-2">Sort by</label>
           <select
@@ -105,7 +103,7 @@
             <option value="issuer">Issuer</option>
           </select>
         </div>
-        
+
         <div class="w-full md:w-32">
           <label class="block text-sm font-medium text-gray-700 mb-2">View</label>
           <select
@@ -128,11 +126,13 @@
           </div>
           <div class="ml-3">
             <p class="text-sm font-medium text-gray-500">Total Badges</p>
-            <p class="text-2xl font-semibold text-gray-900">{{ totalBadges }}</p>
+            <p class="text-2xl font-semibold text-gray-900">
+              {{ totalBadges }}
+            </p>
           </div>
         </div>
       </div>
-      
+
       <div class="bg-white rounded-lg shadow-md p-4">
         <div class="flex items-center">
           <div class="flex-shrink-0">
@@ -140,11 +140,13 @@
           </div>
           <div class="ml-3">
             <p class="text-sm font-medium text-gray-500">This Month</p>
-            <p class="text-2xl font-semibold text-gray-900">{{ badgesThisMonth }}</p>
+            <p class="text-2xl font-semibold text-gray-900">
+              {{ badgesThisMonth }}
+            </p>
           </div>
         </div>
       </div>
-      
+
       <div class="bg-white rounded-lg shadow-md p-4">
         <div class="flex items-center">
           <div class="flex-shrink-0">
@@ -152,11 +154,13 @@
           </div>
           <div class="ml-3">
             <p class="text-sm font-medium text-gray-500">Issuers</p>
-            <p class="text-2xl font-semibold text-gray-900">{{ availableIssuers.length }}</p>
+            <p class="text-2xl font-semibold text-gray-900">
+              {{ availableIssuers.length }}
+            </p>
           </div>
         </div>
       </div>
-      
+
       <div class="bg-white rounded-lg shadow-md p-4">
         <div class="flex items-center">
           <div class="flex-shrink-0">
@@ -164,7 +168,9 @@
           </div>
           <div class="ml-3">
             <p class="text-sm font-medium text-gray-500">Verified</p>
-            <p class="text-2xl font-semibold text-gray-900">{{ verifiedBadges }}</p>
+            <p class="text-2xl font-semibold text-gray-900">
+              {{ verifiedBadges }}
+            </p>
           </div>
         </div>
       </div>
@@ -178,10 +184,7 @@
             Your Badges {{ filteredBadges.length > 0 ? `(${filteredBadges.length})` : '' }}
           </h2>
           <div class="flex items-center space-x-2">
-            <button
-              @click="toggleSelectMode"
-              class="text-sm text-gray-600 hover:text-gray-900"
-            >
+            <button class="text-sm text-gray-600 hover:text-gray-900" @click="toggleSelectMode">
               {{ selectMode ? 'Done' : 'Select' }}
             </button>
             <span v-if="selectMode && selectedBadges.length > 0" class="text-sm text-gray-600">
@@ -200,7 +203,11 @@
         <TrophyIcon class="w-16 h-16 text-gray-300 mx-auto mb-4" />
         <h3 class="text-lg font-medium text-gray-900 mb-2">No badges found</h3>
         <p class="text-gray-600">
-          {{ searchQuery || selectedIssuer ? 'Try adjusting your search or filter.' : 'Start earning badges to see them here!' }}
+          {{
+            searchQuery || selectedIssuer
+              ? 'Try adjusting your search or filter.'
+              : 'Start earning badges to see them here!'
+          }}
         </p>
       </div>
 
@@ -221,35 +228,32 @@
         >
           <template #badge="{ badge }">
             <div class="relative">
-              <div 
-                v-if="selectMode"
-                class="absolute top-2 left-2 z-10"
-              >
+              <div v-if="selectMode" class="absolute top-2 left-2 z-10">
                 <input
                   :checked="selectedBadges.includes(badge.id)"
-                  @change="toggleBadgeSelection(badge.id)"
                   type="checkbox"
                   class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  @change="toggleBadgeSelection(badge.id)"
                 />
               </div>
-              
+
               <div class="absolute top-2 right-2 flex items-center space-x-1">
                 <button
-                  @click.stop="handleShareBadge(badge)"
                   class="p-1 text-gray-400 hover:text-blue-600 bg-white rounded-full shadow-sm"
                   title="Share badge"
+                  @click.stop="handleShareBadge(badge)"
                 >
                   <ShareIcon class="w-4 h-4" />
                 </button>
                 <button
-                  @click.stop="handleDownloadBadge(badge)"
                   class="p-1 text-gray-400 hover:text-green-600 bg-white rounded-full shadow-sm"
                   title="Download badge"
+                  @click.stop="handleDownloadBadge(badge)"
                 >
                   <ArrowDownTrayIcon class="w-4 h-4" />
                 </button>
               </div>
-              
+
               <div class="absolute bottom-2 right-2">
                 <span class="text-xs text-gray-500 bg-white px-2 py-1 rounded">
                   {{ formatDate(badge.issuedOn) }}
@@ -262,7 +266,7 @@
     </div>
 
     <!-- Share Modal -->
-    <div 
+    <div
       v-if="showShareModal"
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
     >
@@ -270,19 +274,14 @@
         <div class="p-6">
           <div class="flex items-center justify-between mb-4">
             <h3 class="text-lg font-medium text-gray-900">Share Your Backpack</h3>
-            <button 
-              @click="showShareModal = false"
-              class="text-gray-400 hover:text-gray-600"
-            >
+            <button class="text-gray-400 hover:text-gray-600" @click="showShareModal = false">
               <XMarkIcon class="w-6 h-6" />
             </button>
           </div>
 
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Public Profile URL
-              </label>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Public Profile URL</label>
               <div class="flex">
                 <input
                   :value="shareUrl"
@@ -290,8 +289,8 @@
                   class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md bg-gray-50 text-sm"
                 />
                 <button
-                  @click="copyToClipboard(shareUrl)"
                   class="px-3 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700"
+                  @click="copyToClipboard(shareUrl)"
                 >
                   Copy
                 </button>
@@ -300,20 +299,20 @@
 
             <div class="flex justify-center space-x-4">
               <button
-                @click="shareToSocial('twitter')"
                 class="flex items-center space-x-2 px-4 py-2 bg-blue-400 text-white rounded-md hover:bg-blue-500"
+                @click="shareToSocial('twitter')"
               >
                 <span>Twitter</span>
               </button>
               <button
-                @click="shareToSocial('linkedin')"
                 class="flex items-center space-x-2 px-4 py-2 bg-blue-700 text-white rounded-md hover:bg-blue-800"
+                @click="shareToSocial('linkedin')"
               >
                 <span>LinkedIn</span>
               </button>
               <button
-                @click="shareToSocial('facebook')"
                 class="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                @click="shareToSocial('facebook')"
               >
                 <span>Facebook</span>
               </button>
@@ -324,7 +323,7 @@
     </div>
 
     <!-- Badge Detail Modal -->
-    <div 
+    <div
       v-if="showDetailModal && selectedBadge"
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
     >
@@ -332,10 +331,7 @@
         <div class="p-6">
           <div class="flex items-center justify-between mb-6">
             <h3 class="text-xl font-semibold text-gray-900">Badge Details</h3>
-            <button 
-              @click="showDetailModal = false"
-              class="text-gray-400 hover:text-gray-600"
-            >
+            <button class="text-gray-400 hover:text-gray-600" @click="showDetailModal = false">
               <XMarkIcon class="w-6 h-6" />
             </button>
           </div>
@@ -349,17 +345,17 @@
             :auto-verify="true"
             :interactive="true"
           />
-          
+
           <div class="mt-6 flex justify-end space-x-3">
             <button
-              @click="handleShareBadge(selectedBadge)"
               class="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md"
+              @click="handleShareBadge(selectedBadge)"
             >
               Share
             </button>
             <button
-              @click="handleDownloadBadge(selectedBadge)"
               class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              @click="handleDownloadBadge(selectedBadge)"
             >
               Download
             </button>
@@ -369,27 +365,27 @@
     </div>
 
     <!-- Success/Error Messages -->
-    <div 
+    <div
       v-if="error"
       class="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg z-50"
     >
       <div class="flex items-center space-x-2">
         <ExclamationTriangleIcon class="w-5 h-5" />
         <span>{{ error }}</span>
-        <button @click="error = null" class="ml-2 hover:text-gray-200">
+        <button class="ml-2 hover:text-gray-200" @click="error = null">
           <XMarkIcon class="w-4 h-4" />
         </button>
       </div>
     </div>
 
-    <div 
+    <div
       v-if="successMessage"
       class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg z-50"
     >
       <div class="flex items-center space-x-2">
         <CheckCircleIcon class="w-5 h-5" />
         <span>{{ successMessage }}</span>
-        <button @click="successMessage = null" class="ml-2 hover:text-gray-200">
+        <button class="ml-2 hover:text-gray-200" @click="successMessage = null">
           <XMarkIcon class="w-4 h-4" />
         </button>
       </div>
@@ -399,10 +395,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { 
-  TrophyIcon, 
-  ShareIcon, 
-  ArrowDownTrayIcon, 
+import {
+  TrophyIcon,
+  ShareIcon,
+  ArrowDownTrayIcon,
   ChevronDownIcon,
   MagnifyingGlassIcon,
   CalendarDaysIcon,
@@ -410,7 +406,7 @@ import {
   CheckBadgeIcon,
   XMarkIcon,
   ExclamationTriangleIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
 } from '@heroicons/vue/24/outline'
 import { BadgeList, BadgeDisplay } from 'openbadges-ui'
 import { useAuth } from '@/composables/useAuth'
@@ -455,18 +451,17 @@ const filteredBadges = computed(() => {
   // Apply search filter
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase()
-    filtered = filtered.filter(badge => 
-      badge.name.toLowerCase().includes(query) ||
-      badge.description.toLowerCase().includes(query) ||
-      getIssuerName(badge.issuer).toLowerCase().includes(query)
+    filtered = filtered.filter(
+      badge =>
+        badge.name.toLowerCase().includes(query) ||
+        badge.description.toLowerCase().includes(query) ||
+        getIssuerName(badge.issuer).toLowerCase().includes(query)
     )
   }
 
   // Apply issuer filter
   if (selectedIssuer.value) {
-    filtered = filtered.filter(badge => 
-      getIssuerName(badge.issuer) === selectedIssuer.value
-    )
+    filtered = filtered.filter(badge => getIssuerName(badge.issuer) === selectedIssuer.value)
   }
 
   // Apply sorting
@@ -477,11 +472,12 @@ const filteredBadges = computed(() => {
       case 'issuer':
         return getIssuerName(a.issuer).localeCompare(getIssuerName(b.issuer))
       case 'issuedOn':
-      default:
+      default: {
         // Assuming badges have issuedOn date, fallback to creation date
         const aDate = new Date((a as any).issuedOn || (a as any).createdAt || 0)
         const bDate = new Date((b as any).issuedOn || (b as any).createdAt || 0)
         return bDate.getTime() - aDate.getTime()
+      }
     }
   })
 
@@ -494,16 +490,14 @@ const paginatedBadges = computed(() => {
   return filteredBadges.value.slice(start, end)
 })
 
-const totalPages = computed(() => 
-  Math.ceil(filteredBadges.value.length / pageSize.value)
-)
+const totalPages = computed(() => Math.ceil(filteredBadges.value.length / pageSize.value))
 
 const totalBadges = computed(() => badges.value.length)
 
 const badgesThisMonth = computed(() => {
   const now = new Date()
   const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-  
+
   return badges.value.filter(badge => {
     const issuedDate = new Date((badge as any).issuedOn || (badge as any).createdAt || 0)
     return issuedDate >= thisMonth
@@ -528,14 +522,18 @@ onMounted(async () => {
 })
 
 // Watch for user changes
-watch(user, async (newUser) => {
-  if (newUser) {
-    await loadUserBadges()
-  }
-}, { immediate: true })
+watch(
+  user,
+  async newUser => {
+    if (newUser) {
+      await loadUserBadges()
+    }
+  },
+  { immediate: true }
+)
 
 // Auto-clear success message
-watch(successMessage, (message) => {
+watch(successMessage, message => {
   if (message) {
     setTimeout(() => {
       successMessage.value = null
@@ -556,7 +554,7 @@ async function loadUserBadges() {
       badges.value = backpack.assertions.map(assertion => ({
         ...assertion.badge,
         issuedOn: assertion.issuedOn,
-        recipient: assertion.recipient
+        recipient: assertion.recipient,
       }))
     }
   } catch (err) {
@@ -576,10 +574,10 @@ function getIssuerName(issuer: OB2.Profile | string): string {
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric' 
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
   })
 }
 
@@ -630,19 +628,22 @@ function exportBadges(format: 'json' | 'pdf' | 'png') {
 }
 
 function copyToClipboard(text: string) {
-  navigator.clipboard.writeText(text).then(() => {
-    successMessage.value = 'URL copied to clipboard!'
-  }).catch(() => {
-    error.value = 'Failed to copy URL'
-  })
+  navigator.clipboard
+    .writeText(text)
+    .then(() => {
+      successMessage.value = 'URL copied to clipboard!'
+    })
+    .catch(() => {
+      error.value = 'Failed to copy URL'
+    })
 }
 
 function shareToSocial(platform: 'twitter' | 'linkedin' | 'facebook') {
   const url = shareUrl.value
   const text = `Check out my digital badges! I've earned ${totalBadges.value} badges.`
-  
+
   let shareUrl = ''
-  
+
   switch (platform) {
     case 'twitter':
       shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`
@@ -654,13 +655,13 @@ function shareToSocial(platform: 'twitter' | 'linkedin' | 'facebook') {
       shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`
       break
   }
-  
+
   window.open(shareUrl, '_blank', 'width=600,height=400')
   showShareModal.value = false
 }
 
 // Close export menu when clicking outside
-document.addEventListener('click', (e) => {
+document.addEventListener('click', e => {
   if (!e.target.closest('.relative')) {
     showExportMenu.value = false
   }

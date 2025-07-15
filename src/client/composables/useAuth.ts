@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { WebAuthnUtils, WebAuthnError, type WebAuthnCredential, type RegistrationOptions, type AuthenticationOptions } from '@/utils/webauthn'
+import { WebAuthnUtils, WebAuthnError, type WebAuthnCredential } from '@/utils/webauthn'
 import { openBadgesService } from '@/services/openbadges'
 
 export interface User {
@@ -31,7 +31,7 @@ export interface AuthResponse {
 
 export const useAuth = () => {
   const router = useRouter()
-  
+
   // State
   const user = ref<User | null>(null)
   const token = ref<string | null>(localStorage.getItem('auth_token'))
@@ -49,53 +49,23 @@ export const useAuth = () => {
     isPlatformAuthAvailable.value = await WebAuthnUtils.isPlatformAuthenticatorAvailable()
   }
 
-  // Local user storage (since OpenBadges server doesn't have user management)
-  const getUsersFromStorage = (): User[] => {
-    try {
-      const stored = localStorage.getItem('app_users')
-      return stored ? JSON.parse(stored) : []
-    } catch {
-      return []
-    }
-  }
-
-  const saveUsersToStorage = (users: User[]) => {
-    localStorage.setItem('app_users', JSON.stringify(users))
-  }
-
-  // Backend API calls for OpenBadges operations
-  const apiCall = async (endpoint: string, options: RequestInit = {}) => {
-    const response = await fetch(`/api/badges${endpoint}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-      },
-      ...options
-    })
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
-      throw new Error(errorData.message || `API call failed: ${response.status}`)
-    }
-    
-    return response.json()
-  }
+  // Removed unused functions: getUsersFromStorage, saveUsersToStorage, apiCall
 
   // Basic API calls for user lookup/registration (uses basic auth)
   const basicApiCall = async (endpoint: string, options: RequestInit = {}) => {
     const response = await fetch(`/api/bs${endpoint}`, {
       headers: {
         'Content-Type': 'application/json',
-        ...options.headers
+        ...options.headers,
       },
-      ...options
+      ...options,
     })
-    
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
       throw new Error(errorData.message || `API call failed: ${response.status}`)
     }
-    
+
     return response.json()
   }
 
@@ -107,14 +77,14 @@ export const useAuth = () => {
       firstName: data.firstName,
       lastName: data.lastName,
       isActive: true,
-      roles: ['USER']
+      roles: ['USER'],
     }
-    
+
     const response = await basicApiCall('/users', {
       method: 'POST',
-      body: JSON.stringify(userData)
+      body: JSON.stringify(userData),
     })
-    
+
     return {
       id: response.id,
       username: response.username,
@@ -124,7 +94,7 @@ export const useAuth = () => {
       avatar: response.avatar,
       isAdmin: response.roles?.includes('ADMIN') || false,
       createdAt: response.createdAt,
-      credentials: []
+      credentials: [],
     }
   }
 
@@ -133,7 +103,7 @@ export const useAuth = () => {
     try {
       // Try to get user by username first
       const users = await basicApiCall(`/users?username=${encodeURIComponent(usernameOrEmail)}`)
-      
+
       if (users.length > 0) {
         const backendUser = users[0]
         return {
@@ -145,10 +115,10 @@ export const useAuth = () => {
           avatar: backendUser.avatar,
           isAdmin: backendUser.roles?.includes('ADMIN') || false,
           createdAt: backendUser.createdAt,
-          credentials: backendUser.credentials || []
+          credentials: backendUser.credentials || [],
         }
       }
-      
+
       // If not found by username, try by email
       const usersByEmail = await basicApiCall(`/users?email=${encodeURIComponent(usernameOrEmail)}`)
       if (usersByEmail.length > 0) {
@@ -162,10 +132,10 @@ export const useAuth = () => {
           avatar: backendUser.avatar,
           isAdmin: backendUser.roles?.includes('ADMIN') || false,
           createdAt: backendUser.createdAt,
-          credentials: backendUser.credentials || []
+          credentials: backendUser.credentials || [],
         }
       }
-      
+
       return null
     } catch (error) {
       console.error('Error finding user:', error)
@@ -177,7 +147,7 @@ export const useAuth = () => {
   const storeCredential = async (userId: string, credential: WebAuthnCredential): Promise<void> => {
     await basicApiCall(`/users/${userId}/credentials`, {
       method: 'POST',
-      body: JSON.stringify(credential)
+      body: JSON.stringify(credential),
     })
   }
 
@@ -185,7 +155,7 @@ export const useAuth = () => {
   const registerWithWebAuthn = async (data: RegisterData): Promise<boolean> => {
     isLoading.value = true
     error.value = null
-    
+
     try {
       // Check if user already exists
       console.log('Checking for existing user:', data.username)
@@ -195,7 +165,7 @@ export const useAuth = () => {
         error.value = 'Username already exists'
         return false
       }
-      
+
       console.log('Checking for existing email:', data.email)
       const existingEmail = await findUser(data.email)
       if (existingEmail) {
@@ -203,12 +173,12 @@ export const useAuth = () => {
         error.value = 'Email already exists'
         return false
       }
-      
+
       // Create user in backend first
       console.log('Creating new user in backend:', data)
       const newUser = await registerUser(data)
       console.log('New user created:', newUser)
-      
+
       // Create WebAuthn registration options
       const registrationOptions = WebAuthnUtils.createRegistrationOptions(
         newUser.id,
@@ -216,10 +186,10 @@ export const useAuth = () => {
         `${newUser.firstName} ${newUser.lastName}`,
         []
       )
-      
+
       // Use WebAuthn to create credential
       const credentialData = await WebAuthnUtils.register(registrationOptions)
-      
+
       // Create credential object
       const credential: WebAuthnCredential = {
         id: credentialData.id,
@@ -228,22 +198,25 @@ export const useAuth = () => {
         counter: 0,
         createdAt: new Date().toISOString(),
         lastUsed: new Date().toISOString(),
-        name: WebAuthnUtils.getAuthenticatorName(credentialData.authenticatorAttachment, credentialData.transports),
-        type: credentialData.authenticatorAttachment === 'platform' ? 'platform' : 'cross-platform'
+        name: WebAuthnUtils.getAuthenticatorName(
+          credentialData.authenticatorAttachment,
+          credentialData.transports
+        ),
+        type: credentialData.authenticatorAttachment === 'platform' ? 'platform' : 'cross-platform',
       }
-      
+
       // Store credential in backend
       await storeCredential(newUser.id, credential)
-      
+
       // Update user with credential
       newUser.credentials = [credential]
-      
+
       // Set authentication state
       user.value = newUser
       token.value = 'backend-jwt-token-' + Date.now() // TODO: Get real JWT from backend
       localStorage.setItem('auth_token', token.value)
       localStorage.setItem('user_data', JSON.stringify(newUser))
-      
+
       return true
     } catch (err) {
       if (err instanceof WebAuthnError) {
@@ -261,7 +234,7 @@ export const useAuth = () => {
   const authenticateWithWebAuthn = async (username: string): Promise<boolean> => {
     isLoading.value = true
     error.value = null
-    
+
     try {
       // Find user in backend
       console.log('Looking for user:', username)
@@ -270,48 +243,49 @@ export const useAuth = () => {
         error.value = 'User not found'
         return false
       }
-      
+
       console.log('Found user:', foundUser)
       console.log('User credentials:', foundUser.credentials)
-      
+
       // Check if user has credentials
       if (!foundUser.credentials || foundUser.credentials.length === 0) {
         error.value = 'No credentials found for this user. Please register first.'
         return false
       }
-      
+
       // Create authentication options
       const authenticationOptions = WebAuthnUtils.createAuthenticationOptions(foundUser.credentials)
-      
+
       // Use WebAuthn to authenticate
       const credentialData = await WebAuthnUtils.authenticate(authenticationOptions)
-      
+
       // Verify credential exists
       const credential = foundUser.credentials.find(c => c.id === credentialData.id)
       if (!credential) {
         error.value = 'Invalid credential'
         return false
       }
-      
+
       // Update credential last used time in backend
       await basicApiCall(`/users/${foundUser.id}/credentials/${credential.id}`, {
         method: 'PATCH',
-        body: JSON.stringify({ lastUsed: new Date().toISOString() })
+        body: JSON.stringify({ lastUsed: new Date().toISOString() }),
       })
-      
+
       // Set authentication state
       user.value = foundUser
       token.value = 'backend-jwt-token-' + Date.now() // TODO: Get real JWT from backend
       localStorage.setItem('auth_token', token.value)
       localStorage.setItem('user_data', JSON.stringify(foundUser))
-      
+
       return true
     } catch (err) {
       console.error('Authentication error:', err)
       if (err instanceof WebAuthnError) {
         error.value = err.userMessage
       } else {
-        error.value = err instanceof Error ? err.message : 'Authentication failed. Please try again.'
+        error.value =
+          err instanceof Error ? err.message : 'Authentication failed. Please try again.'
       }
       return false
     } finally {
@@ -341,21 +315,21 @@ export const useAuth = () => {
   const initializeAuth = async () => {
     const storedToken = localStorage.getItem('auth_token')
     const storedUser = localStorage.getItem('user_data')
-    
+
     if (storedToken && storedUser) {
       try {
         token.value = storedToken
         user.value = JSON.parse(storedUser)
-        
+
         // TODO: Validate token with backend
         // For now, we trust localStorage
-      } catch (err) {
+      } catch {
         // Clear invalid data
         localStorage.removeItem('auth_token')
         localStorage.removeItem('user_data')
       }
     }
-    
+
     // Check WebAuthn support
     await checkPlatformAuth()
   }
@@ -368,14 +342,14 @@ export const useAuth = () => {
   // Update user profile
   const updateProfile = async (updatedUser: Partial<User>) => {
     if (!user.value) return
-    
+
     try {
       // Update user in backend
       await basicApiCall(`/users/${user.value.id}`, {
         method: 'PUT',
-        body: JSON.stringify(updatedUser)
+        body: JSON.stringify(updatedUser),
       })
-      
+
       // Update local user state
       user.value = { ...user.value, ...updatedUser }
       localStorage.setItem('user_data', JSON.stringify(user.value))
@@ -387,10 +361,10 @@ export const useAuth = () => {
   // Add a new credential to user's account
   const addCredential = async (credentialName: string): Promise<boolean> => {
     if (!user.value) return false
-    
+
     isLoading.value = true
     error.value = null
-    
+
     try {
       const registrationOptions = WebAuthnUtils.createRegistrationOptions(
         user.value.id,
@@ -398,9 +372,9 @@ export const useAuth = () => {
         `${user.value.firstName} ${user.value.lastName}`,
         user.value.credentials
       )
-      
+
       const credentialData = await WebAuthnUtils.register(registrationOptions)
-      
+
       const newCredential: WebAuthnCredential = {
         id: credentialData.id,
         publicKey: credentialData.publicKey,
@@ -408,17 +382,22 @@ export const useAuth = () => {
         counter: 0,
         createdAt: new Date().toISOString(),
         lastUsed: new Date().toISOString(),
-        name: credentialName || WebAuthnUtils.getAuthenticatorName(credentialData.authenticatorAttachment, credentialData.transports),
-        type: credentialData.authenticatorAttachment === 'platform' ? 'platform' : 'cross-platform'
+        name:
+          credentialName ||
+          WebAuthnUtils.getAuthenticatorName(
+            credentialData.authenticatorAttachment,
+            credentialData.transports
+          ),
+        type: credentialData.authenticatorAttachment === 'platform' ? 'platform' : 'cross-platform',
       }
-      
+
       // Store credential in backend
       await storeCredential(user.value.id, newCredential)
-      
+
       // Update local user state
       user.value.credentials.push(newCredential)
       localStorage.setItem('user_data', JSON.stringify(user.value))
-      
+
       return true
     } catch (err) {
       if (err instanceof WebAuthnError) {
@@ -435,13 +414,13 @@ export const useAuth = () => {
   // Remove a credential from user's account
   const removeCredential = async (credentialId: string) => {
     if (!user.value) return
-    
+
     try {
       // Remove credential from backend
       await basicApiCall(`/users/${user.value.id}/credentials/${credentialId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       })
-      
+
       // Update local user state
       user.value.credentials = user.value.credentials.filter(c => c.id !== credentialId)
       localStorage.setItem('user_data', JSON.stringify(user.value))
@@ -453,7 +432,7 @@ export const useAuth = () => {
   // OpenBadges integration
   const getUserBackpack = async () => {
     if (!user.value) return null
-    
+
     try {
       return await openBadgesService.getUserBackpack(user.value)
     } catch (err) {
@@ -462,9 +441,13 @@ export const useAuth = () => {
     }
   }
 
-  const addBadgeToBackpack = async (badgeClassId: string, evidence?: string, narrative?: string) => {
+  const addBadgeToBackpack = async (
+    badgeClassId: string,
+    evidence?: string,
+    narrative?: string
+  ) => {
     if (!user.value) return false
-    
+
     try {
       await openBadgesService.addBadgeToBackpack(user.value, badgeClassId, evidence, narrative)
       return true
@@ -477,7 +460,7 @@ export const useAuth = () => {
 
   const removeBadgeFromBackpack = async (assertionId: string) => {
     if (!user.value) return false
-    
+
     try {
       await openBadgesService.removeBadgeFromBackpack(user.value, assertionId)
       return true
@@ -499,7 +482,7 @@ export const useAuth = () => {
 
   const createBadgeClass = async (badgeClass: any) => {
     if (!user.value) return null
-    
+
     try {
       return await openBadgesService.createBadgeClass(user.value, badgeClass)
     } catch (err) {
@@ -509,11 +492,22 @@ export const useAuth = () => {
     }
   }
 
-  const issueBadge = async (badgeClassId: string, recipientEmail: string, evidence?: string, narrative?: string) => {
+  const issueBadge = async (
+    badgeClassId: string,
+    recipientEmail: string,
+    evidence?: string,
+    narrative?: string
+  ) => {
     if (!user.value) return null
-    
+
     try {
-      return await openBadgesService.issueBadge(user.value, badgeClassId, recipientEmail, evidence, narrative)
+      return await openBadgesService.issueBadge(
+        user.value,
+        badgeClassId,
+        recipientEmail,
+        evidence,
+        narrative
+      )
     } catch (err) {
       console.error('Failed to issue badge:', err)
       error.value = 'Failed to issue badge'
@@ -532,11 +526,11 @@ export const useAuth = () => {
     error,
     isWebAuthnSupported,
     isPlatformAuthAvailable,
-    
+
     // Computed
     isAuthenticated,
     isAdmin,
-    
+
     // Actions
     login,
     register,
@@ -548,13 +542,13 @@ export const useAuth = () => {
     updateProfile,
     addCredential,
     removeCredential,
-    
+
     // OpenBadges integration
     getUserBackpack,
     addBadgeToBackpack,
     removeBadgeFromBackpack,
     getBadgeClasses,
     createBadgeClass,
-    issueBadge
+    issueBadge,
   }
 }

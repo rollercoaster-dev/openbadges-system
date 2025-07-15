@@ -7,7 +7,7 @@
         <h2 class="text-lg font-semibold mb-4">Profile Information</h2>
         <p class="text-gray-500">Edit profile details, change password</p>
       </div>
-      
+
       <!-- User statistics placeholder -->
       <div class="border-2 border-dashed border-gray-300 rounded-lg p-8">
         <h2 class="text-lg font-semibold mb-4">Statistics</h2>

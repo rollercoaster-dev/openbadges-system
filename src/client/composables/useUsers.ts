@@ -53,23 +53,23 @@ export const useUsers = () => {
     credentials: '',
     lastLogin: '',
     sortBy: 'createdAt',
-    sortOrder: 'desc'
+    sortOrder: 'desc',
   })
 
-  const totalPages = computed(() => 
-    Math.ceil(totalUsers.value / itemsPerPage.value)
-  )
+  const totalPages = computed(() => Math.ceil(totalUsers.value / itemsPerPage.value))
 
   const hasFilters = computed(() => {
-    return searchQuery.value.trim() !== '' ||
-           filters.value.role !== '' ||
-           filters.value.status !== '' ||
-           filters.value.dateFrom !== '' ||
-           filters.value.dateTo !== '' ||
-           filters.value.credentials !== '' ||
-           filters.value.lastLogin !== '' ||
-           filters.value.sortBy !== 'createdAt' ||
-           filters.value.sortOrder !== 'desc'
+    return (
+      searchQuery.value.trim() !== '' ||
+      filters.value.role !== '' ||
+      filters.value.status !== '' ||
+      filters.value.dateFrom !== '' ||
+      filters.value.dateTo !== '' ||
+      filters.value.credentials !== '' ||
+      filters.value.lastLogin !== '' ||
+      filters.value.sortBy !== 'createdAt' ||
+      filters.value.sortOrder !== 'desc'
+    )
   })
 
   // API calls
@@ -77,22 +77,22 @@ export const useUsers = () => {
     const response = await fetch(`/api/bs${endpoint}`, {
       headers: {
         'Content-Type': 'application/json',
-        ...options.headers
+        ...options.headers,
       },
-      ...options
+      ...options,
     })
-    
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
       throw new Error(errorData.message || `API call failed: ${response.status}`)
     }
-    
+
     return response.json()
   }
 
   // Fetch users with pagination and filters
   const fetchUsers = async (
-    page: number = 1, 
+    page: number = 1,
     perPage: number = 10,
     query: string = '',
     searchFilters: UserSearchFilters = filters.value
@@ -104,31 +104,33 @@ export const useUsers = () => {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: perPage.toString(),
-        ...query && { search: query },
-        ...searchFilters.role && { role: searchFilters.role },
-        ...searchFilters.status && { status: searchFilters.status },
-        ...searchFilters.dateFrom && { dateFrom: searchFilters.dateFrom },
-        ...searchFilters.dateTo && { dateTo: searchFilters.dateTo },
-        ...searchFilters.credentials && { credentials: searchFilters.credentials },
-        ...searchFilters.lastLogin && { lastLogin: searchFilters.lastLogin },
+        ...(query && { search: query }),
+        ...(searchFilters.role && { role: searchFilters.role }),
+        ...(searchFilters.status && { status: searchFilters.status }),
+        ...(searchFilters.dateFrom && { dateFrom: searchFilters.dateFrom }),
+        ...(searchFilters.dateTo && { dateTo: searchFilters.dateTo }),
+        ...(searchFilters.credentials && { credentials: searchFilters.credentials }),
+        ...(searchFilters.lastLogin && { lastLogin: searchFilters.lastLogin }),
         sortBy: searchFilters.sortBy,
-        sortOrder: searchFilters.sortOrder
+        sortOrder: searchFilters.sortOrder,
       })
 
       const response = await apiCall(`/users?${params}`)
-      
+
       // Transform backend user data to frontend User interface
-      const transformedUsers = response.users.map((backendUser: any): User => ({
-        id: backendUser.id,
-        username: backendUser.username,
-        email: backendUser.email,
-        firstName: backendUser.firstName || '',
-        lastName: backendUser.lastName || '',
-        avatar: backendUser.avatar,
-        isAdmin: backendUser.roles?.includes('ADMIN') || false,
-        createdAt: backendUser.createdAt,
-        credentials: backendUser.credentials || []
-      }))
+      const transformedUsers = response.users.map(
+        (backendUser: any): User => ({
+          id: backendUser.id,
+          username: backendUser.username,
+          email: backendUser.email,
+          firstName: backendUser.firstName || '',
+          lastName: backendUser.lastName || '',
+          avatar: backendUser.avatar,
+          isAdmin: backendUser.roles?.includes('ADMIN') || false,
+          createdAt: backendUser.createdAt,
+          credentials: backendUser.credentials || [],
+        })
+      )
 
       users.value = transformedUsers
       totalUsers.value = response.total
@@ -157,8 +159,8 @@ export const useUsers = () => {
           lastName: userData.lastName,
           avatar: userData.avatar,
           isActive: true,
-          roles: userData.isAdmin ? ['ADMIN', 'USER'] : ['USER']
-        })
+          roles: userData.isAdmin ? ['ADMIN', 'USER'] : ['USER'],
+        }),
       })
 
       const newUser: User = {
@@ -170,7 +172,7 @@ export const useUsers = () => {
         avatar: response.avatar,
         isAdmin: response.roles?.includes('ADMIN') || false,
         createdAt: response.createdAt,
-        credentials: []
+        credentials: [],
       }
 
       // Add to local users array if we're on the first page
@@ -196,18 +198,18 @@ export const useUsers = () => {
 
     try {
       const updateData = {
-        ...userData.email && { email: userData.email },
-        ...userData.firstName && { firstName: userData.firstName },
-        ...userData.lastName && { lastName: userData.lastName },
-        ...userData.avatar !== undefined && { avatar: userData.avatar },
-        ...userData.isAdmin !== undefined && { 
-          roles: userData.isAdmin ? ['ADMIN', 'USER'] : ['USER'] 
-        }
+        ...(userData.email && { email: userData.email }),
+        ...(userData.firstName && { firstName: userData.firstName }),
+        ...(userData.lastName && { lastName: userData.lastName }),
+        ...(userData.avatar !== undefined && { avatar: userData.avatar }),
+        ...(userData.isAdmin !== undefined && {
+          roles: userData.isAdmin ? ['ADMIN', 'USER'] : ['USER'],
+        }),
       }
 
       const response = await apiCall(`/users/${userId}`, {
         method: 'PUT',
-        body: JSON.stringify(updateData)
+        body: JSON.stringify(updateData),
       })
 
       const updatedUser: User = {
@@ -219,7 +221,7 @@ export const useUsers = () => {
         avatar: response.avatar,
         isAdmin: response.roles?.includes('ADMIN') || false,
         createdAt: response.createdAt,
-        credentials: response.credentials || []
+        credentials: response.credentials || [],
       }
 
       // Update local users array
@@ -245,7 +247,7 @@ export const useUsers = () => {
 
     try {
       await apiCall(`/users/${userId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       })
 
       // Remove from local users array
@@ -269,7 +271,7 @@ export const useUsers = () => {
 
     try {
       const response = await apiCall(`/users/${userId}`)
-      
+
       return {
         id: response.id,
         username: response.username,
@@ -279,7 +281,7 @@ export const useUsers = () => {
         avatar: response.avatar,
         isAdmin: response.roles?.includes('ADMIN') || false,
         createdAt: response.createdAt,
-        credentials: response.credentials || []
+        credentials: response.credentials || [],
       }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch user'
@@ -297,12 +299,12 @@ export const useUsers = () => {
 
     try {
       await apiCall(`/users/${userId}/credentials/${credentialId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
       })
 
       // Update local user's credentials
       const userIndex = users.value.findIndex(u => u.id === userId)
-      if (userIndex !== -1) {
+      if (userIndex !== -1 && users.value[userIndex]?.credentials) {
         users.value[userIndex].credentials = users.value[userIndex].credentials.filter(
           c => c.id !== credentialId
         )
@@ -346,14 +348,14 @@ export const useUsers = () => {
     try {
       const params = new URLSearchParams({
         format: 'csv',
-        ...searchFilters.role && { role: searchFilters.role },
-        ...searchFilters.status && { status: searchFilters.status },
-        ...searchFilters.dateFrom && { dateFrom: searchFilters.dateFrom },
-        ...searchFilters.dateTo && { dateTo: searchFilters.dateTo },
-        ...searchFilters.credentials && { credentials: searchFilters.credentials },
-        ...searchFilters.lastLogin && { lastLogin: searchFilters.lastLogin },
+        ...(searchFilters.role && { role: searchFilters.role }),
+        ...(searchFilters.status && { status: searchFilters.status }),
+        ...(searchFilters.dateFrom && { dateFrom: searchFilters.dateFrom }),
+        ...(searchFilters.dateTo && { dateTo: searchFilters.dateTo }),
+        ...(searchFilters.credentials && { credentials: searchFilters.credentials }),
+        ...(searchFilters.lastLogin && { lastLogin: searchFilters.lastLogin }),
         sortBy: searchFilters.sortBy,
-        sortOrder: searchFilters.sortOrder
+        sortOrder: searchFilters.sortOrder,
       })
 
       const response = await fetch(`/api/bs/users/export?${params}`)
@@ -400,6 +402,6 @@ export const useUsers = () => {
     changePage,
     changeItemsPerPage,
     exportUsers,
-    clearError
+    clearError,
   }
 }

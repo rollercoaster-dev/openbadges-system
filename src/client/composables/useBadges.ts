@@ -86,22 +86,22 @@ export const useBadges = () => {
     dateTo: '',
     tags: [],
     sortBy: 'createdAt',
-    sortOrder: 'desc'
+    sortOrder: 'desc',
   })
 
-  const totalPages = computed(() => 
-    Math.ceil(totalBadges.value / itemsPerPage.value)
-  )
+  const totalPages = computed(() => Math.ceil(totalBadges.value / itemsPerPage.value))
 
   const hasFilters = computed(() => {
-    return searchQuery.value.trim() !== '' ||
-           filters.value.issuer !== '' ||
-           filters.value.status !== '' ||
-           filters.value.dateFrom !== '' ||
-           filters.value.dateTo !== '' ||
-           filters.value.tags.length > 0 ||
-           filters.value.sortBy !== 'createdAt' ||
-           filters.value.sortOrder !== 'desc'
+    return (
+      searchQuery.value.trim() !== '' ||
+      filters.value.issuer !== '' ||
+      filters.value.status !== '' ||
+      filters.value.dateFrom !== '' ||
+      filters.value.dateTo !== '' ||
+      filters.value.tags.length > 0 ||
+      filters.value.sortBy !== 'createdAt' ||
+      filters.value.sortOrder !== 'desc'
+    )
   })
 
   // API calls with platform authentication
@@ -109,16 +109,16 @@ export const useBadges = () => {
     const response = await fetch(`/api/badges${endpoint}`, {
       headers: {
         'Content-Type': 'application/json',
-        ...options.headers
+        ...options.headers,
       },
-      ...options
+      ...options,
     })
-    
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
       throw new Error(errorData.message || `API call failed: ${response.status}`)
     }
-    
+
     return response.json()
   }
 
@@ -127,22 +127,22 @@ export const useBadges = () => {
     const response = await fetch(`/api/bs${endpoint}`, {
       headers: {
         'Content-Type': 'application/json',
-        ...options.headers
+        ...options.headers,
       },
-      ...options
+      ...options,
     })
-    
+
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
       throw new Error(errorData.message || `API call failed: ${response.status}`)
     }
-    
+
     return response.json()
   }
 
   // Fetch badge classes with pagination and filters
   const fetchBadges = async (
-    page: number = 1, 
+    page: number = 1,
     perPage: number = 10,
     query: string = '',
     searchFilters: BadgeSearchFilters = filters.value
@@ -154,18 +154,18 @@ export const useBadges = () => {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: perPage.toString(),
-        ...query && { search: query },
-        ...searchFilters.issuer && { issuer: searchFilters.issuer },
-        ...searchFilters.status && { status: searchFilters.status },
-        ...searchFilters.dateFrom && { dateFrom: searchFilters.dateFrom },
-        ...searchFilters.dateTo && { dateTo: searchFilters.dateTo },
-        ...searchFilters.tags.length > 0 && { tags: searchFilters.tags.join(',') },
+        ...(query && { search: query }),
+        ...(searchFilters.issuer && { issuer: searchFilters.issuer }),
+        ...(searchFilters.status && { status: searchFilters.status }),
+        ...(searchFilters.dateFrom && { dateFrom: searchFilters.dateFrom }),
+        ...(searchFilters.dateTo && { dateTo: searchFilters.dateTo }),
+        ...(searchFilters.tags.length > 0 && { tags: searchFilters.tags.join(',') }),
         sortBy: searchFilters.sortBy,
-        sortOrder: searchFilters.sortOrder
+        sortOrder: searchFilters.sortOrder,
       })
 
       const response = await basicApiCall(`/v2/badge-classes?${params}`)
-      
+
       badges.value = response.badges || response // Handle different response formats
       totalBadges.value = response.total || badges.value.length
       currentPage.value = page
@@ -179,7 +179,10 @@ export const useBadges = () => {
   }
 
   // Create new badge class
-  const createBadge = async (user: User, badgeData: CreateBadgeData): Promise<OB2.BadgeClass | null> => {
+  const createBadge = async (
+    user: User,
+    badgeData: CreateBadgeData
+  ): Promise<OB2.BadgeClass | null> => {
     isLoading.value = true
     error.value = null
 
@@ -188,9 +191,9 @@ export const useBadges = () => {
       const tokenResponse = await fetch('/api/auth/platform-token', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ user })
+        body: JSON.stringify({ user }),
       })
 
       if (!tokenResponse.ok) {
@@ -203,7 +206,7 @@ export const useBadges = () => {
       const response = await apiCall('/v2/badge-classes', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           type: 'BadgeClass',
@@ -214,8 +217,8 @@ export const useBadges = () => {
           issuer: badgeData.issuer,
           tags: badgeData.tags,
           alignment: badgeData.alignment,
-          expires: badgeData.expires
-        })
+          expires: badgeData.expires,
+        }),
       })
 
       const newBadge = response as OB2.BadgeClass
@@ -237,7 +240,11 @@ export const useBadges = () => {
   }
 
   // Update badge class
-  const updateBadge = async (user: User, badgeId: string, badgeData: UpdateBadgeData): Promise<OB2.BadgeClass | null> => {
+  const updateBadge = async (
+    user: User,
+    badgeId: string,
+    badgeData: UpdateBadgeData
+  ): Promise<OB2.BadgeClass | null> => {
     isLoading.value = true
     error.value = null
 
@@ -246,9 +253,9 @@ export const useBadges = () => {
       const tokenResponse = await fetch('/api/auth/platform-token', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ user })
+        body: JSON.stringify({ user }),
       })
 
       if (!tokenResponse.ok) {
@@ -261,9 +268,9 @@ export const useBadges = () => {
       const response = await apiCall(`/v2/badge-classes/${badgeId}`, {
         method: 'PUT',
         headers: {
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(badgeData)
+        body: JSON.stringify(badgeData),
       })
 
       const updatedBadge = response as OB2.BadgeClass
@@ -294,9 +301,9 @@ export const useBadges = () => {
       const tokenResponse = await fetch('/api/auth/platform-token', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ user })
+        body: JSON.stringify({ user }),
       })
 
       if (!tokenResponse.ok) {
@@ -309,8 +316,8 @@ export const useBadges = () => {
       await apiCall(`/v2/badge-classes/${badgeId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       })
 
       // Remove from local badges array
@@ -345,7 +352,10 @@ export const useBadges = () => {
   }
 
   // Issue badge to recipient
-  const issueBadge = async (user: User, issueData: IssueBadgeData): Promise<BadgeAssertion | null> => {
+  const issueBadge = async (
+    user: User,
+    issueData: IssueBadgeData
+  ): Promise<BadgeAssertion | null> => {
     isLoading.value = true
     error.value = null
 
@@ -354,9 +364,9 @@ export const useBadges = () => {
       const tokenResponse = await fetch('/api/auth/platform-token', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ user })
+        body: JSON.stringify({ user }),
       })
 
       if (!tokenResponse.ok) {
@@ -369,20 +379,20 @@ export const useBadges = () => {
       const response = await apiCall('/v2/assertions', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
           badge: issueData.badgeClassId,
           recipient: {
             type: 'email',
             hashed: false,
-            identity: issueData.recipientEmail
+            identity: issueData.recipientEmail,
           },
           issuedOn: new Date().toISOString(),
           expires: issueData.expires,
           evidence: issueData.evidence,
-          narrative: issueData.narrative
-        })
+          narrative: issueData.narrative,
+        }),
       })
 
       return response as BadgeAssertion
@@ -396,11 +406,7 @@ export const useBadges = () => {
   }
 
   // Fetch badge assertions
-  const fetchAssertions = async (
-    page: number = 1, 
-    perPage: number = 10,
-    badgeClassId?: string
-  ) => {
+  const fetchAssertions = async (page: number = 1, perPage: number = 10, badgeClassId?: string) => {
     isLoading.value = true
     error.value = null
 
@@ -408,11 +414,11 @@ export const useBadges = () => {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: perPage.toString(),
-        ...badgeClassId && { badgeClass: badgeClassId }
+        ...(badgeClassId && { badgeClass: badgeClassId }),
       })
 
       const response = await basicApiCall(`/v2/assertions?${params}`)
-      
+
       assertions.value = response.assertions || response
       totalAssertions.value = response.total || assertions.value.length
       currentPage.value = page
@@ -426,7 +432,11 @@ export const useBadges = () => {
   }
 
   // Revoke badge assertion
-  const revokeBadge = async (user: User, assertionId: string, reason?: string): Promise<boolean> => {
+  const revokeBadge = async (
+    user: User,
+    assertionId: string,
+    reason?: string
+  ): Promise<boolean> => {
     isLoading.value = true
     error.value = null
 
@@ -435,9 +445,9 @@ export const useBadges = () => {
       const tokenResponse = await fetch('/api/auth/platform-token', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ user })
+        body: JSON.stringify({ user }),
       })
 
       if (!tokenResponse.ok) {
@@ -450,16 +460,16 @@ export const useBadges = () => {
       await apiCall(`/v2/assertions/${assertionId}/revoke`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          reason: reason || 'Badge revoked by administrator'
-        })
+          reason: reason || 'Badge revoked by administrator',
+        }),
       })
 
       // Update local assertions array
       const index = assertions.value.findIndex(a => a.id === assertionId)
-      if (index !== -1) {
+      if (index !== -1 && assertions.value[index]) {
         assertions.value[index].revoked = true
         assertions.value[index].revocationReason = reason
       }
@@ -502,13 +512,13 @@ export const useBadges = () => {
     try {
       const params = new URLSearchParams({
         format: 'csv',
-        ...searchFilters.issuer && { issuer: searchFilters.issuer },
-        ...searchFilters.status && { status: searchFilters.status },
-        ...searchFilters.dateFrom && { dateFrom: searchFilters.dateFrom },
-        ...searchFilters.dateTo && { dateTo: searchFilters.dateTo },
-        ...searchFilters.tags.length > 0 && { tags: searchFilters.tags.join(',') },
+        ...(searchFilters.issuer && { issuer: searchFilters.issuer }),
+        ...(searchFilters.status && { status: searchFilters.status }),
+        ...(searchFilters.dateFrom && { dateFrom: searchFilters.dateFrom }),
+        ...(searchFilters.dateTo && { dateTo: searchFilters.dateTo }),
+        ...(searchFilters.tags.length > 0 && { tags: searchFilters.tags.join(',') }),
         sortBy: searchFilters.sortBy,
-        sortOrder: searchFilters.sortOrder
+        sortOrder: searchFilters.sortOrder,
       })
 
       const response = await fetch(`/api/bs/v2/badge-classes/export?${params}`)
@@ -559,6 +569,6 @@ export const useBadges = () => {
     changePage,
     changeItemsPerPage,
     exportBadges,
-    clearError
+    clearError,
   }
 }

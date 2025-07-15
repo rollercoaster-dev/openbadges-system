@@ -4,15 +4,12 @@
       <h2 class="text-xl font-semibold text-gray-900">
         {{ isEditMode ? 'Edit User' : 'Create New User' }}
       </h2>
-      <button 
-        @click="$emit('close')"
-        class="text-gray-400 hover:text-gray-600"
-      >
+      <button class="text-gray-400 hover:text-gray-600" @click="$emit('close')">
         <XMarkIcon class="w-6 h-6" />
       </button>
     </div>
 
-    <form @submit.prevent="handleSubmit" class="space-y-6">
+    <form class="space-y-6" @submit.prevent="handleSubmit">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
           <label for="firstName" class="block text-sm font-medium text-gray-700 mb-2">
@@ -71,9 +68,7 @@
       </div>
 
       <div>
-        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-          Email *
-        </label>
+        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
         <input
           id="email"
           v-model="formData.email"
@@ -88,9 +83,7 @@
       </div>
 
       <div>
-        <label for="avatar" class="block text-sm font-medium text-gray-700 mb-2">
-          Avatar URL
-        </label>
+        <label for="avatar" class="block text-sm font-medium text-gray-700 mb-2">Avatar URL</label>
         <input
           id="avatar"
           v-model="formData.avatar"
@@ -101,9 +94,7 @@
       </div>
 
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          Role
-        </label>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
         <div class="flex items-center space-x-4">
           <label class="flex items-center">
             <input
@@ -122,37 +113,37 @@
       <div v-if="isEditMode" class="border-t pt-6">
         <h3 class="text-lg font-medium text-gray-900 mb-4">WebAuthn Credentials</h3>
         <div v-if="formData.credentials && formData.credentials.length > 0" class="space-y-3">
-          <div 
-            v-for="credential in formData.credentials" 
+          <div
+            v-for="credential in formData.credentials"
             :key="credential.id"
             class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
           >
             <div>
-              <p class="font-medium text-gray-900">{{ credential.name }}</p>
-              <p class="text-sm text-gray-600">{{ credential.type }}</p>
-              <p class="text-xs text-gray-500">
-                Last used: {{ formatDate(credential.lastUsed) }}
+              <p class="font-medium text-gray-900">
+                {{ credential.name }}
               </p>
+              <p class="text-sm text-gray-600">
+                {{ credential.type }}
+              </p>
+              <p class="text-xs text-gray-500">Last used: {{ formatDate(credential.lastUsed) }}</p>
             </div>
             <button
-              @click="removeCredential(credential.id)"
               type="button"
               class="text-red-600 hover:text-red-800"
+              @click="removeCredential(credential.id)"
             >
               <TrashIcon class="w-4 h-4" />
             </button>
           </div>
         </div>
-        <div v-else class="text-sm text-gray-500">
-          No WebAuthn credentials configured
-        </div>
+        <div v-else class="text-sm text-gray-500">No WebAuthn credentials configured</div>
       </div>
 
       <div class="flex justify-end space-x-3 pt-6 border-t">
         <button
           type="button"
-          @click="$emit('close')"
           class="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+          @click="$emit('close')"
         >
           Cancel
         </button>
@@ -161,7 +152,7 @@
           :disabled="isSubmitting"
           class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {{ isSubmitting ? 'Saving...' : (isEditMode ? 'Update User' : 'Create User') }}
+          {{ isSubmitting ? 'Saving...' : isEditMode ? 'Update User' : 'Create User' }}
         </button>
       </div>
     </form>
@@ -210,26 +201,30 @@ const formData = ref<FormData>({
   email: '',
   avatar: '',
   isAdmin: false,
-  credentials: []
+  credentials: [],
 })
 
 const errors = ref<Partial<Record<keyof FormData, string>>>({})
 
-watch(() => props.user, (newUser) => {
-  if (newUser) {
-    formData.value = {
-      firstName: newUser.firstName,
-      lastName: newUser.lastName,
-      username: newUser.username,
-      email: newUser.email,
-      avatar: newUser.avatar || '',
-      isAdmin: newUser.isAdmin,
-      credentials: newUser.credentials || []
+watch(
+  () => props.user,
+  newUser => {
+    if (newUser) {
+      formData.value = {
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        username: newUser.username,
+        email: newUser.email,
+        avatar: newUser.avatar || '',
+        isAdmin: newUser.isAdmin,
+        credentials: newUser.credentials || [],
+      }
+    } else {
+      resetForm()
     }
-  } else {
-    resetForm()
-  }
-}, { immediate: true })
+  },
+  { immediate: true }
+)
 
 function resetForm() {
   formData.value = {
@@ -239,34 +234,34 @@ function resetForm() {
     email: '',
     avatar: '',
     isAdmin: false,
-    credentials: []
+    credentials: [],
   }
   errors.value = {}
 }
 
 function validateForm(): boolean {
   errors.value = {}
-  
+
   if (!formData.value.firstName.trim()) {
     errors.value.firstName = 'First name is required'
   }
-  
+
   if (!formData.value.lastName.trim()) {
     errors.value.lastName = 'Last name is required'
   }
-  
+
   if (!formData.value.username.trim()) {
     errors.value.username = 'Username is required'
   } else if (formData.value.username.length < 3) {
     errors.value.username = 'Username must be at least 3 characters'
   }
-  
+
   if (!formData.value.email.trim()) {
     errors.value.email = 'Email is required'
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.value.email)) {
     errors.value.email = 'Please enter a valid email address'
   }
-  
+
   return Object.keys(errors.value).length === 0
 }
 
@@ -284,10 +279,10 @@ function removeCredential(credentialId: string) {
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric' 
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
   })
 }
 </script>

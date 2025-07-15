@@ -3,70 +3,72 @@
     <div class="flex items-start justify-between">
       <div class="flex items-center space-x-4">
         <div class="flex-shrink-0">
-          <div 
-            v-if="user.avatar" 
+          <div
+            v-if="user.avatar"
             class="w-12 h-12 rounded-full bg-cover bg-center"
             :style="{ backgroundImage: `url(${user.avatar})` }"
           ></div>
-          <div 
-            v-else 
+          <div
+            v-else
             class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg"
           >
             {{ getInitials(user.firstName, user.lastName) }}
           </div>
         </div>
-        
+
         <div class="flex-1">
           <h3 class="text-lg font-semibold text-gray-900">
             {{ user.firstName }} {{ user.lastName }}
           </h3>
           <p class="text-sm text-gray-600">@{{ user.username }}</p>
-          <p class="text-sm text-gray-500">{{ user.email }}</p>
+          <p class="text-sm text-gray-500">
+            {{ user.email }}
+          </p>
         </div>
       </div>
-      
+
       <div class="flex flex-col items-end space-y-2">
         <div class="flex items-center space-x-2">
-          <span 
-            v-if="user.isAdmin" 
+          <span
+            v-if="user.isAdmin"
             class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
           >
             Admin
           </span>
-          <span 
+          <span
             class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
             :class="getStatusClasses(isActive)"
           >
             {{ isActive ? 'Active' : 'Inactive' }}
           </span>
         </div>
-        
+
         <div class="flex items-center space-x-1">
-          <button 
-            @click="$emit('edit', user)"
+          <button
             class="p-1 text-gray-400 hover:text-blue-600 transition-colors"
             title="Edit user"
+            @click="$emit('edit', user)"
           >
             <PencilIcon class="w-4 h-4" />
           </button>
-          <button 
-            @click="$emit('view', user)"
+          <button
             class="p-1 text-gray-400 hover:text-green-600 transition-colors"
             title="View user"
+            @click="$emit('view', user)"
           >
             <EyeIcon class="w-4 h-4" />
           </button>
-          <button 
-            @click="$emit('delete', user)"
+          <button
             class="p-1 text-gray-400 hover:text-red-600 transition-colors"
             title="Delete user"
+            @click="$emit('delete', user)"
           >
             <TrashIcon class="w-4 h-4" />
           </button>
         </div>
       </div>
     </div>
-    
+
     <div class="mt-4 pt-4 border-t border-gray-200">
       <div class="flex items-center justify-between text-sm text-gray-600">
         <div class="flex items-center space-x-4">
@@ -79,7 +81,7 @@
             <span>{{ formatDate(user.createdAt) }}</span>
           </div>
         </div>
-        
+
         <div v-if="lastLoginText" class="text-xs text-gray-500">
           Last login: {{ lastLoginText }}
         </div>
@@ -100,7 +102,7 @@ interface Props {
 
 const props = defineProps<Props>()
 
-const emits = defineEmits<{
+defineEmits<{
   edit: [user: User]
   view: [user: User]
   delete: [user: User]
@@ -114,12 +116,12 @@ const isActive = computed(() => {
 
 const lastLoginText = computed(() => {
   if (!props.lastLogin) return null
-  
+
   const date = new Date(props.lastLogin)
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-  
+
   if (diffDays === 0) return 'Today'
   if (diffDays === 1) return 'Yesterday'
   if (diffDays < 7) return `${diffDays} days ago`
@@ -131,17 +133,15 @@ function getInitials(firstName: string, lastName: string): string {
 }
 
 function getStatusClasses(active: boolean): string {
-  return active 
-    ? 'bg-green-100 text-green-800' 
-    : 'bg-red-100 text-red-800'
+  return active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
 }
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', { 
-    month: 'short', 
-    day: 'numeric', 
-    year: 'numeric' 
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
   })
 }
 </script>

@@ -7,13 +7,13 @@
         <h2 class="text-lg font-semibold mb-4">Badge Information</h2>
         <p class="text-gray-500">Edit name, description, criteria, image</p>
       </div>
-      
+
       <!-- Issuer change placeholder -->
       <div class="border-2 border-dashed border-gray-300 rounded-lg p-8">
         <h2 class="text-lg font-semibold mb-4">Issuer</h2>
         <p class="text-gray-500">Change badge issuer (with warnings)</p>
       </div>
-      
+
       <!-- Badge preview placeholder -->
       <div class="border-2 border-dashed border-gray-300 rounded-lg p-8">
         <h2 class="text-lg font-semibold mb-4">Preview</h2>
@@ -24,6 +24,5 @@
 </template>
 
 <script setup lang="ts">
-const route = useRoute()
 // Badge editing logic will go here
 </script>

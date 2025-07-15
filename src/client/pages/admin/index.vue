@@ -7,16 +7,16 @@
           Last updated: {{ formatDate(new Date().toISOString()) }}
         </div>
         <button
-          @click="refreshData"
           :disabled="isLoading"
           class="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded-md flex items-center space-x-2"
+          @click="refreshData"
         >
           <ArrowPathIcon :class="['w-4 h-4', isLoading && 'animate-spin']" />
           <span>{{ isLoading ? 'Refreshing...' : 'Refresh' }}</span>
         </button>
       </div>
     </div>
-    
+
     <!-- System Statistics -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <div class="bg-white rounded-lg shadow-md p-6">
@@ -27,12 +27,11 @@
           <div class="ml-4">
             <p class="text-sm font-medium text-gray-500">Total Users</p>
             <div class="flex items-center">
-              <p class="text-2xl font-semibold text-gray-900">{{ stats.totalUsers }}</p>
-              <span 
-                :class="[
-                  'ml-2 text-sm',
-                  stats.userGrowth >= 0 ? 'text-green-600' : 'text-red-600'
-                ]"
+              <p class="text-2xl font-semibold text-gray-900">
+                {{ stats.totalUsers }}
+              </p>
+              <span
+                :class="['ml-2 text-sm', stats.userGrowth >= 0 ? 'text-green-600' : 'text-red-600']"
               >
                 {{ stats.userGrowth >= 0 ? '+' : '' }}{{ stats.userGrowth }}%
               </span>
@@ -40,7 +39,7 @@
           </div>
         </div>
       </div>
-      
+
       <div class="bg-white rounded-lg shadow-md p-6">
         <div class="flex items-center">
           <div class="flex-shrink-0">
@@ -49,11 +48,13 @@
           <div class="ml-4">
             <p class="text-sm font-medium text-gray-500">Badge Classes</p>
             <div class="flex items-center">
-              <p class="text-2xl font-semibold text-gray-900">{{ stats.totalBadges }}</p>
-              <span 
+              <p class="text-2xl font-semibold text-gray-900">
+                {{ stats.totalBadges }}
+              </p>
+              <span
                 :class="[
                   'ml-2 text-sm',
-                  stats.badgeGrowth >= 0 ? 'text-green-600' : 'text-red-600'
+                  stats.badgeGrowth >= 0 ? 'text-green-600' : 'text-red-600',
                 ]"
               >
                 {{ stats.badgeGrowth >= 0 ? '+' : '' }}{{ stats.badgeGrowth }}%
@@ -62,7 +63,7 @@
           </div>
         </div>
       </div>
-      
+
       <div class="bg-white rounded-lg shadow-md p-6">
         <div class="flex items-center">
           <div class="flex-shrink-0">
@@ -71,11 +72,13 @@
           <div class="ml-4">
             <p class="text-sm font-medium text-gray-500">Issued Badges</p>
             <div class="flex items-center">
-              <p class="text-2xl font-semibold text-gray-900">{{ stats.totalAssertions }}</p>
-              <span 
+              <p class="text-2xl font-semibold text-gray-900">
+                {{ stats.totalAssertions }}
+              </p>
+              <span
                 :class="[
                   'ml-2 text-sm',
-                  stats.assertionGrowth >= 0 ? 'text-green-600' : 'text-red-600'
+                  stats.assertionGrowth >= 0 ? 'text-green-600' : 'text-red-600',
                 ]"
               >
                 {{ stats.assertionGrowth >= 0 ? '+' : '' }}{{ stats.assertionGrowth }}%
@@ -84,7 +87,7 @@
           </div>
         </div>
       </div>
-      
+
       <div class="bg-white rounded-lg shadow-md p-6">
         <div class="flex items-center">
           <div class="flex-shrink-0">
@@ -93,10 +96,10 @@
           <div class="ml-4">
             <p class="text-sm font-medium text-gray-500">Active Issuers</p>
             <div class="flex items-center">
-              <p class="text-2xl font-semibold text-gray-900">{{ stats.activeIssuers }}</p>
-              <span class="ml-2 text-sm text-gray-500">
-                / {{ stats.totalIssuers }}
-              </span>
+              <p class="text-2xl font-semibold text-gray-900">
+                {{ stats.activeIssuers }}
+              </p>
+              <span class="ml-2 text-sm text-gray-500">/ {{ stats.totalIssuers }}</span>
             </div>
           </div>
         </div>
@@ -134,7 +137,7 @@
     <div class="bg-white rounded-lg shadow-md p-6 mb-6">
       <h2 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <RouterLink 
+        <RouterLink
           to="/admin/users"
           class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
         >
@@ -145,7 +148,7 @@
           </div>
         </RouterLink>
 
-        <RouterLink 
+        <RouterLink
           to="/admin/badges"
           class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
         >
@@ -156,7 +159,7 @@
           </div>
         </RouterLink>
 
-        <RouterLink 
+        <RouterLink
           to="/admin/system"
           class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
         >
@@ -167,9 +170,9 @@
           </div>
         </RouterLink>
 
-        <button 
-          @click="exportData"
+        <button
           class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          @click="exportData"
         >
           <ArrowDownTrayIcon class="w-8 h-8 text-purple-500 mr-3" />
           <div>
@@ -184,24 +187,21 @@
     <div class="bg-white rounded-lg shadow-md p-6 mb-6">
       <div class="flex items-center justify-between mb-4">
         <h2 class="text-lg font-semibold text-gray-900">Recent Activity</h2>
-        <RouterLink 
-          to="/admin/activity"
-          class="text-sm text-blue-600 hover:text-blue-800"
-        >
+        <RouterLink to="/admin/activity" class="text-sm text-blue-600 hover:text-blue-800">
           View all activity →
         </RouterLink>
       </div>
-      
+
       <div v-if="isLoading" class="text-center py-8">
         <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
         <p class="mt-2 text-gray-600">Loading activity...</p>
       </div>
-      
+
       <div v-else-if="recentActivity.length === 0" class="text-center py-8">
         <ClockIcon class="w-16 h-16 text-gray-300 mx-auto mb-2" />
         <p class="text-gray-600">No recent activity</p>
       </div>
-      
+
       <div v-else class="space-y-4">
         <div
           v-for="activity in recentActivity"
@@ -209,22 +209,30 @@
           class="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg"
         >
           <div class="flex-shrink-0">
-            <div :class="[
-              'w-10 h-10 rounded-full flex items-center justify-center',
-              getActivityColor(activity.type)
-            ]">
+            <div
+              :class="[
+                'w-10 h-10 rounded-full flex items-center justify-center',
+                getActivityColor(activity.type),
+              ]"
+            >
               <component :is="getActivityIcon(activity.type)" class="w-5 h-5 text-white" />
             </div>
           </div>
           <div class="flex-1">
-            <p class="text-sm font-medium text-gray-900">{{ activity.description }}</p>
-            <p class="text-xs text-gray-500">{{ formatDate(activity.timestamp) }}</p>
+            <p class="text-sm font-medium text-gray-900">
+              {{ activity.description }}
+            </p>
+            <p class="text-xs text-gray-500">
+              {{ formatDate(activity.timestamp) }}
+            </p>
           </div>
           <div class="flex-shrink-0">
-            <span :class="[
-              'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-              getActivityStatusColor(activity.type)
-            ]">
+            <span
+              :class="[
+                'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+                getActivityStatusColor(activity.type),
+              ]"
+            >
               {{ getActivityLabel(activity.type) }}
             </span>
           </div>
@@ -237,23 +245,29 @@
       <h2 class="text-lg font-semibold text-gray-900 mb-4">System Health</h2>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div class="text-center">
-          <div class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-2">
+          <div
+            class="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-2"
+          >
             <ServerIcon class="w-8 h-8 text-green-500" />
           </div>
           <p class="text-sm font-medium text-gray-900">Server Status</p>
           <p class="text-xs text-green-600">Online</p>
         </div>
-        
+
         <div class="text-center">
-          <div class="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-2">
+          <div
+            class="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-2"
+          >
             <CircleStackIcon class="w-8 h-8 text-blue-500" />
           </div>
           <p class="text-sm font-medium text-gray-900">Database</p>
           <p class="text-xs text-blue-600">Connected</p>
         </div>
-        
+
         <div class="text-center">
-          <div class="mx-auto w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-2">
+          <div
+            class="mx-auto w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-2"
+          >
             <ShieldCheckIcon class="w-8 h-8 text-yellow-500" />
           </div>
           <p class="text-sm font-medium text-gray-900">Security</p>
@@ -263,27 +277,27 @@
     </div>
 
     <!-- Success/Error Messages -->
-    <div 
+    <div
       v-if="error"
       class="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-3 rounded-lg shadow-lg z-50"
     >
       <div class="flex items-center space-x-2">
         <ExclamationTriangleIcon class="w-5 h-5" />
         <span>{{ error }}</span>
-        <button @click="error = null" class="ml-2 hover:text-gray-200">
+        <button class="ml-2 hover:text-gray-200" @click="error = null">
           <XMarkIcon class="w-4 h-4" />
         </button>
       </div>
     </div>
 
-    <div 
+    <div
       v-if="successMessage"
       class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg z-50"
     >
       <div class="flex items-center space-x-2">
         <CheckCircleIcon class="w-5 h-5" />
         <span>{{ successMessage }}</span>
-        <button @click="successMessage = null" class="ml-2 hover:text-gray-200">
+        <button class="ml-2 hover:text-gray-200" @click="successMessage = null">
           <XMarkIcon class="w-4 h-4" />
         </button>
       </div>
@@ -293,7 +307,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import { 
+import {
   ArrowPathIcon,
   UsersIcon,
   TrophyIcon,
@@ -310,7 +324,7 @@ import {
   CheckCircleIcon,
   XMarkIcon,
   UserPlusIcon,
-  PlusIcon
+  PlusIcon,
 } from '@heroicons/vue/24/outline'
 import { useUsers } from '@/composables/useUsers'
 import { useBadges } from '@/composables/useBadges'
@@ -333,7 +347,7 @@ const stats = ref({
   badgeGrowth: 0,
   assertionGrowth: 0,
   newUsersLast30Days: 0,
-  badgesIssuedLast30Days: 0
+  badgesIssuedLast30Days: 0,
 })
 
 interface Activity {
@@ -351,7 +365,7 @@ onMounted(() => {
 })
 
 // Auto-clear success message
-watch(successMessage, (message) => {
+watch(successMessage, message => {
   if (message) {
     setTimeout(() => {
       successMessage.value = null
@@ -368,7 +382,7 @@ async function refreshData() {
     await Promise.all([
       fetchUsers(1, 1000), // Get all users for stats
       fetchBadges(1, 1000), // Get all badges for stats
-      fetchAssertions(1, 1000) // Get all assertions for stats
+      fetchAssertions(1, 1000), // Get all assertions for stats
     ])
 
     // Update stats
@@ -382,7 +396,7 @@ async function refreshData() {
       badgeGrowth: 8, // Placeholder - would calculate from data
       assertionGrowth: 25, // Placeholder - would calculate from data
       newUsersLast30Days: 12, // Placeholder - would calculate from data
-      badgesIssuedLast30Days: 45 // Placeholder - would calculate from data
+      badgesIssuedLast30Days: 45, // Placeholder - would calculate from data
     }
 
     // Mock recent activity data
@@ -391,34 +405,33 @@ async function refreshData() {
         id: '1',
         type: 'user_registered',
         description: 'New user john.doe@example.com registered',
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
       },
       {
         id: '2',
         type: 'badge_issued',
         description: 'Badge "JavaScript Expert" issued to jane.smith@example.com',
-        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()
+        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
       },
       {
         id: '3',
         type: 'badge_created',
         description: 'New badge class "Python Fundamentals" created',
-        timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
+        timestamp: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
       },
       {
         id: '4',
         type: 'user_updated',
         description: 'User alice.johnson@example.com updated profile',
-        timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString()
+        timestamp: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
       },
       {
         id: '5',
         type: 'system_event',
         description: 'System backup completed successfully',
-        timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
-      }
+        timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+      },
     ]
-
   } catch (err) {
     console.error('Failed to refresh dashboard data:', err)
     error.value = 'Failed to load dashboard data. Please try again.'
@@ -506,7 +519,7 @@ function formatDate(dateString: string): string {
   const diffMs = now.getTime() - date.getTime()
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
   const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-  
+
   if (diffHours < 1) {
     return 'Just now'
   } else if (diffHours < 24) {
@@ -514,10 +527,10 @@ function formatDate(dateString: string): string {
   } else if (diffDays < 7) {
     return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
   } else {
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
     })
   }
 }

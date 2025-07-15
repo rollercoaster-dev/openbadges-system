@@ -8,7 +8,7 @@ vi.mock('fs', async () => {
   const actual = await vi.importActual('fs')
   return {
     ...actual,
-    readFileSync: vi.fn()
+    readFileSync: vi.fn(),
   }
 })
 
@@ -16,8 +16,8 @@ vi.mock('fs', async () => {
 vi.mock('jsonwebtoken', () => ({
   default: {
     sign: vi.fn(),
-    verify: vi.fn()
-  }
+    verify: vi.fn(),
+  },
 }))
 
 describe('JWTService', () => {
@@ -36,10 +36,10 @@ TEST_PRIVATE_KEY_CONTENT
 
   beforeEach(() => {
     vi.clearAllMocks()
-    
+
     // Mock readFileSync to return the private key
     vi.mocked(readFileSync).mockReturnValue(mockPrivateKey)
-    
+
     jwtService = new JWTService()
   })
 
@@ -56,7 +56,9 @@ TEST_PRIVATE_KEY_CONTENT
         throw new Error('File not found')
       })
 
-      expect(() => new JWTService()).toThrow('Private key not found. Please run the setup script to generate keys.')
+      expect(() => new JWTService()).toThrow(
+        'Private key not found. Please run the setup script to generate keys.'
+      )
     })
   })
 
@@ -68,7 +70,7 @@ TEST_PRIVATE_KEY_CONTENT
         email: 'test@example.com',
         firstName: 'Test',
         lastName: 'User',
-        isAdmin: false
+        isAdmin: false,
       }
 
       const mockToken = 'mock-jwt-token'
@@ -86,14 +88,14 @@ TEST_PRIVATE_KEY_CONTENT
           metadata: {
             firstName: 'Test',
             lastName: 'User',
-            isAdmin: false
-          }
+            isAdmin: false,
+          },
         },
         mockPrivateKey,
         {
           algorithm: 'RS256',
           issuer: 'openbadges-demo-main-app',
-          expiresIn: '1h'
+          expiresIn: '1h',
         }
       )
     })
@@ -105,7 +107,7 @@ TEST_PRIVATE_KEY_CONTENT
         email: 'admin@example.com',
         firstName: 'Admin',
         lastName: 'User',
-        isAdmin: true
+        isAdmin: true,
       }
 
       const mockToken = 'mock-admin-jwt-token'
@@ -117,8 +119,8 @@ TEST_PRIVATE_KEY_CONTENT
       expect(jwt.sign).toHaveBeenCalledWith(
         expect.objectContaining({
           metadata: expect.objectContaining({
-            isAdmin: true
-          })
+            isAdmin: true,
+          }),
         }),
         mockPrivateKey,
         expect.any(Object)
@@ -137,8 +139,8 @@ TEST_PRIVATE_KEY_CONTENT
         metadata: {
           firstName: 'Test',
           lastName: 'User',
-          isAdmin: false
-        }
+          isAdmin: false,
+        },
       }
 
       vi.mocked(jwt.verify).mockReturnValue(mockPayload as any)
@@ -169,7 +171,7 @@ TEST_PRIVATE_KEY_CONTENT
         email: 'test@example.com',
         firstName: 'Test',
         lastName: 'User',
-        isAdmin: false
+        isAdmin: false,
       }
 
       const mockToken = 'mock-jwt-token'
@@ -179,8 +181,8 @@ TEST_PRIVATE_KEY_CONTENT
 
       expect(result.token).toBe(mockToken)
       expect(result.headers).toEqual({
-        'Authorization': `Bearer ${mockToken}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${mockToken}`,
+        'Content-Type': 'application/json',
       })
     })
   })
@@ -193,7 +195,7 @@ TEST_PRIVATE_KEY_CONTENT
         email: 'test@example.com',
         firstName: 'Test',
         lastName: 'User',
-        isAdmin: false
+        isAdmin: false,
       }
 
       vi.mocked(jwt.sign).mockImplementation(() => {

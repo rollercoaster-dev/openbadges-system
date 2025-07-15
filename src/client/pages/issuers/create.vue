@@ -7,13 +7,13 @@
         <h2 class="text-lg font-semibold mb-4">Basic Information</h2>
         <p class="text-gray-500">Name, description, URL, email, logo upload</p>
       </div>
-      
+
       <!-- Issuer contact info placeholder -->
       <div class="border-2 border-dashed border-gray-300 rounded-lg p-8">
         <h2 class="text-lg font-semibold mb-4">Contact Information</h2>
         <p class="text-gray-500">Address, phone, social media links</p>
       </div>
-      
+
       <!-- Issuer verification placeholder -->
       <div class="border-2 border-dashed border-gray-300 rounded-lg p-8">
         <h2 class="text-lg font-semibold mb-4">Verification</h2>

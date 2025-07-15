@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useAuth, type User } from '../useAuth'
+import { useAuth } from '../useAuth'
 
 // Mock WebAuthn utils
 vi.mock('@/utils/webauthn', () => ({
@@ -11,30 +11,37 @@ vi.mock('@/utils/webauthn', () => ({
       rp: { name: 'Test RP', id: 'localhost' },
       user: { id: userId, name: username, displayName },
       pubKeyCredParams: [{ type: 'public-key', alg: -7 }],
-      excludeCredentials: excludeCredentials || []
+      excludeCredentials: excludeCredentials || [],
     })),
-    createAuthenticationOptions: vi.fn((credentials) => ({
+    createAuthenticationOptions: vi.fn(credentials => ({
       challenge: new Uint8Array(32),
-      allowCredentials: credentials || []
+      allowCredentials: credentials || [],
     })),
-    register: vi.fn(() => Promise.resolve({
-      id: 'test-credential-id',
-      publicKey: 'test-public-key',
-      transports: ['internal'],
-      authenticatorAttachment: 'platform'
-    })),
-    authenticate: vi.fn(() => Promise.resolve({
-      id: 'test-credential-id',
-      publicKey: 'test-public-key',
-      transports: ['internal']
-    })),
-    getAuthenticatorName: vi.fn(() => 'Test Authenticator')
+    register: vi.fn(() =>
+      Promise.resolve({
+        id: 'test-credential-id',
+        publicKey: 'test-public-key',
+        transports: ['internal'],
+        authenticatorAttachment: 'platform',
+      })
+    ),
+    authenticate: vi.fn(() =>
+      Promise.resolve({
+        id: 'test-credential-id',
+        publicKey: 'test-public-key',
+        transports: ['internal'],
+      })
+    ),
+    getAuthenticatorName: vi.fn(() => 'Test Authenticator'),
   },
   WebAuthnError: class extends Error {
-    constructor(message: string, public userMessage: string) {
+    constructor(
+      message: string,
+      public userMessage: string
+    ) {
       super(message)
     }
-  }
+  },
 }))
 
 // Mock OpenBadges service
@@ -45,15 +52,15 @@ vi.mock('@/services/openbadges', () => ({
     removeBadgeFromBackpack: vi.fn(() => Promise.resolve()),
     getBadgeClasses: vi.fn(() => Promise.resolve([])),
     createBadgeClass: vi.fn(() => Promise.resolve({ id: 'test-badge-class' })),
-    issueBadge: vi.fn(() => Promise.resolve({ id: 'test-issued-badge' }))
-  }
+    issueBadge: vi.fn(() => Promise.resolve({ id: 'test-issued-badge' })),
+  },
 }))
 
 // Mock router
 vi.mock('vue-router', () => ({
   useRouter: vi.fn(() => ({
-    push: vi.fn()
-  }))
+    push: vi.fn(),
+  })),
 }))
 
 describe('useAuth', () => {
@@ -63,22 +70,22 @@ describe('useAuth', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
-    
+
     // Mock global fetch for backend API calls
     mockFetch = vi.fn()
     global.fetch = mockFetch
-    
+
     // Mock localStorage methods
     Object.defineProperty(window, 'localStorage', {
       value: {
         getItem: vi.fn(),
         setItem: vi.fn(),
         removeItem: vi.fn(),
-        clear: vi.fn()
+        clear: vi.fn(),
       },
-      writable: true
+      writable: true,
     })
-    
+
     auth = useAuth()
   })
 
@@ -96,7 +103,7 @@ describe('useAuth', () => {
   describe('User storage', () => {
     it('should initialize with empty state when no storage exists', () => {
       localStorage.getItem = vi.fn(() => null)
-      
+
       const newAuth = useAuth()
       expect(newAuth.user.value).toBeNull()
       expect(newAuth.isAuthenticated.value).toBe(false)
@@ -112,16 +119,16 @@ describe('useAuth', () => {
         avatar: undefined,
         isAdmin: false,
         createdAt: new Date().toISOString(),
-        credentials: []
+        credentials: [],
       }
-      
-      localStorage.getItem = vi.fn((key) => {
+
+      localStorage.getItem = vi.fn(key => {
         if (key === 'auth_token') return 'test-token'
         if (key === 'user_data') return JSON.stringify(mockUser)
         return null
       })
-      
-      const newAuth = useAuth()
+
+      useAuth()
       expect(localStorage.getItem).toHaveBeenCalledWith('auth_token')
       expect(localStorage.getItem).toHaveBeenCalledWith('user_data')
     })
@@ -138,17 +145,17 @@ describe('useAuth', () => {
         avatar: undefined,
         isAdmin: false,
         createdAt: new Date().toISOString(),
-        credentials: []
+        credentials: [],
       }
-      
-      localStorage.getItem = vi.fn((key) => {
+
+      localStorage.getItem = vi.fn(key => {
         if (key === 'auth_token') return 'test-token'
         if (key === 'user_data') return JSON.stringify(mockUser)
         return null
       })
-      
+
       const newAuth = useAuth()
-      
+
       // Wait for initialization to complete
       setTimeout(() => {
         expect(newAuth.user.value).toEqual(mockUser)
@@ -158,17 +165,18 @@ describe('useAuth', () => {
     })
 
     it('should clear invalid stored data', () => {
-      localStorage.getItem = vi.fn((key) => {
+      localStorage.getItem = vi.fn(key => {
         if (key === 'auth_token') return 'test-token'
         if (key === 'user_data') return 'invalid-json'
         return null
       })
-      
+
       const newAuth = useAuth()
-      
+
       setTimeout(() => {
         expect(localStorage.removeItem).toHaveBeenCalledWith('auth_token')
         expect(localStorage.removeItem).toHaveBeenCalledWith('user_data')
+        expect(newAuth.user.value).toBeNull() // Use the variable
       }, 0)
     })
   })
@@ -179,28 +187,33 @@ describe('useAuth', () => {
         username: 'newuser',
         email: 'newuser@example.com',
         firstName: 'New',
-        lastName: 'User'
+        lastName: 'User',
       }
 
       // Mock successful backend responses
       mockFetch
-        .mockResolvedValueOnce({  // Check existing user by username (1st call)
+        .mockResolvedValueOnce({
+          // Check existing user by username (1st call)
           ok: true,
-          json: vi.fn().mockResolvedValue([])
+          json: vi.fn().mockResolvedValue([]),
         })
-        .mockResolvedValueOnce({  // Check existing user by username (2nd call - for email check)
+        .mockResolvedValueOnce({
+          // Check existing user by username (2nd call - for email check)
           ok: true,
-          json: vi.fn().mockResolvedValue([])
+          json: vi.fn().mockResolvedValue([]),
         })
-        .mockResolvedValueOnce({  // Check existing user by email (1st call)
+        .mockResolvedValueOnce({
+          // Check existing user by email (1st call)
           ok: true,
-          json: vi.fn().mockResolvedValue([])
+          json: vi.fn().mockResolvedValue([]),
         })
-        .mockResolvedValueOnce({  // Check existing user by email (2nd call)
+        .mockResolvedValueOnce({
+          // Check existing user by email (2nd call)
           ok: true,
-          json: vi.fn().mockResolvedValue([])
+          json: vi.fn().mockResolvedValue([]),
         })
-        .mockResolvedValueOnce({  // Create user
+        .mockResolvedValueOnce({
+          // Create user
           ok: true,
           json: vi.fn().mockResolvedValue({
             id: 'new-user-id',
@@ -210,22 +223,23 @@ describe('useAuth', () => {
             lastName: 'User',
             isActive: true,
             roles: ['USER'],
-            createdAt: new Date().toISOString()
-          })
+            createdAt: new Date().toISOString(),
+          }),
         })
-        .mockResolvedValueOnce({  // Store credential
+        .mockResolvedValueOnce({
+          // Store credential
           ok: true,
-          json: vi.fn().mockResolvedValue({})
+          json: vi.fn().mockResolvedValue({}),
         })
 
       const result = await auth.registerWithWebAuthn(registrationData)
-      
+
       if (!result) {
         console.log('Registration failed. Error:', auth.error.value)
         console.log('Fetch call count:', mockFetch.mock.calls.length)
         console.log('Fetch calls:', mockFetch.mock.calls)
       }
-      
+
       expect(result).toBe(true)
       expect(auth.user.value).not.toBeNull()
       expect(auth.user.value?.username).toBe('newuser')
@@ -240,21 +254,23 @@ describe('useAuth', () => {
         username: 'existing',
         email: 'different@example.com',
         firstName: 'New',
-        lastName: 'User'
+        lastName: 'User',
       }
 
       // Mock backend response with existing user
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: vi.fn().mockResolvedValue([{
-          id: 'existing-user-id',
-          username: 'existing',
-          email: 'existing@example.com'
-        }])
+        json: vi.fn().mockResolvedValue([
+          {
+            id: 'existing-user-id',
+            username: 'existing',
+            email: 'existing@example.com',
+          },
+        ]),
       })
 
       const result = await auth.registerWithWebAuthn(duplicateUser)
-      
+
       expect(result).toBe(false)
       expect(auth.error.value).toBe('Username already exists')
     })
@@ -270,31 +286,35 @@ describe('useAuth', () => {
         lastName: 'User',
         roles: ['USER'],
         createdAt: new Date().toISOString(),
-        credentials: [{
-          id: 'test-credential-id',
-          publicKey: 'test-public-key',
-          transports: ['internal'],
-          counter: 0,
-          createdAt: new Date().toISOString(),
-          lastUsed: new Date().toISOString(),
-          name: 'Test Authenticator',
-          type: 'platform'
-        }]
+        credentials: [
+          {
+            id: 'test-credential-id',
+            publicKey: 'test-public-key',
+            transports: ['internal'],
+            counter: 0,
+            createdAt: new Date().toISOString(),
+            lastUsed: new Date().toISOString(),
+            name: 'Test Authenticator',
+            type: 'platform',
+          },
+        ],
       }
 
       // Mock backend responses
       mockFetch
-        .mockResolvedValueOnce({  // Find user by username
+        .mockResolvedValueOnce({
+          // Find user by username
           ok: true,
-          json: vi.fn().mockResolvedValue([mockUser])
+          json: vi.fn().mockResolvedValue([mockUser]),
         })
-        .mockResolvedValueOnce({  // Update credential last used
+        .mockResolvedValueOnce({
+          // Update credential last used
           ok: true,
-          json: vi.fn().mockResolvedValue({})
+          json: vi.fn().mockResolvedValue({}),
         })
 
       const result = await auth.authenticateWithWebAuthn('testuser')
-      
+
       expect(result).toBe(true)
       expect(auth.user.value).not.toBeNull()
       expect(auth.user.value?.username).toBe('testuser')
@@ -308,15 +328,15 @@ describe('useAuth', () => {
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
-          json: vi.fn().mockResolvedValue([])
+          json: vi.fn().mockResolvedValue([]),
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: vi.fn().mockResolvedValue([])
+          json: vi.fn().mockResolvedValue([]),
         })
 
       const result = await auth.authenticateWithWebAuthn('nonexistent')
-      
+
       expect(result).toBe(false)
       expect(auth.error.value).toBe('User not found')
       expect(auth.isAuthenticated.value).toBe(false)
@@ -335,12 +355,12 @@ describe('useAuth', () => {
         avatar: undefined,
         isAdmin: false,
         createdAt: new Date().toISOString(),
-        credentials: []
+        credentials: [],
       }
       auth.token.value = 'test-token'
 
       auth.logout()
-      
+
       expect(auth.user.value).toBeNull()
       expect(auth.token.value).toBeNull()
       expect(auth.isAuthenticated.value).toBe(false)
@@ -360,55 +380,55 @@ describe('useAuth', () => {
         avatar: undefined,
         isAdmin: false,
         createdAt: new Date().toISOString(),
-        credentials: []
+        credentials: [],
       }
     })
 
     it('should get user backpack', async () => {
       const backpack = await auth.getUserBackpack()
-      
+
       expect(backpack).toEqual({ assertions: [], total: 0 })
     })
 
     it('should add badge to backpack', async () => {
       const result = await auth.addBadgeToBackpack('test-badge-class')
-      
+
       expect(result).toBe(true)
     })
 
     it('should remove badge from backpack', async () => {
       const result = await auth.removeBadgeFromBackpack('test-assertion')
-      
+
       expect(result).toBe(true)
     })
 
     it('should get badge classes', async () => {
       const badgeClasses = await auth.getBadgeClasses()
-      
+
       expect(badgeClasses).toEqual([])
     })
 
     it('should create badge class', async () => {
       const badgeClass = await auth.createBadgeClass({ name: 'Test Badge' })
-      
+
       expect(badgeClass).toEqual({ id: 'test-badge-class' })
     })
 
     it('should issue badge', async () => {
       const issuedBadge = await auth.issueBadge('test-badge-class', 'recipient@example.com')
-      
+
       expect(issuedBadge).toEqual({ id: 'test-issued-badge' })
     })
 
     it('should handle OpenBadges operations when user is not authenticated', async () => {
       auth.user.value = null
-      
+
       const backpack = await auth.getUserBackpack()
       const addResult = await auth.addBadgeToBackpack('test-badge-class')
       const removeResult = await auth.removeBadgeFromBackpack('test-assertion')
       const badgeClass = await auth.createBadgeClass({ name: 'Test Badge' })
       const issuedBadge = await auth.issueBadge('test-badge-class', 'recipient@example.com')
-      
+
       expect(backpack).toBeNull()
       expect(addResult).toBe(false)
       expect(removeResult).toBe(false)
@@ -428,7 +448,7 @@ describe('useAuth', () => {
         avatar: undefined,
         isAdmin: false,
         createdAt: new Date().toISOString(),
-        credentials: []
+        credentials: [],
       }
     })
 
@@ -436,11 +456,11 @@ describe('useAuth', () => {
       // Mock backend response for storing credential
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: vi.fn().mockResolvedValue({})
+        json: vi.fn().mockResolvedValue({}),
       })
 
       const result = await auth.addCredential('New Authenticator')
-      
+
       expect(result).toBe(true)
       expect(auth.user.value?.credentials).toHaveLength(1)
       expect(auth.user.value?.credentials[0]?.name).toBe('New Authenticator')
@@ -448,25 +468,27 @@ describe('useAuth', () => {
 
     it('should remove credential', async () => {
       // Add a credential first
-      auth.user.value!.credentials = [{
-        id: 'test-credential-id',
-        publicKey: 'test-public-key',
-        transports: ['internal'],
-        counter: 0,
-        createdAt: new Date().toISOString(),
-        lastUsed: new Date().toISOString(),
-        name: 'Test Authenticator',
-        type: 'platform'
-      }]
+      auth.user.value!.credentials = [
+        {
+          id: 'test-credential-id',
+          publicKey: 'test-public-key',
+          transports: ['internal'],
+          counter: 0,
+          createdAt: new Date().toISOString(),
+          lastUsed: new Date().toISOString(),
+          name: 'Test Authenticator',
+          type: 'platform',
+        },
+      ]
 
       // Mock backend response for removing credential
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: vi.fn().mockResolvedValue({})
+        json: vi.fn().mockResolvedValue({}),
       })
 
       await auth.removeCredential('test-credential-id')
-      
+
       expect(auth.user.value?.credentials).toHaveLength(0)
     })
   })
@@ -474,9 +496,9 @@ describe('useAuth', () => {
   describe('Error Handling', () => {
     it('should clear error', () => {
       auth.error.value = 'Test error'
-      
+
       auth.clearError()
-      
+
       expect(auth.error.value).toBeNull()
     })
   })
@@ -492,24 +514,24 @@ describe('useAuth', () => {
         avatar: undefined,
         isAdmin: false,
         createdAt: new Date().toISOString(),
-        credentials: []
+        credentials: [],
       }
     })
 
     it('should update user profile', async () => {
       const updates = {
         firstName: 'Updated',
-        lastName: 'Name'
+        lastName: 'Name',
       }
-      
+
       // Mock backend response for updating profile
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: vi.fn().mockResolvedValue({})
+        json: vi.fn().mockResolvedValue({}),
       })
 
       await auth.updateProfile(updates)
-      
+
       expect(auth.user.value?.firstName).toBe('Updated')
       expect(auth.user.value?.lastName).toBe('Name')
       expect(localStorage.setItem).toHaveBeenCalledWith('user_data', expect.any(String))

@@ -19,7 +19,7 @@ export const useFormValidation = () => {
   const rules = {
     required: (message = 'This field is required'): ValidationRule => ({
       validate: (value: string) => value.trim().length > 0,
-      message
+      message,
     }),
 
     email: (message = 'Please enter a valid email address'): ValidationRule => ({
@@ -27,20 +27,22 @@ export const useFormValidation = () => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         return emailRegex.test(value)
       },
-      message
+      message,
     }),
 
     minLength: (min: number, message?: string): ValidationRule => ({
       validate: (value: string) => value.length >= min,
-      message: message || `Must be at least ${min} characters`
+      message: message || `Must be at least ${min} characters`,
     }),
 
     maxLength: (max: number, message?: string): ValidationRule => ({
       validate: (value: string) => value.length <= max,
-      message: message || `Must be no more than ${max} characters`
+      message: message || `Must be no more than ${max} characters`,
     }),
 
-    password: (message = 'Password must be at least 8 characters with uppercase, lowercase, and number'): ValidationRule => ({
+    password: (
+      message = 'Password must be at least 8 characters with uppercase, lowercase, and number'
+    ): ValidationRule => ({
       validate: (value: string) => {
         const hasUppercase = /[A-Z]/.test(value)
         const hasLowercase = /[a-z]/.test(value)
@@ -48,21 +50,26 @@ export const useFormValidation = () => {
         const hasMinLength = value.length >= 8
         return hasUppercase && hasLowercase && hasNumber && hasMinLength
       },
-      message
+      message,
     }),
 
-    confirmPassword: (originalPassword: string, message = 'Passwords do not match'): ValidationRule => ({
+    confirmPassword: (
+      originalPassword: string,
+      message = 'Passwords do not match'
+    ): ValidationRule => ({
       validate: (value: string) => value === originalPassword,
-      message
+      message,
     }),
 
-    username: (message = 'Username must be 3-20 characters, letters, numbers, and underscores only'): ValidationRule => ({
+    username: (
+      message = 'Username must be 3-20 characters, letters, numbers, and underscores only'
+    ): ValidationRule => ({
       validate: (value: string) => {
         const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
         return usernameRegex.test(value)
       },
-      message
-    })
+      message,
+    }),
   }
 
   // Create a field
@@ -71,7 +78,7 @@ export const useFormValidation = () => {
       value: initialValue,
       rules: validationRules,
       touched: false,
-      error: ''
+      error: '',
     }
   }
 
@@ -113,7 +120,7 @@ export const useFormValidation = () => {
   // Validate all fields
   const validateAll = () => {
     let isValid = true
-    
+
     for (const name in fields.value) {
       const field = fields.value[name]
       if (field) {
@@ -141,8 +148,8 @@ export const useFormValidation = () => {
 
   // Check if form is valid
   const isFormValid = computed(() => {
-    return Object.values(fields.value).every(field => 
-      field.error === '' && (field.rules.length === 0 || field.value !== '')
+    return Object.values(fields.value).every(
+      field => field.error === '' && (field.rules.length === 0 || field.value !== '')
     )
   })
 
@@ -179,6 +186,6 @@ export const useFormValidation = () => {
     hasErrors,
     getFieldError,
     getFieldValue,
-    isFieldTouched
+    isFieldTouched,
   }
 }
