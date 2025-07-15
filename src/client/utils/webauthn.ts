@@ -60,8 +60,8 @@ export class WebAuthnUtils {
     return !!(
       window.PublicKeyCredential &&
       window.navigator.credentials &&
-      window.navigator.credentials.create &&
-      window.navigator.credentials.get
+      typeof window.navigator.credentials.create === 'function' &&
+      typeof window.navigator.credentials.get === 'function'
     )
   }
 
@@ -84,7 +84,7 @@ export class WebAuthnUtils {
   static generateChallenge(): ArrayBuffer {
     const challenge = new Uint8Array(32)
     crypto.getRandomValues(challenge)
-    return challenge
+    return challenge.buffer
   }
 
   /**
@@ -94,7 +94,7 @@ export class WebAuthnUtils {
     const bytes = new Uint8Array(buffer)
     let binary = ''
     for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i])
+      binary += String.fromCharCode(bytes[i]!)
     }
     return btoa(binary)
       .replace(/\+/g, '-')
@@ -134,7 +134,7 @@ export class WebAuthnUtils {
     return {
       challenge: this.arrayBufferToBase64Url(challenge),
       user: {
-        id: this.arrayBufferToBase64Url(userIdBuffer),
+        id: this.arrayBufferToBase64Url(userIdBuffer.buffer as ArrayBuffer),
         name: username,
         displayName: displayName
       },
@@ -235,8 +235,8 @@ export class WebAuthnUtils {
       return {
         id: this.arrayBufferToBase64Url(credential.rawId),
         publicKey: this.arrayBufferToBase64Url(response.getPublicKey()!),
-        transports,
-        authenticatorAttachment: credential.authenticatorAttachment
+        transports: transports as AuthenticatorTransport[],
+        authenticatorAttachment: credential.authenticatorAttachment as AuthenticatorAttachment | null
       }
     } catch (error: any) {
       if (error instanceof WebAuthnError) {

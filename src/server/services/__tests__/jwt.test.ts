@@ -1,0 +1,217 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import jwt from 'jsonwebtoken'
+import { readFileSync } from 'fs'
+import { JWTService } from '../jwt'
+
+// Mock fs module
+vi.mock('fs', async () => {
+  const actual = await vi.importActual('fs')
+  return {
+    ...actual,
+    readFileSync: vi.fn()
+  }
+})
+
+// Mock jsonwebtoken
+vi.mock('jsonwebtoken', () => ({
+  default: {
+    sign: vi.fn(),
+    verify: vi.fn()
+  }
+}))
+
+describe('JWTService', () => {
+  let jwtService: JWTService
+  const mockPrivateKey = `-----BEGIN PRIVATE KEY-----
+MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDHDJ7FR/04tfIc
+Ec0ZwdWC23kAq4zML0M33M/2YrtSJhZ6ZxFSkBtx2jVsUmeqR9sJDeXkQtXy0f4p
+MBdDXPcj5YSrrsdda1+Il0vMuDKxgNsB86M3UQdKzdGLfFEirgxjR7kEJv10YOtE
+DpbpedxPrvG7Ik9MlJTAd4r0Pw49cjcdMTE6E/8gMAbKAnJfdCp5k0CGlQo2o1o6
+q+5r6dJDIo8jTSlB+NNcuiA6jXphOoaSGyTGPGAJq0Ly+69AazxfOlxRrtE32f+Z
+C1GKiWSiZdsXdUIrF9WUELMlnarXCJJ6S4UG0ohBTgFcFDYuPITiGVQeS+Hf5Z8i
+pqQfFAB5AgMBAAECggEABvGpEcxHxUl2HBnzOGGqmcfXhxvhgzPFKWJaOBvQXQCb
+K+oOgCQFy3GaJvLzYSCvNzObRKXrpKgEUPClFcmHgqhE6jEOQwQhfvfJJuZAJJ7L
+TEST_PRIVATE_KEY_CONTENT
+-----END PRIVATE KEY-----`
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    
+    // Mock readFileSync to return the private key
+    vi.mocked(readFileSync).mockReturnValue(mockPrivateKey)
+    
+    jwtService = new JWTService()
+  })
+
+  describe('constructor', () => {
+    it('should initialize with private key and platform configuration', () => {
+      expect(readFileSync).toHaveBeenCalledWith(
+        expect.stringContaining('keys/platform-private.pem'),
+        'utf8'
+      )
+    })
+
+    it('should throw error when private key is not found', () => {
+      vi.mocked(readFileSync).mockImplementation(() => {
+        throw new Error('File not found')
+      })
+
+      expect(() => new JWTService()).toThrow('Private key not found. Please run the setup script to generate keys.')
+    })
+  })
+
+  describe('generatePlatformToken', () => {
+    it('should generate JWT token with correct payload', () => {
+      const mockUser = {
+        id: 'test-user-id',
+        username: 'testuser',
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        isAdmin: false
+      }
+
+      const mockToken = 'mock-jwt-token'
+      vi.mocked(jwt.sign).mockReturnValue(mockToken as any)
+
+      const result = jwtService.generatePlatformToken(mockUser)
+
+      expect(result).toBe(mockToken)
+      expect(jwt.sign).toHaveBeenCalledWith(
+        {
+          sub: 'test-user-id',
+          platformId: 'urn:uuid:a504d862-bd64-4e0d-acff-db7955955bc1',
+          displayName: 'Test User',
+          email: 'test@example.com',
+          metadata: {
+            firstName: 'Test',
+            lastName: 'User',
+            isAdmin: false
+          }
+        },
+        mockPrivateKey,
+        {
+          algorithm: 'RS256',
+          issuer: 'openbadges-demo-main-app',
+          expiresIn: '1h'
+        }
+      )
+    })
+
+    it('should generate token for admin user', () => {
+      const mockUser = {
+        id: 'admin-user-id',
+        username: 'admin',
+        email: 'admin@example.com',
+        firstName: 'Admin',
+        lastName: 'User',
+        isAdmin: true
+      }
+
+      const mockToken = 'mock-admin-jwt-token'
+      vi.mocked(jwt.sign).mockReturnValue(mockToken as any)
+
+      const result = jwtService.generatePlatformToken(mockUser)
+
+      expect(result).toBe(mockToken)
+      expect(jwt.sign).toHaveBeenCalledWith(
+        expect.objectContaining({
+          metadata: expect.objectContaining({
+            isAdmin: true
+          })
+        }),
+        mockPrivateKey,
+        expect.any(Object)
+      )
+    })
+  })
+
+  describe('verifyToken', () => {
+    it('should verify valid JWT token', () => {
+      const mockToken = 'valid-jwt-token'
+      const mockPayload = {
+        sub: 'test-user-id',
+        platformId: 'urn:uuid:a504d862-bd64-4e0d-acff-db7955955bc1',
+        displayName: 'Test User',
+        email: 'test@example.com',
+        metadata: {
+          firstName: 'Test',
+          lastName: 'User',
+          isAdmin: false
+        }
+      }
+
+      vi.mocked(jwt.verify).mockReturnValue(mockPayload as any)
+
+      const result = jwtService.verifyToken(mockToken)
+
+      expect(result).toEqual(mockPayload)
+      expect(jwt.verify).toHaveBeenCalledWith(mockToken, mockPrivateKey)
+    })
+
+    it('should return null for invalid JWT token', () => {
+      const mockToken = 'invalid-jwt-token'
+      vi.mocked(jwt.verify).mockImplementation(() => {
+        throw new Error('Invalid token')
+      })
+
+      const result = jwtService.verifyToken(mockToken)
+
+      expect(result).toBeNull()
+    })
+  })
+
+  describe('createOpenBadgesApiClient', () => {
+    it('should create API client with correct headers', () => {
+      const mockUser = {
+        id: 'test-user-id',
+        username: 'testuser',
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        isAdmin: false
+      }
+
+      const mockToken = 'mock-jwt-token'
+      vi.mocked(jwt.sign).mockReturnValue(mockToken as any)
+
+      const result = jwtService.createOpenBadgesApiClient(mockUser)
+
+      expect(result.token).toBe(mockToken)
+      expect(result.headers).toEqual({
+        'Authorization': `Bearer ${mockToken}`,
+        'Content-Type': 'application/json'
+      })
+    })
+  })
+
+  describe('error handling', () => {
+    it('should handle JWT signing errors gracefully', () => {
+      const mockUser = {
+        id: 'test-user-id',
+        username: 'testuser',
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        isAdmin: false
+      }
+
+      vi.mocked(jwt.sign).mockImplementation(() => {
+        throw new Error('JWT signing failed')
+      })
+
+      expect(() => jwtService.generatePlatformToken(mockUser)).toThrow('JWT signing failed')
+    })
+
+    it('should handle verification errors gracefully', () => {
+      const mockToken = 'malformed-token'
+      vi.mocked(jwt.verify).mockImplementation(() => {
+        throw new Error('Token verification failed')
+      })
+
+      const result = jwtService.verifyToken(mockToken)
+
+      expect(result).toBeNull()
+    })
+  })
+})

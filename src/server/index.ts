@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
+import { jwtService } from './services/jwt';
 
 // Define a simpler JSON value type to avoid deep type recursion
 type JSONValue =
@@ -29,6 +30,65 @@ app.use(
 // Health check endpoint
 app.get('/api/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Authentication endpoints
+app.post('/api/auth/platform-token', async (c) => {
+  try {
+    const { user } = await c.req.json();
+    
+    if (!user || !user.id || !user.email) {
+      return c.json({ error: 'Invalid user data' }, 400);
+    }
+
+    const apiClient = jwtService.createOpenBadgesApiClient(user);
+    
+    return c.json({
+      success: true,
+      token: apiClient.token,
+      platformId: 'urn:uuid:a504d862-bd64-4e0d-acff-db7955955bc1'
+    });
+  } catch (error) {
+    console.error('Platform token generation failed:', error);
+    return c.json({ error: 'Failed to generate platform token' }, 500);
+  }
+});
+
+// OpenBadges API proxy with platform authentication
+app.all('/api/badges/*', async (c) => {
+  const openbadgesUrl = process.env.OPENBADGES_SERVER_URL || 'http://localhost:3000';
+  const path = c.req.path.replace('/api/badges', '');
+  const url = new URL(path, openbadgesUrl);
+
+  try {
+    // Get platform token from Authorization header
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ error: 'Platform token required' }, 401);
+    }
+
+    const headers = new Headers(c.req.raw.headers);
+    // Forward the platform token to OpenBadges server
+    headers.set('Authorization', authHeader);
+    
+    const response = await fetch(url.toString(), {
+      method: c.req.method,
+      headers,
+      body: c.req.raw.body,
+    });
+
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      return new Response(text, { status: response.status });
+    }
+
+    const data = await safeJsonResponse(response);
+    return c.json(data, response.status as any);
+  } catch (error) {
+    console.error('Error proxying badges request:', error);
+    return c.json({ error: 'Failed to communicate with OpenBadges server' }, 500);
+  }
 });
 
 // Helper function to safely parse JSON

@@ -87,8 +87,9 @@ export const useFormValidation = () => {
 
   // Mark field as touched
   const touchField = (name: string) => {
-    if (fields.value[name]) {
-      fields.value[name].touched = true
+    const field = fields.value[name]
+    if (field) {
+      field.touched = true
       validateField(name)
     }
   }
@@ -114,9 +115,12 @@ export const useFormValidation = () => {
     let isValid = true
     
     for (const name in fields.value) {
-      fields.value[name].touched = true
-      if (!validateField(name)) {
-        isValid = false
+      const field = fields.value[name]
+      if (field) {
+        field.touched = true
+        if (!validateField(name)) {
+          isValid = false
+        }
       }
     }
 
@@ -126,9 +130,12 @@ export const useFormValidation = () => {
   // Reset form
   const resetForm = () => {
     for (const name in fields.value) {
-      fields.value[name].value = ''
-      fields.value[name].touched = false
-      fields.value[name].error = ''
+      const field = fields.value[name]
+      if (field) {
+        field.value = ''
+        field.touched = false
+        field.error = ''
+      }
     }
   }
 
