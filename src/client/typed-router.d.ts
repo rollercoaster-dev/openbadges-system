@@ -19,5 +19,27 @@ declare module 'vue-router/auto-routes' {
    */
   export interface RouteNamedMap {
     '/': RouteRecordInfo<'/', '/', Record<never, never>, Record<never, never>>,
+    '/admin/': RouteRecordInfo<'/admin/', '/admin', Record<never, never>, Record<never, never>>,
+    '/admin/badges': RouteRecordInfo<'/admin/badges', '/admin/badges', Record<never, never>, Record<never, never>>,
+    '/admin/system': RouteRecordInfo<'/admin/system', '/admin/system', Record<never, never>, Record<never, never>>,
+    '/admin/users': RouteRecordInfo<'/admin/users', '/admin/users', Record<never, never>, Record<never, never>>,
+    '/auth/login': RouteRecordInfo<'/auth/login', '/auth/login', Record<never, never>, Record<never, never>>,
+    '/auth/profile': RouteRecordInfo<'/auth/profile', '/auth/profile', Record<never, never>, Record<never, never>>,
+    '/auth/register': RouteRecordInfo<'/auth/register', '/auth/register', Record<never, never>, Record<never, never>>,
+    '/backpack/': RouteRecordInfo<'/backpack/', '/backpack', Record<never, never>, Record<never, never>>,
+    '/backpack/[id]': RouteRecordInfo<'/backpack/[id]', '/backpack/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    '/badges/': RouteRecordInfo<'/badges/', '/badges', Record<never, never>, Record<never, never>>,
+    '/badges/[id]/': RouteRecordInfo<'/badges/[id]/', '/badges/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    '/badges/[id]/edit': RouteRecordInfo<'/badges/[id]/edit', '/badges/:id/edit', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    '/badges/[id]/issue': RouteRecordInfo<'/badges/[id]/issue', '/badges/:id/issue', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    '/badges/create': RouteRecordInfo<'/badges/create', '/badges/create', Record<never, never>, Record<never, never>>,
+    '/badges/issued': RouteRecordInfo<'/badges/issued', '/badges/issued', Record<never, never>, Record<never, never>>,
+    '/issuers/': RouteRecordInfo<'/issuers/', '/issuers', Record<never, never>, Record<never, never>>,
+    '/issuers/[id]/': RouteRecordInfo<'/issuers/[id]/', '/issuers/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    '/issuers/[id]/badges': RouteRecordInfo<'/issuers/[id]/badges', '/issuers/:id/badges', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    '/issuers/[id]/edit': RouteRecordInfo<'/issuers/[id]/edit', '/issuers/:id/edit', { id: ParamValue<true> }, { id: ParamValue<false> }>,
+    '/issuers/create': RouteRecordInfo<'/issuers/create', '/issuers/create', Record<never, never>, Record<never, never>>,
+    '/issuers/manage': RouteRecordInfo<'/issuers/manage', '/issuers/manage', Record<never, never>, Record<never, never>>,
+    '/verify/[id]': RouteRecordInfo<'/verify/[id]', '/verify/:id', { id: ParamValue<true> }, { id: ParamValue<false> }>,
   }
 }

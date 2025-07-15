@@ -96,13 +96,34 @@
 
                 <div class="mt-6">
                     <h3 class="text-lg font-medium text-slate-900 mb-2">
-                        Next Steps
+                        Quick Actions
                     </h3>
-                    <ul class="list-disc pl-5 space-y-2 text-slate-600">
-                        <li>Explore the OpenBadges API</li>
-                        <li>Create and issue badges</li>
-                        <li>View and manage badge recipients</li>
-                    </ul>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <RouterLink to="/badges" class="block p-4 bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200">
+                            <h4 class="font-semibold text-blue-900">Browse Badges</h4>
+                            <p class="text-sm text-blue-700">View all available badge classes</p>
+                        </RouterLink>
+                        <RouterLink to="/badges/create" class="block p-4 bg-green-50 hover:bg-green-100 rounded-lg border border-green-200">
+                            <h4 class="font-semibold text-green-900">Create Badge</h4>
+                            <p class="text-sm text-green-700">Design a new badge class</p>
+                        </RouterLink>
+                        <RouterLink to="/backpack" class="block p-4 bg-purple-50 hover:bg-purple-100 rounded-lg border border-purple-200">
+                            <h4 class="font-semibold text-purple-900">My Backpack</h4>
+                            <p class="text-sm text-purple-700">View earned badges</p>
+                        </RouterLink>
+                        <RouterLink to="/issuers" class="block p-4 bg-orange-50 hover:bg-orange-100 rounded-lg border border-orange-200">
+                            <h4 class="font-semibold text-orange-900">Issuers</h4>
+                            <p class="text-sm text-orange-700">Browse badge issuers</p>
+                        </RouterLink>
+                        <RouterLink to="/badges/issued" class="block p-4 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200">
+                            <h4 class="font-semibold text-indigo-900">Issued Badges</h4>
+                            <p class="text-sm text-indigo-700">Manage issued badges</p>
+                        </RouterLink>
+                        <RouterLink to="/auth/profile" class="block p-4 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200">
+                            <h4 class="font-semibold text-gray-900">Profile</h4>
+                            <p class="text-sm text-gray-700">Manage your account</p>
+                        </RouterLink>
+                    </div>
                 </div>
             </div>
         </div>
