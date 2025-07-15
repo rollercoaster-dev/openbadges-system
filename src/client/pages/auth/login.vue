@@ -1,17 +1,11 @@
 <template>
-  <div class="max-w-md mx-auto mt-8 bg-white shadow rounded-lg p-6">
-    <h1 class="text-2xl font-bold text-gray-900 mb-6">Sign In</h1>
-    <div class="space-y-4">
-      <p class="text-gray-600">Login to your OpenBadges account</p>
-      <!-- Login form placeholder -->
-      <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-        <p class="text-gray-500">Login Form</p>
-        <p class="text-sm text-gray-400 mt-2">Username/Email & Password fields</p>
-      </div>
+  <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+      <LoginForm />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-// Login form logic will go here
+import LoginForm from '@/components/Auth/LoginForm.vue'
 </script>

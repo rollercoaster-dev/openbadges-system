@@ -9,7 +9,9 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     Breadcrumb: typeof import('./components/Navigation/Breadcrumb.vue')['default']
+    LoginForm: typeof import('./components/Auth/LoginForm.vue')['default']
     MainNavigation: typeof import('./components/Navigation/MainNavigation.vue')['default']
+    RegisterForm: typeof import('./components/Auth/RegisterForm.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     UserMenu: typeof import('./components/Navigation/UserMenu.vue')['default']
