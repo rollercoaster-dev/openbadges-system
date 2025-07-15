@@ -81,6 +81,24 @@ export const useAuth = () => {
     return response.json()
   }
 
+  // Basic API calls for user lookup/registration (uses basic auth)
+  const basicApiCall = async (endpoint: string, options: RequestInit = {}) => {
+    const response = await fetch(`/api/bs${endpoint}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+      },
+      ...options
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
+      throw new Error(errorData.message || `API call failed: ${response.status}`)
+    }
+    
+    return response.json()
+  }
+
   // Register user in backend
   const registerUser = async (data: RegisterData): Promise<User> => {
     const userData = {
@@ -92,7 +110,7 @@ export const useAuth = () => {
       roles: ['USER']
     }
     
-    const response = await apiCall('/users', {
+    const response = await basicApiCall('/users', {
       method: 'POST',
       body: JSON.stringify(userData)
     })
@@ -114,7 +132,7 @@ export const useAuth = () => {
   const findUser = async (usernameOrEmail: string): Promise<User | null> => {
     try {
       // Try to get user by username first
-      const users = await apiCall(`/users?username=${encodeURIComponent(usernameOrEmail)}`)
+      const users = await basicApiCall(`/users?username=${encodeURIComponent(usernameOrEmail)}`)
       
       if (users.length > 0) {
         const backendUser = users[0]
@@ -132,7 +150,7 @@ export const useAuth = () => {
       }
       
       // If not found by username, try by email
-      const usersByEmail = await apiCall(`/users?email=${encodeURIComponent(usernameOrEmail)}`)
+      const usersByEmail = await basicApiCall(`/users?email=${encodeURIComponent(usernameOrEmail)}`)
       if (usersByEmail.length > 0) {
         const backendUser = usersByEmail[0]
         return {
@@ -157,7 +175,7 @@ export const useAuth = () => {
 
   // Store WebAuthn credential in backend
   const storeCredential = async (userId: string, credential: WebAuthnCredential): Promise<void> => {
-    await apiCall(`/users/${userId}/credentials`, {
+    await basicApiCall(`/users/${userId}/credentials`, {
       method: 'POST',
       body: JSON.stringify(credential)
     })
@@ -276,7 +294,7 @@ export const useAuth = () => {
       }
       
       // Update credential last used time in backend
-      await apiCall(`/users/${foundUser.id}/credentials/${credential.id}`, {
+      await basicApiCall(`/users/${foundUser.id}/credentials/${credential.id}`, {
         method: 'PATCH',
         body: JSON.stringify({ lastUsed: new Date().toISOString() })
       })
@@ -353,7 +371,7 @@ export const useAuth = () => {
     
     try {
       // Update user in backend
-      await apiCall(`/users/${user.value.id}`, {
+      await basicApiCall(`/users/${user.value.id}`, {
         method: 'PUT',
         body: JSON.stringify(updatedUser)
       })
@@ -420,7 +438,7 @@ export const useAuth = () => {
     
     try {
       // Remove credential from backend
-      await apiCall(`/users/${user.value.id}/credentials/${credentialId}`, {
+      await basicApiCall(`/users/${user.value.id}/credentials/${credentialId}`, {
         method: 'DELETE'
       })
       
