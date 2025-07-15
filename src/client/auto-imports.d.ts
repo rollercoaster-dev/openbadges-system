@@ -128,6 +128,7 @@ declare global {
   const useAsyncState: typeof import('@vueuse/core')['useAsyncState']
   const useAttrs: typeof import('vue')['useAttrs']
   const useAuth: typeof import('./composables/useAuth')['useAuth']
+  const useBadges: typeof import('./composables/useBadges')['useBadges']
   const useBase64: typeof import('@vueuse/core')['useBase64']
   const useBattery: typeof import('@vueuse/core')['useBattery']
   const useBluetooth: typeof import('@vueuse/core')['useBluetooth']
@@ -268,6 +269,7 @@ declare global {
   const useTransition: typeof import('@vueuse/core')['useTransition']
   const useUrlSearchParams: typeof import('@vueuse/core')['useUrlSearchParams']
   const useUserMedia: typeof import('@vueuse/core')['useUserMedia']
+  const useUsers: typeof import('./composables/useUsers')['useUsers']
   const useVModel: typeof import('@vueuse/core')['useVModel']
   const useVModels: typeof import('@vueuse/core')['useVModels']
   const useVibrate: typeof import('@vueuse/core')['useVibrate']
@@ -306,11 +308,17 @@ declare global {
   export type { User, RegisterData, AuthResponse } from './composables/useAuth'
   import('./composables/useAuth')
   // @ts-ignore
+  export type { BadgeSearchFilters, BadgesPaginationData, CreateBadgeData, UpdateBadgeData, BadgeAssertion, IssueBadgeData } from './composables/useBadges'
+  import('./composables/useBadges')
+  // @ts-ignore
   export type { ValidationRule, FieldValidation } from './composables/useFormValidation'
   import('./composables/useFormValidation')
   // @ts-ignore
   export type { NavigationItem } from './composables/useNavigation'
   import('./composables/useNavigation')
+  // @ts-ignore
+  export type { UserSearchFilters, UsersPaginationData, CreateUserData, UpdateUserData } from './composables/useUsers'
+  import('./composables/useUsers')
 }
 
 // for vue template auto import
@@ -440,6 +448,7 @@ declare module 'vue' {
     readonly useAsyncState: UnwrapRef<typeof import('@vueuse/core')['useAsyncState']>
     readonly useAttrs: UnwrapRef<typeof import('vue')['useAttrs']>
     readonly useAuth: UnwrapRef<typeof import('./composables/useAuth')['useAuth']>
+    readonly useBadges: UnwrapRef<typeof import('./composables/useBadges')['useBadges']>
     readonly useBase64: UnwrapRef<typeof import('@vueuse/core')['useBase64']>
     readonly useBattery: UnwrapRef<typeof import('@vueuse/core')['useBattery']>
     readonly useBluetooth: UnwrapRef<typeof import('@vueuse/core')['useBluetooth']>
@@ -580,6 +589,7 @@ declare module 'vue' {
     readonly useTransition: UnwrapRef<typeof import('@vueuse/core')['useTransition']>
     readonly useUrlSearchParams: UnwrapRef<typeof import('@vueuse/core')['useUrlSearchParams']>
     readonly useUserMedia: UnwrapRef<typeof import('@vueuse/core')['useUserMedia']>
+    readonly useUsers: UnwrapRef<typeof import('./composables/useUsers')['useUsers']>
     readonly useVModel: UnwrapRef<typeof import('@vueuse/core')['useVModel']>
     readonly useVModels: UnwrapRef<typeof import('@vueuse/core')['useVModels']>
     readonly useVibrate: UnwrapRef<typeof import('@vueuse/core')['useVibrate']>

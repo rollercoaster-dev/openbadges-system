@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "pnpm exec concurrently \"pnpm run server\" \"pnpm run client\"",
     "dev:local": "./scripts/dev-local.sh",
+    "dev:docker": "./scripts/dev-docker.sh",
     "server": "bun run --hot src/server/index.ts",
     "client": "vite",
     "build": "vite build",
@@ -49,6 +50,7 @@
     "openbadges-types": "^3.2.3",
     "openbadges-ui": "^1.0.3",
     "pinia": "^3.0.2",
+    "sqlite3": "^5.1.7",
     "vue": "^3.4.0",
     "vue-router": "^4.3.0"
   },
