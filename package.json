@@ -34,10 +34,15 @@
     "@unhead/vue": "^2.0.9",
     "@vueuse/core": "^13.2.0",
     "hono": "^4.7.10",
-    "openbadges-ui": "^1.0.3",
     "openbadges-types": "^3.2.3",
+    "openbadges-ui": "^1.0.3",
     "pinia": "^3.0.2",
     "vue": "^3.4.0",
     "vue-router": "^4.3.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "brace-expansion@>=2.0.0 <=2.0.1": ">=2.0.2"
+    }
   }
 }
