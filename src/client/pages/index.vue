@@ -54,7 +54,7 @@
                         </p>
                     </div>
                     <div v-else class="bg-slate-50 p-4 rounded-md">
-                        <p v-if="modularServerStatus === 'Connected'">
+                        <p v-if="modularServerStatus && modularServerStatus.startsWith('Connected')">
                             <span
                                   class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                 <svg
@@ -65,8 +65,7 @@
                                 </svg>
                                 Connected
                             </span>
-                            <span class="ml-2">Successfully connected to OpenBadges Modular
-                                Server.</span>
+                            <span class="ml-2">{{ modularServerStatus }}</span>
                         </p>
                         <p v-else class="text-red-600">
                             {{
@@ -82,7 +81,16 @@
                         Featured Badge
                     </h3>
                     <div class="bg-slate-50 p-4 rounded-md">
-                        <BadgeDisplay :badge="mockBadge" />
+                        <div v-if="featuredBadge">
+                            <BadgeDisplay :badge="featuredBadge" />
+                            <p v-if="badgeError" class="text-sm text-orange-600 mt-2">
+                                Note: {{ badgeError }}. Showing fallback data.
+                            </p>
+                        </div>
+                        <div v-else class="text-center py-4">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                            <p class="mt-2 text-sm text-slate-600">Loading badge data...</p>
+                        </div>
                     </div>
                 </div>
 
@@ -103,34 +111,35 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import type { BadgeClassV2UI } from "openbadges-types";
-import { BadgeDisplay } from "openbadges-ui"; // Corrected import
+import type { OB2 } from "openbadges-types";
+import { BadgeDisplay } from "openbadges-ui";
 
 const loading = ref(true);
 const serverStatus = ref(false);
 const modularServerLoading = ref(true);
 const modularServerStatus = ref<string | null>(null);
+const featuredBadge = ref<OB2.BadgeClass | null>(null);
+const badgeError = ref<string | null>(null);
 
-const mockBadge = ref<BadgeClassV2UI>({
-    // @ts-ignore - type: 'BadgeClass' is technically a subset of the full type definition, but valid for usage.
+// Fallback mock badge for when no real badges are available
+const mockBadge: OB2.BadgeClass = {
     type: "BadgeClass",
-    id: "urn:uuid:demobadge123-monolith-master",
+    id: "urn:uuid:demobadge123-monolith-master" as OB2.IRI,
     name: "Monolith Master Badge",
     description:
         "This badge is awarded for successfully setting up the demonstration monolith application and displaying this badge.",
-    image: "https://via.placeholder.com/150/007bff/ffffff?Text=Monolith%20Badge", // Placeholder image
+    image: "https://via.placeholder.com/150/007bff/ffffff?Text=Monolith%20Badge" as OB2.IRI,
     criteria: {
         narrative:
             "Successfully integrate Bun, Hono, Vue, Vite, and display a badge from openbadges-ui using mock data.",
     },
     issuer: {
-        // @ts-ignore - type: 'Issuer' is technically a subset of the full type definition, but valid for usage.
-        type: "Issuer",
-        id: "urn:uuid:issuer-demo-project",
+        type: "Profile",
+        id: "urn:uuid:issuer-demo-project" as OB2.IRI,
         name: "OpenBadges Demo Project Issuer",
         url: "https://example.com/issuer/demoproject",
     },
-});
+};
 
 // Check server status on component mount
 onMounted(async () => {
@@ -162,8 +171,11 @@ onMounted(async () => {
             const bsResponse = await fetch("/api/bs/health");
             if (bsResponse.ok) {
                 const bsData = await bsResponse.json();
-                if (bsData && bsData.success === true) {
-                    modularServerStatus.value = "Connected";
+                // Check for valid health response structure
+                if (bsData && bsData.status === "ok") {
+                    const uptime = bsData.uptime ? Math.round(bsData.uptime) : 0;
+                    const dbType = bsData.database?.type || "unknown";
+                    modularServerStatus.value = `Connected (uptime: ${uptime}s, db: ${dbType})`;
                 } else {
                     modularServerStatus.value = `Unexpected response: ${JSON.stringify(bsData).substring(0, 100)}`;
                 }
@@ -179,7 +191,34 @@ onMounted(async () => {
         }
     };
 
-    await Promise.all([monolithHealthCheck(), modularServerHealthCheck()]);
+    const fetchFeaturedBadge = async () => {
+        try {
+            // Try to fetch badge classes from the modular server
+            const response = await fetch("/api/bs/v2/badge-classes");
+            if (response.ok) {
+                const badgeClasses = await response.json();
+                
+                // Use the first badge class if available, otherwise fall back to mock
+                if (Array.isArray(badgeClasses) && badgeClasses.length > 0) {
+                    featuredBadge.value = badgeClasses[0] as OB2.BadgeClass;
+                } else {
+                    // No real badges available, use mock badge
+                    featuredBadge.value = mockBadge;
+                }
+                badgeError.value = null;
+            } else {
+                console.warn("Failed to fetch badge classes, using mock badge");
+                featuredBadge.value = mockBadge;
+                badgeError.value = `Failed to fetch badges: ${response.status}`;
+            }
+        } catch (error) {
+            console.error("Error fetching badge data:", error);
+            featuredBadge.value = mockBadge;
+            badgeError.value = "Connection error while fetching badges";
+        }
+    };
+
+    await Promise.all([monolithHealthCheck(), modularServerHealthCheck(), fetchFeaturedBadge()]);
 
     loading.value = false;
     modularServerLoading.value = false;

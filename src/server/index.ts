@@ -20,7 +20,7 @@ app.use('*', logger());
 app.use(
   '*',
   cors({
-    origin: ['http://localhost:5173'], // Vite dev server
+    origin: ['http://localhost:7777'], // Vite dev server
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
   })
@@ -59,15 +59,41 @@ async function safeJsonResponse(response: Response): Promise<JSONValue> {
 
 // Proxy endpoint for OpenBadges server
 app.all('/api/bs/*', async (c) => {
+  const openbadgesUrl = process.env.OPENBADGES_SERVER_URL || 'http://localhost:3000';
   const url = new URL(
     c.req.path.replace('/api/bs', ''),
-    'http://localhost:3000'
+    openbadgesUrl
   );
 
   try {
+    // Configure headers based on environment
+    const headers = new Headers(c.req.raw.headers);
+    
+    // Add authentication if enabled
+    const authEnabled = process.env.OPENBADGES_AUTH_ENABLED !== 'false';
+    const authMode = process.env.OPENBADGES_AUTH_MODE || 'docker';
+    
+    if (authEnabled) {
+      if (authMode === 'docker') {
+        // Docker mode: use Basic Auth
+        headers.set('Authorization', 'Basic ' + btoa('admin:admin-user'));
+      } else if (authMode === 'local') {
+        // Local mode: add API key or basic auth if provided
+        const apiKey = process.env.OPENBADGES_API_KEY;
+        const basicUser = process.env.OPENBADGES_BASIC_AUTH_USER;
+        const basicPass = process.env.OPENBADGES_BASIC_AUTH_PASS;
+        
+        if (apiKey) {
+          headers.set('X-API-Key', apiKey);
+        } else if (basicUser && basicPass) {
+          headers.set('Authorization', 'Basic ' + btoa(`${basicUser}:${basicPass}`));
+        }
+      }
+    }
+    
     const response = await fetch(url.toString(), {
       method: c.req.method,
-      headers: c.req.raw.headers,
+      headers,
       body: c.req.raw.body,
     });
 
@@ -82,15 +108,17 @@ app.all('/api/bs/*', async (c) => {
     return c.json(data, response.status as any);
   } catch (error) {
     console.error('Error proxying request to OpenBadges server:', error);
+    console.error('Server URL:', openbadgesUrl);
+    console.error('Request path:', c.req.path);
     return c.json(
-      { error: 'Failed to communicate with OpenBadges server' },
+      { error: 'Failed to communicate with local OpenBadges server' },
       500
     );
   }
 });
 
 // Start the server
-const port = parseInt(process.env.PORT || '3030');
+const port = parseInt(process.env.PORT || '8888');
 console.log(`Server is running on http://localhost:${port}`);
 
 // Export for Bun to pick up

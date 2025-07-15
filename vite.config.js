@@ -30,7 +30,7 @@ export default defineConfig(({ mode }) => {
           target: `http://localhost:${process.env.PORT || '8888'}`,
           changeOrigin: true,
           secure: false,
-          rewrite: (path) => path.replace(/^\/api/, ''),
+          rewrite: (path) => path,
         },
       },
     },

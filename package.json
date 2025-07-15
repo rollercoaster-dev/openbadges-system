@@ -5,6 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "pnpm exec concurrently \"pnpm run server\" \"pnpm run client\"",
+    "dev:local": "./scripts/dev-local.sh",
     "server": "bun run --hot src/server/index.ts",
     "client": "vite",
     "build": "vite build",
