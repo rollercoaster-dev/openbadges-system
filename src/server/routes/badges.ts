@@ -68,7 +68,7 @@ badgesRoutes.all('/*', async c => {
     }
 
     const data = await safeJsonResponse(response)
-    return c.json(data, response.status as any)
+    return c.json(data, response.status as 200 | 201 | 400 | 401 | 403 | 404 | 500)
   } catch (error) {
     console.error('Error proxying badges request:', error)
     return c.json({ error: 'Failed to communicate with OpenBadges server' }, 500)

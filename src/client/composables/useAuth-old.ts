@@ -141,7 +141,7 @@ export const useAuth = () => {
 
   const mockCompleteRegistration = async (
     registrationData: RegisterData,
-    credentialData: any
+    credentialData: unknown
   ): Promise<AuthResponse> => {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1000))
@@ -210,7 +210,7 @@ export const useAuth = () => {
 
   const mockCompleteAuthentication = async (
     username: string,
-    credentialData: any
+    credentialData: unknown
   ): Promise<AuthResponse> => {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1000))
@@ -504,7 +504,7 @@ export const useAuth = () => {
     }
   }
 
-  const createBadgeClass = async (badgeClass: any) => {
+  const createBadgeClass = async (badgeClass: unknown) => {
     if (!user.value) return null
 
     try {

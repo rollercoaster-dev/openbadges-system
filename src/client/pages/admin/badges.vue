@@ -215,7 +215,7 @@
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="flex items-center">
                     <img
-                      :src="assertion.badge.image"
+                      :src="getImageSrc(assertion.badge.image)"
                       :alt="assertion.badge.name"
                       class="w-10 h-10 rounded-lg object-cover"
                     />
@@ -408,8 +408,8 @@ import {
 import { BadgeList, BadgeDisplay, BadgeIssuerForm } from 'openbadges-ui'
 import { useBadges } from '@/composables/useBadges'
 import { useAuth } from '@/composables/useAuth'
-import type { OB2 } from 'openbadges-types'
 import type { BadgeAssertion } from '@/composables/useBadges'
+import type { OB2 } from 'openbadges-types'
 
 const { user } = useAuth()
 
@@ -583,5 +583,11 @@ function formatDate(dateString: string): string {
     day: 'numeric',
     year: 'numeric',
   })
+}
+
+function getImageSrc(image: OB2.IRI | OB2.Image | undefined): string | undefined {
+  if (!image) return undefined
+  if (typeof image === 'string') return image
+  return image.id || undefined
 }
 </script>

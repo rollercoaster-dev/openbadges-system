@@ -107,6 +107,7 @@ export default [
         Request: 'readonly',
         Response: 'readonly',
         ReadableStream: 'readonly',
+        URL: 'readonly',
         vi: 'readonly',
         describe: 'readonly',
         it: 'readonly',

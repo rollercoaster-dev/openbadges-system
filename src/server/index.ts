@@ -115,7 +115,7 @@ app.all('/api/bs/*', async c => {
     }
 
     const data = await safeJsonResponse(response)
-    return c.json(data, response.status as any)
+    return c.json(data, response.status as 200 | 201 | 400 | 401 | 403 | 404 | 500)
   } catch (error) {
     console.error('Error proxying request to OpenBadges server:', error)
     console.error('Server URL:', openbadgesUrl)

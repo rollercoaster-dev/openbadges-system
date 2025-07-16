@@ -122,7 +122,7 @@ export class OpenBadgesService {
   /**
    * Get badge classes available for issuance
    */
-  async getBadgeClasses(): Promise<any[]> {
+  async getBadgeClasses(): Promise<unknown[]> {
     const response = await fetch(`${this.baseUrl}/v2/badge-classes`)
 
     if (!response.ok) {
@@ -135,7 +135,7 @@ export class OpenBadgesService {
   /**
    * Create new badge class
    */
-  async createBadgeClass(user: User, badgeClass: any): Promise<any> {
+  async createBadgeClass(user: User, badgeClass: unknown): Promise<unknown> {
     const client = await this.createApiClient(user)
 
     const response = await fetch(`${this.baseUrl}/v2/badge-classes`, {

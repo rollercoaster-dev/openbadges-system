@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import type { User } from '@/composables/useAuth'
+import type { User, WebAuthnCredential } from '@/composables/useAuth'
 
 export interface UserSearchFilters {
   role: string
@@ -35,6 +35,21 @@ export interface UpdateUserData {
   lastName?: string
   avatar?: string
   isAdmin?: boolean
+  roles?: string[]
+}
+
+interface BackendUser {
+  id: string
+  username: string
+  email: string
+  firstName: string
+  lastName: string
+  avatar?: string
+  isActive: boolean
+  roles: string[]
+  createdAt: string
+  updatedAt: string
+  credentials: WebAuthnCredential[]
 }
 
 export const useUsers = () => {
@@ -119,7 +134,7 @@ export const useUsers = () => {
 
       // Transform backend user data to frontend User interface
       const transformedUsers = response.users.map(
-        (backendUser: any): User => ({
+        (backendUser: BackendUser): User => ({
           id: backendUser.id,
           username: backendUser.username,
           email: backendUser.email,

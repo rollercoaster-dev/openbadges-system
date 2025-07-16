@@ -282,8 +282,8 @@ function toggleViewMode() {
   viewMode.value = viewMode.value === 'grid' ? 'table' : 'grid'
 }
 
-function changePage(page: number) {
-  if (page >= 1 && page <= totalPages.value) {
+function changePage(page: number | string) {
+  if (typeof page === 'number' && page >= 1 && page <= totalPages.value) {
     emits('changePage', page)
   }
 }

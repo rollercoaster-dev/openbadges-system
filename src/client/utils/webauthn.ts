@@ -236,7 +236,7 @@ export class WebAuthnUtils {
         authenticatorAttachment:
           credential.authenticatorAttachment as AuthenticatorAttachment | null,
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof WebAuthnError) {
         throw error
       }
@@ -331,7 +331,7 @@ export class WebAuthnUtils {
         clientDataJSON: this.arrayBufferToBase64Url(response.clientDataJSON),
         userHandle: response.userHandle ? this.arrayBufferToBase64Url(response.userHandle) : null,
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof WebAuthnError) {
         throw error
       }

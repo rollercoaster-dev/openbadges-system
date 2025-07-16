@@ -5,7 +5,7 @@
         <div class="flex-shrink-0">
           <img
             v-if="badge.image"
-            :src="badge.image"
+            :src="getImageSrc(badge.image)"
             :alt="badge.name"
             class="w-16 h-16 rounded-lg object-cover"
           />
@@ -156,6 +156,12 @@ function formatDate(dateString?: string): string {
     day: 'numeric',
     year: 'numeric',
   })
+}
+
+function getImageSrc(image: OB2.IRI | OB2.Image | undefined): string | undefined {
+  if (!image) return undefined
+  if (typeof image === 'string') return image
+  return image.id || undefined
 }
 </script>
 

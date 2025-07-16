@@ -125,7 +125,7 @@ export class UserService {
     }
   }
 
-  private async runAsync(sql: string, params: any[] = []): Promise<void> {
+  private async runAsync(sql: string, params: unknown[] = []): Promise<void> {
     return new Promise((resolve, reject) => {
       this.db.run(sql, params, function (err) {
         if (err) reject(err)
@@ -134,7 +134,7 @@ export class UserService {
     })
   }
 
-  private async getAsync(sql: string, params: any[] = []): Promise<any> {
+  private async getAsync(sql: string, params: unknown[] = []): Promise<unknown> {
     return new Promise((resolve, reject) => {
       this.db.get(sql, params, (err, row) => {
         if (err) reject(err)
@@ -143,7 +143,7 @@ export class UserService {
     })
   }
 
-  private async allAsync(sql: string, params: any[] = []): Promise<any[]> {
+  private async allAsync(sql: string, params: unknown[] = []): Promise<unknown[]> {
     return new Promise((resolve, reject) => {
       this.db.all(sql, params, (err, rows) => {
         if (err) reject(err)
@@ -156,7 +156,7 @@ export class UserService {
     return 'user_' + Date.now().toString(36) + Math.random().toString(36).substr(2)
   }
 
-  private parseUser(row: any): User {
+  private parseUser(row: unknown): User {
     return {
       id: row.id,
       username: row.username,
@@ -220,7 +220,7 @@ export class UserService {
     filters?: UserSearchFilters
   ): Promise<{ users: User[]; total: number }> {
     let whereClause = 'WHERE 1=1'
-    let params: any[] = []
+    let params: unknown[] = []
 
     // Add search filter
     if (search) {
@@ -281,7 +281,7 @@ export class UserService {
 
   async updateUser(id: string, userData: UpdateUserData): Promise<User | null> {
     const updates: string[] = []
-    const params: any[] = []
+    const params: unknown[] = []
 
     if (userData.email !== undefined) {
       updates.push('email = ?')

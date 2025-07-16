@@ -65,7 +65,7 @@ vi.mock('vue-router', () => ({
 
 describe('useAuth', () => {
   let auth: ReturnType<typeof useAuth>
-  let mockFetch: any
+  let mockFetch: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
     vi.clearAllMocks()

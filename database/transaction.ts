@@ -144,13 +144,13 @@ export class TransactionManager {
  * @param descriptor Method descriptor
  */
 export function Transactional(
-  target: any,
+  target: unknown,
   propertyKey: string,
   descriptor: PropertyDescriptor
 ): PropertyDescriptor {
   const originalMethod = descriptor.value
 
-  descriptor.value = async function (...args: any[]) {
+  descriptor.value = async function (...args: unknown[]) {
     return await withTransaction(async trx => {
       // Replace the first argument with the transaction if it's a database instance
       if (args[0] && typeof args[0].selectFrom === 'function') {

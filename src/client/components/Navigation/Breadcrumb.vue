@@ -78,8 +78,8 @@ const breadcrumbs = computed(() => {
   const routeParams = route.params
 
   // Handle dynamic routes
-  if (path.startsWith('/badges/') && routeParams.id) {
-    const badgeId = routeParams.id as string
+  if (path.startsWith('/badges/') && routeParams.id && typeof routeParams.id === 'string') {
+    const badgeId = routeParams.id
     const baseBreadcrumbs = [{ label: 'Badges', to: '/badges' }]
 
     if (path.endsWith('/edit')) {
@@ -99,8 +99,8 @@ const breadcrumbs = computed(() => {
     }
   }
 
-  if (path.startsWith('/issuers/') && routeParams.id) {
-    const issuerId = routeParams.id as string
+  if (path.startsWith('/issuers/') && routeParams.id && typeof routeParams.id === 'string') {
+    const issuerId = routeParams.id
     const baseBreadcrumbs = [{ label: 'Issuers', to: '/issuers' }]
 
     if (path.endsWith('/edit')) {
@@ -120,13 +120,13 @@ const breadcrumbs = computed(() => {
     }
   }
 
-  if (path.startsWith('/backpack/') && routeParams.id) {
-    const badgeId = routeParams.id as string
+  if (path.startsWith('/backpack/') && routeParams.id && typeof routeParams.id === 'string') {
+    const badgeId = routeParams.id
     return [{ label: 'My Backpack', to: '/backpack' }, { label: `Badge ${badgeId}` }]
   }
 
-  if (path.startsWith('/verify/') && routeParams.id) {
-    const badgeId = routeParams.id as string
+  if (path.startsWith('/verify/') && routeParams.id && typeof routeParams.id === 'string') {
+    const badgeId = routeParams.id
     return [{ label: 'Verification' }, { label: `Badge ${badgeId}` }]
   }
 

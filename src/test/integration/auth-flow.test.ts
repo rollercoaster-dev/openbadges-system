@@ -66,7 +66,7 @@ vi.mock('@/services/openbadges', () => ({
 
 describe('Authentication Flow Integration Tests', () => {
   let mockFetch: ReturnType<typeof vi.fn>
-  let registeredUsers: any[] = []
+  let registeredUsers: unknown[] = []
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -92,14 +92,14 @@ describe('Authentication Flow Integration Tests', () => {
           const email = urlObj.searchParams.get('email')
 
           // Check against registered users first
-          const foundUser = registeredUsers.find(user => 
-            user.username === username || user.email === email
+          const foundUser = registeredUsers.find(
+            user => user.username === username || user.email === email
           )
-          
+
           if (foundUser) {
             return {
               ok: true,
-              json: async () => [foundUser]
+              json: async () => [foundUser],
             }
           }
 
@@ -107,22 +107,24 @@ describe('Authentication Flow Integration Tests', () => {
           if (username === 'existing' || email === 'existing@example.com') {
             return {
               ok: true,
-              json: async () => [{
-                id: 'existing-user-id',
-                username: 'existing',
-                email: 'existing@example.com',
-                firstName: '',
-                lastName: '',
-                roles: ['USER'],
-                credentials: [],
-              }]
+              json: async () => [
+                {
+                  id: 'existing-user-id',
+                  username: 'existing',
+                  email: 'existing@example.com',
+                  firstName: '',
+                  lastName: '',
+                  roles: ['USER'],
+                  credentials: [],
+                },
+              ],
             }
           }
 
           // Return empty array for non-existent users
           return {
             ok: true,
-            json: async () => []
+            json: async () => [],
           }
         }
 
@@ -132,7 +134,7 @@ describe('Authentication Flow Integration Tests', () => {
           const urlParts = url.split('/')
           const userIdIndex = urlParts.indexOf('users') + 1
           const userId = urlParts[userIdIndex]
-          
+
           const credential = {
             id: 'test-credential-id',
             publicKey: 'test-public-key',
@@ -143,14 +145,14 @@ describe('Authentication Flow Integration Tests', () => {
             name: 'Test Authenticator',
             type: 'platform',
           }
-          
+
           // Add credential to the user
           const user = registeredUsers.find(u => u.id === userId)
           if (user) {
             user.credentials = user.credentials || []
             user.credentials.push(credential)
           }
-          
+
           return {
             ok: true,
             json: async () => credential,
@@ -170,10 +172,10 @@ describe('Authentication Flow Integration Tests', () => {
             createdAt: new Date().toISOString(),
             credentials: [],
           }
-          
+
           // Add to registered users for future lookups
           registeredUsers.push(newUser)
-          
+
           return {
             ok: true,
             json: async () => newUser,
@@ -185,7 +187,7 @@ describe('Authentication Flow Integration Tests', () => {
           return {
             ok: true,
             json: async () => ({
-              success: true
+              success: true,
             }),
           }
         }
@@ -196,24 +198,24 @@ describe('Authentication Flow Integration Tests', () => {
           const urlParts = url.split('/')
           const userIdIndex = urlParts.indexOf('users') + 1
           const userId = urlParts[userIdIndex]
-          
+
           // Find the user and update their profile
           const user = registeredUsers.find(u => u.id === userId)
           if (user) {
             // Update user with new data
             Object.assign(user, body)
-            
+
             // Handle roles conversion
             if (body.roles) {
               user.roles = body.roles
             }
-            
+
             return {
               ok: true,
               json: async () => user,
             }
           }
-          
+
           return {
             ok: true,
             json: async () => ({

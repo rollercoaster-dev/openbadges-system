@@ -5,7 +5,7 @@ export interface NavigationItem {
   id: string
   label: string
   to?: string
-  icon?: any
+  icon?: unknown
   children?: NavigationItem[]
   requiresAuth?: boolean
   requiresAdmin?: boolean

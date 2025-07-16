@@ -5,7 +5,7 @@ import type { User } from '@/composables/useAuth'
 describe('OpenBadgesService', () => {
   let service: OpenBadgesService
   let mockUser: User
-  let mockFetch: any
+  let mockFetch: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
     vi.clearAllMocks()
