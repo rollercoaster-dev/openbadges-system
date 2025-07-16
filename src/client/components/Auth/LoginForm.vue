@@ -102,6 +102,38 @@
           </div>
         </div>
 
+        <!-- OAuth Options -->
+        <div class="space-y-3">
+          <div class="relative">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-gray-300"></div>
+            </div>
+            <div class="relative flex justify-center text-sm">
+              <span class="px-2 bg-white text-gray-500">Or continue with</span>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <OAuthProviderButton
+              v-for="provider in availableProviders"
+              :key="provider"
+              :provider="provider"
+              :is-loading="oauthLoading === provider"
+              @click="handleOAuthLogin"
+            />
+          </div>
+        </div>
+
+        <!-- WebAuthn Divider -->
+        <div class="relative">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-300"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-2 bg-white text-gray-500">Or use passwordless</span>
+          </div>
+        </div>
+
         <!-- Submit Button -->
         <button
           type="submit"
@@ -163,11 +195,13 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { UserIcon, ExclamationTriangleIcon, ShieldCheckIcon } from '@heroicons/vue/24/outline'
 import { useFormValidation } from '@/composables/useFormValidation'
 import { useAuth } from '@/composables/useAuth'
+import { useOAuth } from '@/composables/useOAuth'
+import OAuthProviderButton from './OAuthProviderButton.vue'
 
 const router = useRouter()
 
@@ -192,12 +226,33 @@ const {
   isPlatformAuthAvailable,
 } = useAuth()
 
+// OAuth composable
+const { availableProviders, initiateOAuth } = useOAuth()
+
+// OAuth state
+const oauthLoading = ref<string | null>(null)
+
 // Initialize form fields
 onMounted(() => {
   createField('usernameOrEmail', '', [
     { validate: value => value.trim().length > 0, message: 'Username or email is required' },
   ])
 })
+
+// Handle OAuth login
+const handleOAuthLogin = async (provider: string) => {
+  clearError()
+  oauthLoading.value = provider
+
+  try {
+    const redirectPath = (router.currentRoute.value.query.redirect as string) || '/'
+    await initiateOAuth(provider, redirectPath)
+  } catch (error) {
+    console.error('OAuth login failed:', error)
+  } finally {
+    oauthLoading.value = null
+  }
+}
 
 // Handle form submission
 const handleSubmit = async () => {

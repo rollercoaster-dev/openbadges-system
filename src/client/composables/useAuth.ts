@@ -76,7 +76,7 @@ export const useAuth = () => {
     if (response.json && typeof response.json === 'function') {
       return response.json()
     }
-    
+
     // Fallback for test environment or if response.json is not available
     return response
   }
@@ -374,7 +374,7 @@ export const useAuth = () => {
         const updatedUserData = {
           ...user.value,
           ...updatedUser,
-          isAdmin: response.roles.includes('ADMIN')
+          isAdmin: response.roles.includes('ADMIN'),
         }
         user.value = updatedUserData
         localStorage.setItem('user_data', JSON.stringify(user.value))
@@ -545,6 +545,90 @@ export const useAuth = () => {
     }
   }
 
+  // OAuth Authentication
+  const authenticateWithOAuth = async (
+    provider: string,
+    redirectUri: string = '/'
+  ): Promise<boolean> => {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      // Initiate OAuth flow
+      const response = await fetch(
+        `/api/oauth/${provider}?redirect_uri=${encodeURIComponent(redirectUri)}`
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || 'OAuth initiation failed')
+      }
+
+      const result = await response.json()
+
+      if (result.success && result.authUrl) {
+        // Redirect to OAuth provider
+        window.location.href = result.authUrl
+        return true
+      } else {
+        throw new Error('Failed to get OAuth authorization URL')
+      }
+    } catch (err) {
+      console.error('OAuth authentication failed:', err)
+      error.value = err instanceof Error ? err.message : 'OAuth authentication failed'
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Process OAuth callback (typically handled by backend, but can be used for SPA flows)
+  const processOAuthCallback = async (code: string, state: string): Promise<boolean> => {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await fetch(`/api/oauth/github/callback?code=${code}&state=${state}`)
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || 'OAuth callback failed')
+      }
+
+      const result = await response.json()
+
+      if (result.success && result.user && result.token) {
+        // Set authentication state
+        const userData = {
+          id: result.user.id,
+          username: result.user.username,
+          email: result.user.email,
+          firstName: result.user.firstName,
+          lastName: result.user.lastName,
+          avatar: result.user.avatar,
+          isAdmin: result.user.isAdmin,
+          createdAt: result.user.createdAt || new Date().toISOString(),
+          credentials: result.user.credentials || [],
+        }
+
+        user.value = userData
+        token.value = result.token
+        localStorage.setItem('auth_token', result.token)
+        localStorage.setItem('user_data', JSON.stringify(userData))
+
+        return true
+      } else {
+        throw new Error(result.error || 'OAuth authentication failed')
+      }
+    } catch (err) {
+      console.error('OAuth callback processing failed:', err)
+      error.value = err instanceof Error ? err.message : 'OAuth callback processing failed'
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   // Initialize on first use
   initializeAuth()
 
@@ -566,6 +650,8 @@ export const useAuth = () => {
     register,
     authenticateWithWebAuthn,
     registerWithWebAuthn,
+    authenticateWithOAuth,
+    processOAuthCallback,
     logout,
     initializeAuth,
     clearError,
