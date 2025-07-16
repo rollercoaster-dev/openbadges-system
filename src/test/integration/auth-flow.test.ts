@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useAuth } from '@/composables/useAuth'
+import { openBadgesService } from '@/services/openbadges'
 
 // Mock WebAuthn utils
 vi.mock('@/utils/webauthn', () => ({
@@ -51,15 +52,231 @@ vi.mock('vue-router', () => ({
   })),
 }))
 
+// Mock OpenBadges service
+vi.mock('@/services/openbadges', () => ({
+  openBadgesService: {
+    getUserBackpack: vi.fn(),
+    addBadgeToBackpack: vi.fn(),
+    removeBadgeFromBackpack: vi.fn(),
+    getBadgeClasses: vi.fn(),
+    createBadgeClass: vi.fn(),
+    issueBadge: vi.fn(),
+  },
+}))
+
 describe('Authentication Flow Integration Tests', () => {
-  let mockFetch: any
+  let mockFetch: ReturnType<typeof vi.fn>
+  let registeredUsers: any[] = []
 
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
+    registeredUsers = []
 
     mockFetch = vi.fn()
     global.fetch = mockFetch
+
+    // Set up intelligent mock responses that can handle different scenarios
+    mockFetch.mockImplementation(
+      async (
+        url: string,
+        options?: { method?: string; body?: string; headers?: Record<string, string> }
+      ) => {
+        const method = options?.method || 'GET'
+        const body = options?.body ? JSON.parse(options.body) : null
+
+        // Handle user lookup by username or email (GET /api/bs/users?username=... or ?email=...)
+        if (url.includes('/api/bs/users') && method === 'GET') {
+          const urlObj = new URL(url, 'http://localhost')
+          const username = urlObj.searchParams.get('username')
+          const email = urlObj.searchParams.get('email')
+
+          // Check against registered users first
+          const foundUser = registeredUsers.find(user => 
+            user.username === username || user.email === email
+          )
+          
+          if (foundUser) {
+            return {
+              ok: true,
+              json: async () => [foundUser]
+            }
+          }
+
+          // Return existing user data for specific cases
+          if (username === 'existing' || email === 'existing@example.com') {
+            return {
+              ok: true,
+              json: async () => [{
+                id: 'existing-user-id',
+                username: 'existing',
+                email: 'existing@example.com',
+                firstName: '',
+                lastName: '',
+                roles: ['USER'],
+                credentials: [],
+              }]
+            }
+          }
+
+          // Return empty array for non-existent users
+          return {
+            ok: true,
+            json: async () => []
+          }
+        }
+
+        // Handle credential addition (POST /api/bs/users/:userId/credentials)
+        if (url.includes('/credentials') && method === 'POST') {
+          // Extract userId from URL
+          const urlParts = url.split('/')
+          const userIdIndex = urlParts.indexOf('users') + 1
+          const userId = urlParts[userIdIndex]
+          
+          const credential = {
+            id: 'test-credential-id',
+            publicKey: 'test-public-key',
+            transports: ['internal'],
+            counter: 0,
+            createdAt: new Date().toISOString(),
+            lastUsed: new Date().toISOString(),
+            name: 'Test Authenticator',
+            type: 'platform',
+          }
+          
+          // Add credential to the user
+          const user = registeredUsers.find(u => u.id === userId)
+          if (user) {
+            user.credentials = user.credentials || []
+            user.credentials.push(credential)
+          }
+          
+          return {
+            ok: true,
+            json: async () => credential,
+          }
+        }
+
+        // Handle user creation (POST /api/bs/users)
+        if (url.includes('/api/bs/users') && method === 'POST' && !url.includes('/credentials')) {
+          const { username, email, firstName, lastName } = body
+          const newUser = {
+            id: `${username}-user-id`,
+            username,
+            email,
+            firstName: firstName || '',
+            lastName: lastName || '',
+            roles: ['USER'],
+            createdAt: new Date().toISOString(),
+            credentials: [],
+          }
+          
+          // Add to registered users for future lookups
+          registeredUsers.push(newUser)
+          
+          return {
+            ok: true,
+            json: async () => newUser,
+          }
+        }
+
+        // Handle credential updates (PATCH /api/bs/users/:userId/credentials/:credentialId)
+        if (url.includes('/credentials') && method === 'PATCH') {
+          return {
+            ok: true,
+            json: async () => ({
+              success: true
+            }),
+          }
+        }
+
+        // Handle profile update (PUT /api/bs/users/:userId)
+        if (url.includes('/api/bs/users/') && method === 'PUT') {
+          // Extract userId from URL
+          const urlParts = url.split('/')
+          const userIdIndex = urlParts.indexOf('users') + 1
+          const userId = urlParts[userIdIndex]
+          
+          // Find the user and update their profile
+          const user = registeredUsers.find(u => u.id === userId)
+          if (user) {
+            // Update user with new data
+            Object.assign(user, body)
+            
+            // Handle roles conversion
+            if (body.roles) {
+              user.roles = body.roles
+            }
+            
+            return {
+              ok: true,
+              json: async () => user,
+            }
+          }
+          
+          return {
+            ok: true,
+            json: async () => ({
+              id: 'updated-user-id',
+              username: 'updateduser',
+              email: 'updated@example.com',
+              firstName: 'Updated',
+              lastName: 'User',
+              roles: ['USER'],
+              credentials: [],
+            }),
+          }
+        }
+
+        // Handle platform token generation
+        if (url.includes('/api/auth/platform-token') && method === 'POST') {
+          return {
+            ok: true,
+            json: async () => ({ token: 'mock-platform-token' }),
+          }
+        }
+
+        // Handle OpenBadges API calls
+        if (url.includes('openbadges.org')) {
+          if (url.includes('/api/v1/badge-assertions')) {
+            return {
+              ok: true,
+              json: async () => ({
+                assertions: [
+                  {
+                    id: 'assertion-1',
+                    badgeClass: 'badge-1',
+                    recipient: 'test@example.com',
+                  },
+                ],
+                total: 1,
+              }),
+            }
+          }
+
+          if (method === 'POST') {
+            return {
+              ok: true,
+              json: async () => ({
+                id: 'new-assertion',
+                badgeClass: 'badge-class-1',
+                recipient: 'test@example.com',
+              }),
+            }
+          }
+
+          if (method === 'DELETE') {
+            return { ok: true }
+          }
+        }
+
+        // Default response for unhandled calls
+        return {
+          ok: true,
+          json: async () => ({}),
+        }
+      }
+    )
   })
 
   describe('Complete User Registration and Authentication Flow', () => {
@@ -257,21 +474,13 @@ describe('Authentication Flow Integration Tests', () => {
   describe('OpenBadges Integration Flow', () => {
     it('should integrate with OpenBadges service after authentication', async () => {
       // Mock OpenBadges API responses
-      const mockPlatformToken = 'mock-platform-jwt-token'
       const mockBackpack = {
         assertions: [{ id: 'assertion-1', badgeClass: 'badge-1', recipient: 'test@example.com' }],
         total: 1,
       }
 
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ token: mockPlatformToken }),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve(mockBackpack),
-        })
+      // Mock the OpenBadges service
+      vi.mocked(openBadgesService.getUserBackpack).mockResolvedValue(mockBackpack)
 
       // Step 1: Register and authenticate user
       const auth = useAuth()
@@ -289,11 +498,7 @@ describe('Authentication Flow Integration Tests', () => {
       const backpack = await auth.getUserBackpack()
 
       expect(backpack).toEqual(mockBackpack)
-      expect(mockFetch).toHaveBeenCalledWith('/api/auth/platform-token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user: auth.user.value }),
-      })
+      expect(openBadgesService.getUserBackpack).toHaveBeenCalledWith(auth.user.value)
     })
 
     it('should handle badge management operations', async () => {
@@ -368,11 +573,8 @@ describe('Authentication Flow Integration Tests', () => {
     })
 
     it('should handle OpenBadges API errors gracefully', async () => {
-      // Mock platform token request to fail
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 500,
-      })
+      // Mock the OpenBadges service to return null
+      vi.mocked(openBadgesService.getUserBackpack).mockResolvedValue(null)
 
       const auth = useAuth()
 
@@ -432,22 +634,14 @@ describe('Authentication Flow Integration Tests', () => {
 
   describe('Admin User Scenarios', () => {
     it('should handle admin user badge issuance', async () => {
-      const mockPlatformToken = 'mock-admin-platform-token'
       const mockIssuedBadge = {
         id: 'issued-badge-id',
         badgeClass: 'badge-class-1',
         recipient: 'recipient@example.com',
       }
 
-      mockFetch
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ token: mockPlatformToken }),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve(mockIssuedBadge),
-        })
+      // Mock the OpenBadges service
+      vi.mocked(openBadgesService.issueBadge).mockResolvedValue(mockIssuedBadge)
 
       const auth = useAuth()
 
@@ -463,7 +657,7 @@ describe('Authentication Flow Integration Tests', () => {
 
       // Update user to be admin
       console.log('Before updateProfile:', auth.user.value)
-      auth.updateProfile({ isAdmin: true })
+      await auth.updateProfile({ isAdmin: true })
       console.log('After updateProfile:', auth.user.value)
 
       expect(auth.user.value?.isAdmin).toBe(true)

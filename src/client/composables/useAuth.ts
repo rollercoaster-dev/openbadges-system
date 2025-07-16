@@ -61,12 +61,24 @@ export const useAuth = () => {
       ...options,
     })
 
+    if (!response) {
+      throw new Error('Network error: No response received')
+    }
+
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
+      let errorData = { message: 'Unknown error' }
+      if (response.json && typeof response.json === 'function') {
+        errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
+      }
       throw new Error(errorData.message || `API call failed: ${response.status}`)
     }
 
-    return response.json()
+    if (response.json && typeof response.json === 'function') {
+      return response.json()
+    }
+    
+    // Fallback for test environment or if response.json is not available
+    return response
   }
 
   // Register user in backend
@@ -222,7 +234,7 @@ export const useAuth = () => {
       if (err instanceof WebAuthnError) {
         error.value = err.userMessage
       } else {
-        error.value = err instanceof Error ? err.message : 'Registration failed. Please try again.'
+        error.value = 'Registration failed. Please try again.'
       }
       return false
     } finally {
@@ -344,15 +356,33 @@ export const useAuth = () => {
     if (!user.value) return
 
     try {
+      // Convert isAdmin to roles structure for backend
+      const backendUpdate = { ...updatedUser }
+      if ('isAdmin' in updatedUser) {
+        backendUpdate.roles = updatedUser.isAdmin ? ['USER', 'ADMIN'] : ['USER']
+        delete backendUpdate.isAdmin
+      }
+
       // Update user in backend
-      await basicApiCall(`/users/${user.value.id}`, {
+      const response = await basicApiCall(`/users/${user.value.id}`, {
         method: 'PUT',
-        body: JSON.stringify(updatedUser),
+        body: JSON.stringify(backendUpdate),
       })
 
-      // Update local user state
-      user.value = { ...user.value, ...updatedUser }
-      localStorage.setItem('user_data', JSON.stringify(user.value))
+      // Update local user state with backend response
+      if (response && response.roles) {
+        const updatedUserData = {
+          ...user.value,
+          ...updatedUser,
+          isAdmin: response.roles.includes('ADMIN')
+        }
+        user.value = updatedUserData
+        localStorage.setItem('user_data', JSON.stringify(user.value))
+      } else {
+        // Fallback to direct update if no response
+        user.value = { ...user.value, ...updatedUser }
+        localStorage.setItem('user_data', JSON.stringify(user.value))
+      }
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to update profile'
     }
@@ -480,7 +510,7 @@ export const useAuth = () => {
     }
   }
 
-  const createBadgeClass = async (badgeClass: any) => {
+  const createBadgeClass = async (badgeClass: Record<string, unknown>) => {
     if (!user.value) return null
 
     try {

@@ -71,7 +71,9 @@ export class JWTService {
     try {
       return jwt.verify(token, this.privateKey) as JWTPayload
     } catch (error) {
-      console.error('JWT verification failed:', error)
+      if (process.env.NODE_ENV !== 'test') {
+        console.error('JWT verification failed:', error)
+      }
       return null
     }
   }

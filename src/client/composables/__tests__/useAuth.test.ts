@@ -135,7 +135,7 @@ describe('useAuth', () => {
   })
 
   describe('Authentication state persistence', () => {
-    it('should restore authentication state from localStorage', () => {
+    it('should restore authentication state from localStorage', async () => {
       const mockUser = {
         id: 'test-user',
         username: 'testuser',
@@ -157,14 +157,14 @@ describe('useAuth', () => {
       const newAuth = useAuth()
 
       // Wait for initialization to complete
-      setTimeout(() => {
-        expect(newAuth.user.value).toEqual(mockUser)
-        expect(newAuth.token.value).toBe('test-token')
-        expect(newAuth.isAuthenticated.value).toBe(true)
-      }, 0)
+      await new Promise(resolve => setTimeout(resolve, 1))
+
+      expect(newAuth.user.value).toEqual(mockUser)
+      expect(newAuth.token.value).toBe('test-token')
+      expect(newAuth.isAuthenticated.value).toBe(true)
     })
 
-    it('should clear invalid stored data', () => {
+    it('should clear invalid stored data', async () => {
       localStorage.getItem = vi.fn(key => {
         if (key === 'auth_token') return 'test-token'
         if (key === 'user_data') return 'invalid-json'
@@ -173,11 +173,12 @@ describe('useAuth', () => {
 
       const newAuth = useAuth()
 
-      setTimeout(() => {
-        expect(localStorage.removeItem).toHaveBeenCalledWith('auth_token')
-        expect(localStorage.removeItem).toHaveBeenCalledWith('user_data')
-        expect(newAuth.user.value).toBeNull() // Use the variable
-      }, 0)
+      // Wait for initialization to complete using nextTick instead of setTimeout
+      await new Promise(resolve => setTimeout(resolve, 1))
+
+      expect(localStorage.removeItem).toHaveBeenCalledWith('auth_token')
+      expect(localStorage.removeItem).toHaveBeenCalledWith('user_data')
+      expect(newAuth.user.value).toBeNull()
     })
   })
 
