@@ -1,4 +1,4 @@
-import Database from 'sqlite3'
+import { Database } from 'bun:sqlite'
 import { join } from 'path'
 import { existsSync, mkdirSync } from 'fs'
 
@@ -57,8 +57,31 @@ export interface UserSearchFilters {
   sortOrder?: 'asc' | 'desc'
 }
 
+export interface OAuthProvider {
+  id: string
+  user_id: string
+  provider: string
+  provider_user_id: string
+  access_token?: string
+  refresh_token?: string
+  token_expires_at?: string
+  profile_data?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface OAuthSession {
+  id: string
+  state: string
+  code_verifier?: string
+  redirect_uri?: string
+  provider: string
+  created_at: string
+  expires_at: string
+}
+
 export class UserService {
-  private db: Database.Database
+  private db: Database | null = null
   private dbPath: string
 
   constructor() {
@@ -69,18 +92,27 @@ export class UserService {
     }
 
     this.dbPath = join(dataDir, 'users.sqlite')
-    this.db = new Database.Database(this.dbPath)
+  }
 
-    // Enable foreign keys
-    this.db.run('PRAGMA foreign_keys = ON')
-
-    this.initializeDatabase()
+  private getDb(): Database {
+    if (!this.db) {
+      try {
+        this.db = new Database(this.dbPath)
+        // Enable foreign keys
+        this.db.exec('PRAGMA foreign_keys = ON')
+        this.initializeDatabase()
+      } catch (error) {
+        console.error('Failed to initialize database:', error)
+        throw new Error('Database unavailable')
+      }
+    }
+    return this.db
   }
 
   private initializeDatabase() {
     try {
       // Create users table
-      this.db.exec(`
+      this.getDb().exec(`
         CREATE TABLE IF NOT EXISTS users (
           id TEXT PRIMARY KEY,
           username TEXT UNIQUE NOT NULL,
@@ -96,7 +128,7 @@ export class UserService {
       `)
 
       // Create user credentials table
-      this.db.exec(`
+      this.getDb().exec(`
         CREATE TABLE IF NOT EXISTS user_credentials (
           id TEXT PRIMARY KEY,
           userId TEXT NOT NULL,
@@ -111,11 +143,44 @@ export class UserService {
         );
       `)
 
+      // Create OAuth providers table
+      this.getDb().exec(`
+        CREATE TABLE IF NOT EXISTS oauth_providers (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          provider TEXT NOT NULL,
+          provider_user_id TEXT NOT NULL,
+          access_token TEXT,
+          refresh_token TEXT,
+          token_expires_at TEXT,
+          profile_data TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+        );
+      `)
+
+      // Create OAuth sessions table
+      this.getDb().exec(`
+        CREATE TABLE IF NOT EXISTS oauth_sessions (
+          id TEXT PRIMARY KEY,
+          state TEXT NOT NULL,
+          code_verifier TEXT,
+          redirect_uri TEXT,
+          provider TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          expires_at TEXT NOT NULL
+        );
+      `)
+
       // Create indexes for better performance
-      this.db.exec(`
+      this.getDb().exec(`
         CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
         CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
         CREATE INDEX IF NOT EXISTS idx_credentials_userId ON user_credentials(userId);
+        CREATE INDEX IF NOT EXISTS idx_oauth_providers_user_id ON oauth_providers(user_id);
+        CREATE INDEX IF NOT EXISTS idx_oauth_providers_provider ON oauth_providers(provider);
+        CREATE INDEX IF NOT EXISTS idx_oauth_sessions_state ON oauth_sessions(state);
       `)
 
       console.log('Database initialized successfully')
@@ -125,31 +190,16 @@ export class UserService {
     }
   }
 
-  private async runAsync(sql: string, params: unknown[] = []): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.db.run(sql, params, function (err) {
-        if (err) reject(err)
-        else resolve()
-      })
-    })
+  private runQuery(sql: string, params: unknown[] = []): void {
+    this.getDb().prepare(sql).run(params)
   }
 
-  private async getAsync(sql: string, params: unknown[] = []): Promise<unknown> {
-    return new Promise((resolve, reject) => {
-      this.db.get(sql, params, (err, row) => {
-        if (err) reject(err)
-        else resolve(row)
-      })
-    })
+  private getQuery(sql: string, params: unknown[] = []): unknown {
+    return this.getDb().prepare(sql).get(params)
   }
 
-  private async allAsync(sql: string, params: unknown[] = []): Promise<unknown[]> {
-    return new Promise((resolve, reject) => {
-      this.db.all(sql, params, (err, rows) => {
-        if (err) reject(err)
-        else resolve(rows)
-      })
-    })
+  private allQuery(sql: string, params: unknown[] = []): unknown[] {
+    return this.getDb().prepare(sql).all(params)
   }
 
   private generateId(): string {
@@ -193,23 +243,23 @@ export class UserService {
       now,
     ]
 
-    await this.runAsync(sql, params)
+    this.runQuery(sql, params)
 
     return this.getUserById(id) as Promise<User>
   }
 
   async getUserById(id: string): Promise<User | null> {
-    const row = await this.getAsync('SELECT * FROM users WHERE id = ?', [id])
+    const row = this.getQuery('SELECT * FROM users WHERE id = ?', [id])
     return row ? this.parseUser(row) : null
   }
 
   async getUserByUsername(username: string): Promise<User | null> {
-    const row = await this.getAsync('SELECT * FROM users WHERE username = ?', [username])
+    const row = this.getQuery('SELECT * FROM users WHERE username = ?', [username])
     return row ? this.parseUser(row) : null
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
-    const row = await this.getAsync('SELECT * FROM users WHERE email = ?', [email])
+    const row = this.getQuery('SELECT * FROM users WHERE email = ?', [email])
     return row ? this.parseUser(row) : null
   }
 
@@ -252,10 +302,7 @@ export class UserService {
     }
 
     // Get total count
-    const totalResult = await this.getAsync(
-      `SELECT COUNT(*) as count FROM users ${whereClause}`,
-      params
-    )
+    const totalResult = this.getQuery(`SELECT COUNT(*) as count FROM users ${whereClause}`, params)
     const total = totalResult.count
 
     // Add sorting
@@ -269,7 +316,7 @@ export class UserService {
     params.push(limit, offset)
 
     // Get users
-    const rows = await this.allAsync(
+    const rows = this.allQuery(
       `SELECT * FROM users ${whereClause} ${orderClause} ${paginationClause}`,
       params
     )
@@ -322,13 +369,13 @@ export class UserService {
     params.push(id)
 
     const sql = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`
-    await this.runAsync(sql, params)
+    this.runQuery(sql, params)
 
     return this.getUserById(id)
   }
 
   async deleteUser(id: string): Promise<boolean> {
-    await this.runAsync('DELETE FROM users WHERE id = ?', [id])
+    this.runQuery('DELETE FROM users WHERE id = ?', [id])
     return true
   }
 
@@ -354,11 +401,11 @@ export class UserService {
       credential.type,
     ]
 
-    await this.runAsync(sql, params)
+    this.runQuery(sql, params)
   }
 
   async getUserCredentials(userId: string): Promise<UserCredential[]> {
-    const rows = await this.allAsync('SELECT * FROM user_credentials WHERE userId = ?', [userId])
+    const rows = this.allQuery('SELECT * FROM user_credentials WHERE userId = ?', [userId])
     return rows.map(row => ({
       id: row.id,
       userId: row.userId,
@@ -373,21 +420,176 @@ export class UserService {
   }
 
   async removeUserCredential(userId: string, credentialId: string): Promise<boolean> {
-    await this.runAsync('DELETE FROM user_credentials WHERE id = ? AND userId = ?', [
+    this.runQuery('DELETE FROM user_credentials WHERE id = ? AND userId = ?', [
       credentialId,
       userId,
     ])
     return true
   }
 
+  // OAuth provider management
+  async createOAuthProvider(
+    oauthProvider: Omit<OAuthProvider, 'id' | 'created_at' | 'updated_at'>
+  ): Promise<OAuthProvider> {
+    const id = this.generateId()
+    const now = new Date().toISOString()
+
+    const sql = `
+      INSERT INTO oauth_providers (id, user_id, provider, provider_user_id, access_token, refresh_token, token_expires_at, profile_data, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `
+
+    const params = [
+      id,
+      oauthProvider.user_id,
+      oauthProvider.provider,
+      oauthProvider.provider_user_id,
+      oauthProvider.access_token || null,
+      oauthProvider.refresh_token || null,
+      oauthProvider.token_expires_at || null,
+      oauthProvider.profile_data || null,
+      now,
+      now,
+    ]
+
+    this.runQuery(sql, params)
+
+    return {
+      id,
+      ...oauthProvider,
+      created_at: now,
+      updated_at: now,
+    }
+  }
+
+  async getOAuthProvider(userId: string, provider: string): Promise<OAuthProvider | null> {
+    const row = this.getQuery('SELECT * FROM oauth_providers WHERE user_id = ? AND provider = ?', [
+      userId,
+      provider,
+    ])
+    return row ? (row as OAuthProvider) : null
+  }
+
+  async getOAuthProviderByProviderId(
+    provider: string,
+    providerUserId: string
+  ): Promise<OAuthProvider | null> {
+    const row = this.getQuery(
+      'SELECT * FROM oauth_providers WHERE provider = ? AND provider_user_id = ?',
+      [provider, providerUserId]
+    )
+    return row ? (row as OAuthProvider) : null
+  }
+
+  async updateOAuthProvider(id: string, updates: Partial<OAuthProvider>): Promise<boolean> {
+    const updateFields: string[] = []
+    const params: unknown[] = []
+
+    if (updates.access_token !== undefined) {
+      updateFields.push('access_token = ?')
+      params.push(updates.access_token)
+    }
+
+    if (updates.refresh_token !== undefined) {
+      updateFields.push('refresh_token = ?')
+      params.push(updates.refresh_token)
+    }
+
+    if (updates.token_expires_at !== undefined) {
+      updateFields.push('token_expires_at = ?')
+      params.push(updates.token_expires_at)
+    }
+
+    if (updates.profile_data !== undefined) {
+      updateFields.push('profile_data = ?')
+      params.push(updates.profile_data)
+    }
+
+    if (updateFields.length === 0) {
+      return false
+    }
+
+    updateFields.push('updated_at = ?')
+    params.push(new Date().toISOString())
+    params.push(id)
+
+    const sql = `UPDATE oauth_providers SET ${updateFields.join(', ')} WHERE id = ?`
+    this.runQuery(sql, params)
+
+    return true
+  }
+
+  async removeOAuthProvider(userId: string, provider: string): Promise<boolean> {
+    this.runQuery('DELETE FROM oauth_providers WHERE user_id = ? AND provider = ?', [
+      userId,
+      provider,
+    ])
+    return true
+  }
+
+  // OAuth session management
+  async createOAuthSession(
+    session: Omit<OAuthSession, 'id' | 'created_at'>
+  ): Promise<OAuthSession> {
+    const id = this.generateId()
+    const now = new Date().toISOString()
+
+    const sql = `
+      INSERT INTO oauth_sessions (id, state, code_verifier, redirect_uri, provider, created_at, expires_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `
+
+    const params = [
+      id,
+      session.state,
+      session.code_verifier || null,
+      session.redirect_uri || null,
+      session.provider,
+      now,
+      session.expires_at,
+    ]
+
+    this.runQuery(sql, params)
+
+    return {
+      id,
+      ...session,
+      created_at: now,
+    }
+  }
+
+  async getOAuthSession(state: string): Promise<OAuthSession | null> {
+    const row = this.getQuery('SELECT * FROM oauth_sessions WHERE state = ?', [state])
+    return row ? (row as OAuthSession) : null
+  }
+
+  async removeOAuthSession(state: string): Promise<boolean> {
+    this.runQuery('DELETE FROM oauth_sessions WHERE state = ?', [state])
+    return true
+  }
+
+  async cleanupExpiredOAuthSessions(): Promise<void> {
+    const now = new Date().toISOString()
+    this.runQuery('DELETE FROM oauth_sessions WHERE expires_at < ?', [now])
+  }
+
   async close(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.db.close(err => {
-        if (err) reject(err)
-        else resolve()
-      })
-    })
+    if (this.db) {
+      this.db.close()
+      this.db = null
+    }
   }
 }
 
-export const userService = new UserService()
+// Create user service with error handling
+let userService: UserService | null = null
+
+try {
+  userService = new UserService()
+  console.log('User service initialized successfully')
+} catch (error) {
+  console.warn('User service disabled due to database initialization error:', error.message)
+  userService = null
+}
+
+export { userService }

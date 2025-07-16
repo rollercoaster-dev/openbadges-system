@@ -5,6 +5,9 @@ const userRoutes = new Hono()
 
 // Get all users with pagination and filtering
 userRoutes.get('/', async c => {
+  if (!userService) {
+    return c.json({ error: 'User service unavailable' }, 503)
+  }
   try {
     const page = parseInt(c.req.query('page') || '1') || 1
     const limit = parseInt(c.req.query('limit') || '10') || 10
@@ -26,6 +29,9 @@ userRoutes.get('/', async c => {
 
 // Create new user
 userRoutes.post('/', async c => {
+  if (!userService) {
+    return c.json({ error: 'User service unavailable' }, 503)
+  }
   try {
     const userData = await c.req.json()
     const newUser = await userService.createUser(userData)
@@ -38,6 +44,9 @@ userRoutes.post('/', async c => {
 
 // Get user by ID
 userRoutes.get('/:id', async c => {
+  if (!userService) {
+    return c.json({ error: 'User service unavailable' }, 503)
+  }
   try {
     const userId = c.req.param('id')
     const user = await userService.getUserById(userId)
@@ -51,6 +60,9 @@ userRoutes.get('/:id', async c => {
 
 // Update user
 userRoutes.put('/:id', async c => {
+  if (!userService) {
+    return c.json({ error: 'User service unavailable' }, 503)
+  }
   try {
     const userId = c.req.param('id')
     const userData = await c.req.json()
@@ -65,6 +77,9 @@ userRoutes.put('/:id', async c => {
 
 // Delete user
 userRoutes.delete('/:id', async c => {
+  if (!userService) {
+    return c.json({ error: 'User service unavailable' }, 503)
+  }
   try {
     const userId = c.req.param('id')
     await userService.deleteUser(userId)
@@ -77,6 +92,9 @@ userRoutes.delete('/:id', async c => {
 
 // Add user credential
 userRoutes.post('/:id/credentials', async c => {
+  if (!userService) {
+    return c.json({ error: 'User service unavailable' }, 503)
+  }
   try {
     const userId = c.req.param('id')
     const credentialData = await c.req.json()
@@ -90,6 +108,9 @@ userRoutes.post('/:id/credentials', async c => {
 
 // Get user credentials
 userRoutes.get('/:id/credentials', async c => {
+  if (!userService) {
+    return c.json({ error: 'User service unavailable' }, 503)
+  }
   try {
     const userId = c.req.param('id')
     const credentials = await userService.getUserCredentials(userId)
@@ -102,6 +123,9 @@ userRoutes.get('/:id/credentials', async c => {
 
 // Remove user credential
 userRoutes.delete('/:id/credentials/:credentialId', async c => {
+  if (!userService) {
+    return c.json({ error: 'User service unavailable' }, 503)
+  }
   try {
     const userId = c.req.param('id')
     const credentialId = c.req.param('credentialId')

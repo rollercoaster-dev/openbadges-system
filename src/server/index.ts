@@ -4,6 +4,7 @@ import { logger } from 'hono/logger'
 import { userRoutes } from './routes/users'
 import { authRoutes } from './routes/auth'
 import { badgesRoutes } from './routes/badges'
+import { oauthRoutes } from './routes/oauth'
 
 // Define a simpler JSON value type to avoid deep type recursion
 type JSONValue =
@@ -38,6 +39,7 @@ app.get('/api/health', c => {
 app.route('/api/bs/users', userRoutes)
 app.route('/api/auth', authRoutes)
 app.route('/api/badges', badgesRoutes)
+app.route('/api/oauth', oauthRoutes)
 
 // Helper function to safely parse JSON
 async function safeJsonResponse(response: Response): Promise<JSONValue> {
