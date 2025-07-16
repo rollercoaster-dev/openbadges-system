@@ -183,6 +183,7 @@ declare global {
   const useId: (typeof import('vue'))['useId']
   const useIdle: (typeof import('@vueuse/core'))['useIdle']
   const useImage: (typeof import('@vueuse/core'))['useImage']
+  const useImageUpload: (typeof import('./composables/useImageUpload'))['useImageUpload']
   const useInfiniteScroll: (typeof import('@vueuse/core'))['useInfiniteScroll']
   const useIntersectionObserver: (typeof import('@vueuse/core'))['useIntersectionObserver']
   const useInterval: (typeof import('@vueuse/core'))['useInterval']
@@ -336,6 +337,9 @@ declare global {
   // @ts-ignore
   export type { ValidationRule, FieldValidation } from './composables/useFormValidation'
   import('./composables/useFormValidation')
+  // @ts-ignore
+  export type { ImageUploadOptions, ImageUploadResult } from './composables/useImageUpload'
+  import('./composables/useImageUpload')
   // @ts-ignore
   export type { NavigationItem } from './composables/useNavigation'
   import('./composables/useNavigation')
@@ -550,6 +554,9 @@ declare module 'vue' {
     readonly useId: UnwrapRef<(typeof import('vue'))['useId']>
     readonly useIdle: UnwrapRef<(typeof import('@vueuse/core'))['useIdle']>
     readonly useImage: UnwrapRef<(typeof import('@vueuse/core'))['useImage']>
+    readonly useImageUpload: UnwrapRef<
+      (typeof import('./composables/useImageUpload'))['useImageUpload']
+    >
     readonly useInfiniteScroll: UnwrapRef<(typeof import('@vueuse/core'))['useInfiniteScroll']>
     readonly useIntersectionObserver: UnwrapRef<
       (typeof import('@vueuse/core'))['useIntersectionObserver']
