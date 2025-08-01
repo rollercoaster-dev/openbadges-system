@@ -527,6 +527,11 @@ export class UserService {
     return true
   }
 
+  async getOAuthProvidersByUser(userId: string): Promise<OAuthProvider[]> {
+    const rows = this.allQuery('SELECT * FROM oauth_providers WHERE user_id = ?', [userId])
+    return rows.map(row => row as OAuthProvider)
+  }
+
   // OAuth session management
   async createOAuthSession(
     session: Omit<OAuthSession, 'id' | 'created_at'>

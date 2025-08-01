@@ -24,6 +24,7 @@ declare module 'vue-router/auto-routes' {
     '/admin/system': RouteRecordInfo<'/admin/system', '/admin/system', Record<never, never>, Record<never, never>>,
     '/admin/users': RouteRecordInfo<'/admin/users', '/admin/users', Record<never, never>, Record<never, never>>,
     '/auth/login': RouteRecordInfo<'/auth/login', '/auth/login', Record<never, never>, Record<never, never>>,
+    '/auth/oauth/callback': RouteRecordInfo<'/auth/oauth/callback', '/auth/oauth/callback', Record<never, never>, Record<never, never>>,
     '/auth/profile': RouteRecordInfo<'/auth/profile', '/auth/profile', Record<never, never>, Record<never, never>>,
     '/auth/register': RouteRecordInfo<'/auth/register', '/auth/register', Record<never, never>, Record<never, never>>,
     '/backpack': RouteRecordInfo<'/backpack', '/backpack', Record<never, never>, Record<never, never>>,

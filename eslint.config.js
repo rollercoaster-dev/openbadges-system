@@ -189,6 +189,8 @@ export default [
       'vue/first-attribute-linebreak': 'warn',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       'no-unused-vars': 'off',
+      // Enforce block order: template, script, style
+      'vue/block-order': ['error', { order: ['template', 'script', 'style'] }],
     },
   },
 

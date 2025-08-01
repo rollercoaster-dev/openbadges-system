@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { oauthService } from '../services/oauth'
 import { userService } from '../services/user'
+import { userSyncService } from '../services/userSync'
 
 const oauthRoutes = new Hono()
 
@@ -136,6 +137,18 @@ oauthRoutes.get('/github/callback', async c => {
 
     // Clean up OAuth session
     await oauthService.removeOAuthSession(state)
+
+    // Sync user with badge server
+    try {
+      const syncResult = await userSyncService.syncUser(user)
+      if (syncResult.success) {
+        console.log('User synced with badge server:', syncResult.created ? 'created' : 'updated')
+      } else {
+        console.warn('Failed to sync user with badge server:', syncResult.error)
+      }
+    } catch (syncError) {
+      console.error('Error syncing user with badge server:', syncError)
+    }
 
     // Generate JWT token for authentication
     const jwtToken = 'oauth-jwt-token-' + Date.now() // TODO: Generate real JWT token

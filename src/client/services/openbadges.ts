@@ -19,34 +19,148 @@ export interface UserBackpack {
   total: number
 }
 
+export interface OAuthTokenInfo {
+  access_token: string
+  refresh_token?: string
+  expires_at?: string
+  provider: string
+}
+
 export class OpenBadgesService {
   private baseUrl = '/api/badges'
+  private badgeServerBaseUrl = import.meta.env.VITE_BADGE_SERVER_URL || 'http://localhost:3000'
 
   /**
-   * Get platform token for authenticated user
+   * Get OAuth access token for badge server API
    */
-  async getPlatformToken(user: User): Promise<string> {
-    const response = await fetch('/api/auth/platform-token', {
+  async getOAuthToken(user: User): Promise<string> {
+    const response = await fetch('/api/auth/oauth-token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
       },
-      body: JSON.stringify({ user }),
+      body: JSON.stringify({ userId: user.id }),
     })
 
     if (!response.ok) {
-      throw new Error('Failed to get platform token')
+      if (response.status === 401) {
+        throw new Error('Authentication required. Please log in again.')
+      }
+      throw new Error('Failed to get OAuth token for badge server')
     }
 
     const data = await response.json()
-    return data.token
+    return data.access_token
+  }
+
+  /**
+   * Refresh OAuth token if needed
+   */
+  async refreshOAuthToken(user: User): Promise<string> {
+    const response = await fetch('/api/auth/oauth-token/refresh', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+      },
+      body: JSON.stringify({ userId: user.id }),
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to refresh OAuth token')
+    }
+
+    const data = await response.json()
+    return data.access_token
+  }
+
+  /**
+   * Handle badge server API errors with user-friendly messages
+   */
+  private handleBadgeServerError(response: Response, _endpoint: string): Error {
+    switch (response.status) {
+      case 400:
+        return new Error('Invalid request. Please check your input and try again.')
+      case 401:
+        return new Error('Authentication failed. Please log in again.')
+      case 403:
+        return new Error('Permission denied. You do not have access to this resource.')
+      case 404:
+        return new Error('Resource not found. The requested item may not exist.')
+      case 409:
+        return new Error('Conflict. The resource already exists or there is a conflict.')
+      case 429:
+        return new Error('Too many requests. Please wait a moment and try again.')
+      case 500:
+        return new Error('Badge server error. Please try again later.')
+      case 502:
+      case 503:
+      case 504:
+        return new Error('Badge server is temporarily unavailable. Please try again later.')
+      default:
+        return new Error(`Badge server request failed (${response.status}). Please try again.`)
+    }
+  }
+
+  /**
+   * Make authenticated API request with token refresh support
+   */
+  async makeAuthenticatedRequest(
+    user: User,
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<Response> {
+    let token: string
+
+    try {
+      token = await this.getOAuthToken(user)
+    } catch {
+      throw new Error('Failed to authenticate with badge server. Please log in again.')
+    }
+
+    const makeRequest = async (authToken: string) => {
+      try {
+        return await fetch(`${this.badgeServerBaseUrl}${endpoint}`, {
+          ...options,
+          headers: {
+            Authorization: `Bearer ${authToken}`,
+            'Content-Type': 'application/json',
+            ...options.headers,
+          },
+        })
+      } catch {
+        throw new Error('Network error. Please check your connection and try again.')
+      }
+    }
+
+    let response: Response
+
+    response = await makeRequest(token)
+
+    // If token expired, try to refresh and retry once
+    if (response.status === 401) {
+      try {
+        token = await this.refreshOAuthToken(user)
+        response = await makeRequest(token)
+      } catch {
+        throw new Error('Authentication failed. Please log in again.')
+      }
+    }
+
+    // Handle other error statuses
+    if (!response.ok) {
+      throw this.handleBadgeServerError(response, endpoint)
+    }
+
+    return response
   }
 
   /**
    * Create API client for authenticated user
    */
   async createApiClient(user: User): Promise<OpenBadgesApiClient> {
-    const token = await this.getPlatformToken(user)
+    const token = await this.getOAuthToken(user)
 
     return {
       token,
@@ -61,16 +175,7 @@ export class OpenBadgesService {
    * Get user's badge backpack
    */
   async getUserBackpack(user: User): Promise<UserBackpack> {
-    const client = await this.createApiClient(user)
-
-    const response = await fetch(`${this.baseUrl}/api/v1/assertions`, {
-      headers: client.headers,
-    })
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch user backpack')
-    }
-
+    const response = await this.makeAuthenticatedRequest(user, '/api/v1/assertions')
     return await response.json()
   }
 
@@ -83,11 +188,8 @@ export class OpenBadgesService {
     evidence?: string,
     narrative?: string
   ): Promise<BadgeAssertion> {
-    const client = await this.createApiClient(user)
-
-    const response = await fetch(`${this.baseUrl}/api/v1/assertions`, {
+    const response = await this.makeAuthenticatedRequest(user, '/api/v1/assertions', {
       method: 'POST',
-      headers: client.headers,
       body: JSON.stringify({
         badgeClass: badgeClassId,
         recipient: user.email,
@@ -96,10 +198,6 @@ export class OpenBadgesService {
       }),
     })
 
-    if (!response.ok) {
-      throw new Error('Failed to add badge to backpack')
-    }
-
     return await response.json()
   }
 
@@ -107,26 +205,29 @@ export class OpenBadgesService {
    * Remove badge assertion from user's backpack
    */
   async removeBadgeFromBackpack(user: User, assertionId: string): Promise<void> {
-    const client = await this.createApiClient(user)
-
-    const response = await fetch(`${this.baseUrl}/api/v1/assertions/${assertionId}`, {
+    await this.makeAuthenticatedRequest(user, `/api/v1/assertions/${assertionId}`, {
       method: 'DELETE',
-      headers: client.headers,
     })
-
-    if (!response.ok) {
-      throw new Error('Failed to remove badge from backpack')
-    }
   }
 
   /**
    * Get badge classes available for issuance
    */
-  async getBadgeClasses(): Promise<unknown[]> {
-    const response = await fetch(`${this.baseUrl}/v2/badge-classes`)
+  async getBadgeClasses(user?: User): Promise<unknown[]> {
+    let response: Response
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch badge classes')
+    if (user) {
+      response = await this.makeAuthenticatedRequest(user, '/api/v2/badge-classes')
+    } else {
+      // Public endpoint - no authentication required
+      try {
+        response = await fetch(`${this.badgeServerBaseUrl}/api/v2/badge-classes`)
+        if (!response.ok) {
+          throw this.handleBadgeServerError(response, '/api/v2/badge-classes')
+        }
+      } catch {
+        throw new Error('Network error. Please check your connection and try again.')
+      }
     }
 
     return await response.json()
@@ -136,17 +237,10 @@ export class OpenBadgesService {
    * Create new badge class
    */
   async createBadgeClass(user: User, badgeClass: unknown): Promise<unknown> {
-    const client = await this.createApiClient(user)
-
-    const response = await fetch(`${this.baseUrl}/v2/badge-classes`, {
+    const response = await this.makeAuthenticatedRequest(user, '/api/v2/badge-classes', {
       method: 'POST',
-      headers: client.headers,
       body: JSON.stringify(badgeClass),
     })
-
-    if (!response.ok) {
-      throw new Error('Failed to create badge class')
-    }
 
     return await response.json()
   }
@@ -161,11 +255,8 @@ export class OpenBadgesService {
     evidence?: string,
     narrative?: string
   ): Promise<BadgeAssertion> {
-    const client = await this.createApiClient(issuerUser)
-
-    const response = await fetch(`${this.baseUrl}/v2/assertions`, {
+    const response = await this.makeAuthenticatedRequest(issuerUser, '/api/v2/assertions', {
       method: 'POST',
-      headers: client.headers,
       body: JSON.stringify({
         badgeClass: badgeClassId,
         recipient: recipientEmail,
@@ -173,10 +264,6 @@ export class OpenBadgesService {
         narrative,
       }),
     })
-
-    if (!response.ok) {
-      throw new Error('Failed to issue badge')
-    }
 
     return await response.json()
   }

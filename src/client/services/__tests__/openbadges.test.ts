@@ -2,6 +2,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { OpenBadgesService } from '../openbadges'
 import type { User } from '@/composables/useAuth'
 
+// Mock localStorage
+Object.defineProperty(global, 'localStorage', {
+  value: {
+    getItem: vi.fn(() => 'mock-auth-token'),
+    setItem: vi.fn(),
+    removeItem: vi.fn(),
+  },
+})
+
 describe('OpenBadgesService', () => {
   let service: OpenBadgesService
   let mockUser: User
@@ -26,42 +35,89 @@ describe('OpenBadgesService', () => {
     global.fetch = mockFetch
   })
 
-  describe('getPlatformToken', () => {
-    it('should get platform token successfully', async () => {
-      const mockToken = 'test-jwt-token'
+  describe('getOAuthToken', () => {
+    it('should get OAuth token successfully', async () => {
+      const mockToken = 'test-oauth-token'
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ token: mockToken }),
+        json: () => Promise.resolve({ access_token: mockToken }),
       })
 
-      const token = await service.getPlatformToken(mockUser)
+      const token = await service.getOAuthToken(mockUser)
 
       expect(token).toBe(mockToken)
-      expect(mockFetch).toHaveBeenCalledWith('/api/auth/platform-token', {
+      expect(mockFetch).toHaveBeenCalledWith('/api/auth/oauth-token', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user: mockUser }),
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer mock-auth-token',
+        },
+        body: JSON.stringify({ userId: mockUser.id }),
       })
     })
 
-    it('should throw error when platform token request fails', async () => {
+    it('should throw error when OAuth token request fails', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 500,
       })
 
-      await expect(service.getPlatformToken(mockUser)).rejects.toThrow(
-        'Failed to get platform token'
+      await expect(service.getOAuthToken(mockUser)).rejects.toThrow(
+        'Failed to get OAuth token for badge server'
+      )
+    })
+
+    it('should throw authentication error for 401 status', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+      })
+
+      await expect(service.getOAuthToken(mockUser)).rejects.toThrow(
+        'Authentication required. Please log in again.'
+      )
+    })
+  })
+
+  describe('refreshOAuthToken', () => {
+    it('should refresh OAuth token successfully', async () => {
+      const mockToken = 'refreshed-oauth-token'
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ access_token: mockToken }),
+      })
+
+      const token = await service.refreshOAuthToken(mockUser)
+
+      expect(token).toBe(mockToken)
+      expect(mockFetch).toHaveBeenCalledWith('/api/auth/oauth-token/refresh', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer mock-auth-token',
+        },
+        body: JSON.stringify({ userId: mockUser.id }),
+      })
+    })
+
+    it('should throw error when token refresh fails', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+      })
+
+      await expect(service.refreshOAuthToken(mockUser)).rejects.toThrow(
+        'Failed to refresh OAuth token'
       )
     })
   })
 
   describe('createApiClient', () => {
     it('should create API client with correct headers', async () => {
-      const mockToken = 'test-jwt-token'
+      const mockToken = 'test-oauth-token'
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ token: mockToken }),
+        json: () => Promise.resolve({ access_token: mockToken }),
       })
 
       const client = await service.createApiClient(mockUser)
@@ -76,7 +132,7 @@ describe('OpenBadgesService', () => {
 
   describe('getUserBackpack', () => {
     it('should get user backpack successfully', async () => {
-      const mockToken = 'test-jwt-token'
+      const mockToken = 'test-oauth-token'
       const mockBackpack = {
         assertions: [{ id: 'assertion-1', badgeClass: 'badge-1', recipient: 'test@example.com' }],
         total: 1,
@@ -85,7 +141,7 @@ describe('OpenBadgesService', () => {
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ token: mockToken }),
+          json: () => Promise.resolve({ access_token: mockToken }),
         })
         .mockResolvedValueOnce({
           ok: true,
@@ -95,7 +151,7 @@ describe('OpenBadgesService', () => {
       const backpack = await service.getUserBackpack(mockUser)
 
       expect(backpack).toEqual(mockBackpack)
-      expect(mockFetch).toHaveBeenCalledWith('/api/badges/api/v1/assertions', {
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/assertions', {
         headers: {
           Authorization: `Bearer ${mockToken}`,
           'Content-Type': 'application/json',
@@ -104,11 +160,11 @@ describe('OpenBadgesService', () => {
     })
 
     it('should throw error when backpack request fails', async () => {
-      const mockToken = 'test-jwt-token'
+      const mockToken = 'test-oauth-token'
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ token: mockToken }),
+          json: () => Promise.resolve({ access_token: mockToken }),
         })
         .mockResolvedValueOnce({
           ok: false,
@@ -116,14 +172,46 @@ describe('OpenBadgesService', () => {
         })
 
       await expect(service.getUserBackpack(mockUser)).rejects.toThrow(
-        'Failed to fetch user backpack'
+        'Badge server error. Please try again later.'
       )
+    })
+
+    it('should refresh token and retry on 401 error', async () => {
+      const mockToken = 'test-oauth-token'
+      const mockRefreshToken = 'refreshed-oauth-token'
+      const mockBackpack = {
+        assertions: [{ id: 'assertion-1', badgeClass: 'badge-1', recipient: 'test@example.com' }],
+        total: 1,
+      }
+
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ access_token: mockToken }),
+        })
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 401,
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ access_token: mockRefreshToken }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockBackpack),
+        })
+
+      const backpack = await service.getUserBackpack(mockUser)
+
+      expect(backpack).toEqual(mockBackpack)
+      expect(mockFetch).toHaveBeenCalledTimes(4)
     })
   })
 
   describe('addBadgeToBackpack', () => {
     it('should add badge to backpack successfully', async () => {
-      const mockToken = 'test-jwt-token'
+      const mockToken = 'test-oauth-token'
       const mockAssertion = {
         id: 'new-assertion',
         badgeClass: 'badge-class-1',
@@ -133,7 +221,7 @@ describe('OpenBadgesService', () => {
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ token: mockToken }),
+          json: () => Promise.resolve({ access_token: mockToken }),
         })
         .mockResolvedValueOnce({
           ok: true,
@@ -148,7 +236,7 @@ describe('OpenBadgesService', () => {
       )
 
       expect(result).toEqual(mockAssertion)
-      expect(mockFetch).toHaveBeenCalledWith('/api/badges/api/v1/assertions', {
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/assertions', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${mockToken}`,
@@ -164,11 +252,11 @@ describe('OpenBadgesService', () => {
     })
 
     it('should throw error when add badge request fails', async () => {
-      const mockToken = 'test-jwt-token'
+      const mockToken = 'test-oauth-token'
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ token: mockToken }),
+          json: () => Promise.resolve({ access_token: mockToken }),
         })
         .mockResolvedValueOnce({
           ok: false,
@@ -176,7 +264,7 @@ describe('OpenBadgesService', () => {
         })
 
       await expect(service.addBadgeToBackpack(mockUser, 'badge-class-1')).rejects.toThrow(
-        'Failed to add badge to backpack'
+        'Invalid request. Please check your input and try again.'
       )
     })
   })
@@ -223,7 +311,35 @@ describe('OpenBadgesService', () => {
   })
 
   describe('getBadgeClasses', () => {
-    it('should get badge classes successfully', async () => {
+    it('should get badge classes successfully with user authentication', async () => {
+      const mockToken = 'test-oauth-token'
+      const mockBadgeClasses = [
+        { id: 'badge-1', name: 'Badge 1' },
+        { id: 'badge-2', name: 'Badge 2' },
+      ]
+
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ access_token: mockToken }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockBadgeClasses),
+        })
+
+      const badgeClasses = await service.getBadgeClasses(mockUser)
+
+      expect(badgeClasses).toEqual(mockBadgeClasses)
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v2/badge-classes', {
+        headers: {
+          Authorization: `Bearer ${mockToken}`,
+          'Content-Type': 'application/json',
+        },
+      })
+    })
+
+    it('should get badge classes successfully without authentication', async () => {
       const mockBadgeClasses = [
         { id: 'badge-1', name: 'Badge 1' },
         { id: 'badge-2', name: 'Badge 2' },
@@ -237,7 +353,7 @@ describe('OpenBadgesService', () => {
       const badgeClasses = await service.getBadgeClasses()
 
       expect(badgeClasses).toEqual(mockBadgeClasses)
-      expect(mockFetch).toHaveBeenCalledWith('/api/badges/v2/badge-classes')
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v2/badge-classes')
     })
 
     it('should throw error when badge classes request fails', async () => {
@@ -246,7 +362,9 @@ describe('OpenBadgesService', () => {
         status: 500,
       })
 
-      await expect(service.getBadgeClasses()).rejects.toThrow('Failed to fetch badge classes')
+      await expect(service.getBadgeClasses()).rejects.toThrow(
+        'Badge server error. Please try again later.'
+      )
     })
   })
 
