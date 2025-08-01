@@ -323,7 +323,7 @@ declare global {
   } from 'vue'
   import('vue')
   // @ts-ignore
-  export type { User, RegisterData, AuthResponse } from './composables/useAuth'
+  export type { User, RegisterData, AuthResponse, WebAuthnCredential } from './composables/useAuth'
   import('./composables/useAuth')
   // @ts-ignore
   export type {
