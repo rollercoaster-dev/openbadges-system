@@ -275,7 +275,7 @@ describe('OpenBadgesService', () => {
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ token: mockToken }),
+          json: () => Promise.resolve({ access_token: mockToken }),
         })
         .mockResolvedValueOnce({
           ok: true,
@@ -283,13 +283,24 @@ describe('OpenBadgesService', () => {
 
       await service.removeBadgeFromBackpack(mockUser, 'assertion-1')
 
-      expect(mockFetch).toHaveBeenCalledWith('/api/badges/api/v1/assertions/assertion-1', {
-        method: 'DELETE',
+      expect(mockFetch).toHaveBeenCalledWith('/api/auth/oauth-token', {
+        method: 'POST',
         headers: {
-          Authorization: `Bearer ${mockToken}`,
+          Authorization: 'Bearer mock-auth-token',
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ userId: 'test-user' }),
       })
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://localhost:3000/api/v1/assertions/assertion-1',
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${mockToken}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      )
     })
 
     it('should throw error when remove badge request fails', async () => {
@@ -297,7 +308,7 @@ describe('OpenBadgesService', () => {
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ token: mockToken }),
+          json: () => Promise.resolve({ access_token: mockToken }),
         })
         .mockResolvedValueOnce({
           ok: false,
@@ -305,7 +316,7 @@ describe('OpenBadgesService', () => {
         })
 
       await expect(service.removeBadgeFromBackpack(mockUser, 'assertion-1')).rejects.toThrow(
-        'Failed to remove badge from backpack'
+        'Resource not found. The requested item may not exist.'
       )
     })
   })
@@ -363,7 +374,7 @@ describe('OpenBadgesService', () => {
       })
 
       await expect(service.getBadgeClasses()).rejects.toThrow(
-        'Badge server error. Please try again later.'
+        'Network error. Please check your connection and try again.'
       )
     })
   })
@@ -377,7 +388,7 @@ describe('OpenBadgesService', () => {
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ token: mockToken }),
+          json: () => Promise.resolve({ access_token: mockToken }),
         })
         .mockResolvedValueOnce({
           ok: true,
@@ -387,7 +398,15 @@ describe('OpenBadgesService', () => {
       const result = await service.createBadgeClass(mockUser, mockBadgeClass)
 
       expect(result).toEqual(mockCreatedBadge)
-      expect(mockFetch).toHaveBeenCalledWith('/api/badges/v2/badge-classes', {
+      expect(mockFetch).toHaveBeenCalledWith('/api/auth/oauth-token', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer mock-auth-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: 'test-user' }),
+      })
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v2/badge-classes', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${mockToken}`,
@@ -402,7 +421,7 @@ describe('OpenBadgesService', () => {
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ token: mockToken }),
+          json: () => Promise.resolve({ access_token: mockToken }),
         })
         .mockResolvedValueOnce({
           ok: false,
@@ -410,7 +429,7 @@ describe('OpenBadgesService', () => {
         })
 
       await expect(service.createBadgeClass(mockUser, { name: 'Test Badge' })).rejects.toThrow(
-        'Failed to create badge class'
+        'Invalid request. Please check your input and try again.'
       )
     })
   })
@@ -427,7 +446,7 @@ describe('OpenBadgesService', () => {
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ token: mockToken }),
+          json: () => Promise.resolve({ access_token: mockToken }),
         })
         .mockResolvedValueOnce({
           ok: true,
@@ -443,7 +462,15 @@ describe('OpenBadgesService', () => {
       )
 
       expect(result).toEqual(mockIssuedBadge)
-      expect(mockFetch).toHaveBeenCalledWith('/api/badges/v2/assertions', {
+      expect(mockFetch).toHaveBeenCalledWith('/api/auth/oauth-token', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer mock-auth-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: 'test-user' }),
+      })
+      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v2/assertions', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${mockToken}`,
@@ -463,7 +490,7 @@ describe('OpenBadgesService', () => {
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ token: mockToken }),
+          json: () => Promise.resolve({ access_token: mockToken }),
         })
         .mockResolvedValueOnce({
           ok: false,
@@ -472,7 +499,7 @@ describe('OpenBadgesService', () => {
 
       await expect(
         service.issueBadge(mockUser, 'badge-class-1', 'recipient@example.com')
-      ).rejects.toThrow('Failed to issue badge')
+      ).rejects.toThrow('Permission denied. You do not have access to this resource.')
     })
   })
 })

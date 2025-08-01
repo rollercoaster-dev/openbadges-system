@@ -197,20 +197,30 @@ describe('UserSyncService', () => {
         updatedAt: '2023-01-01T00:00:00Z',
       }
 
-      // Mock calls for checking if user exists (2 calls - username and email)
+      // Mock calls for getBadgeServerUser(username) - 2 calls (username search, email search)
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve([]), // No users found by username
-        })
+          json: () => Promise.resolve([]), // No users found by username in first search
+        } as Response)
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve([]), // No users found by email
-        })
+          json: () => Promise.resolve([]), // No users found by email in first search
+        } as Response)
+        // Mock calls for getBadgeServerUser(email) - 2 calls (username search, email search)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]), // No users found by username in second search
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]), // No users found by email in second search
+        } as Response)
+        // Mock call for createBadgeServerUser
         .mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve(mockCreatedUser), // Create user response
-        })
+        } as Response)
 
       const result = await service.syncUser(mockUser)
 
@@ -219,7 +229,7 @@ describe('UserSyncService', () => {
         user: mockCreatedUser,
         created: true,
       })
-      expect(mockFetch).toHaveBeenCalledTimes(3)
+      expect(mockFetch).toHaveBeenCalledTimes(5)
     })
 
     it('should update existing user when data differs', async () => {
@@ -292,14 +302,33 @@ describe('UserSyncService', () => {
     })
 
     it('should return error when sync fails', async () => {
-      // Mock first call to getBadgeServerUser to fail
-      mockFetch.mockRejectedValueOnce(new Error('Network error'))
+      // Mock calls for getBadgeServerUser(username) - 2 calls (username search, email search)
+      mockFetch
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]), // No users found by username in first search
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]), // No users found by email in first search
+        } as Response)
+        // Mock calls for getBadgeServerUser(email) - 2 calls (username search, email search)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]), // No users found by username in second search
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]), // No users found by email in second search
+        } as Response)
+        // Mock createBadgeServerUser to fail
+        .mockRejectedValueOnce(new Error('Network error'))
 
       const result = await service.syncUser(mockUser)
 
       expect(result).toEqual({
         success: false,
-        error: 'User sync failed: Network error',
+        error: 'Failed to create user in badge server',
       })
     })
   })

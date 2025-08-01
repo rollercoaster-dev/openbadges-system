@@ -607,8 +607,8 @@ describe('Authentication Flow Integration Tests', () => {
     })
 
     it('should handle OpenBadges API errors gracefully', async () => {
-      // Mock the OpenBadges service to return null
-      vi.mocked(openBadgesService.getUserBackpack).mockResolvedValue({ assertions: [], total: 0 })
+      // Mock the OpenBadges service to throw an error
+      vi.mocked(openBadgesService.getUserBackpack).mockRejectedValue(new Error('API Error'))
 
       const auth = useAuth()
 
