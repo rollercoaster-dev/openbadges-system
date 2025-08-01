@@ -45,21 +45,8 @@ export interface UpdateBadgeData {
   expires?: string
 }
 
-export interface BadgeAssertion {
-  id: string
-  badge: OB2.BadgeClass
-  recipient: {
-    type: 'email'
-    hashed: boolean
-    identity: string
-  }
-  issuedOn: string
-  expires?: string
-  evidence?: string
-  narrative?: string
-  revoked?: boolean
-  revocationReason?: string
-}
+// Use official Open Badges Assertion type
+export type BadgeAssertion = OB2.Assertion
 
 export interface IssueBadgeData {
   badgeClassId: string

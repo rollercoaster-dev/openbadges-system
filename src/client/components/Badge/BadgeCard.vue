@@ -158,7 +158,7 @@ function formatDate(dateString?: string): string {
   })
 }
 
-function getImageSrc(image: OB2.IRI | OB2.Image | undefined): string | undefined {
+function getImageSrc(image: string | OB2.Image | undefined): string | undefined {
   if (!image) return undefined
   if (typeof image === 'string') return image
   return image.id || undefined

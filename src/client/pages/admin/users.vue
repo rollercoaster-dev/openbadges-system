@@ -42,7 +42,7 @@
     >
       <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <UserForm
-          :user="selectedUser"
+          :user="selectedUser || undefined"
           :is-submitting="isLoading"
           @close="closeForm"
           @submit="handleSubmitUser"

@@ -1,6 +1,9 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { WebAuthnUtils, WebAuthnError, type WebAuthnCredential } from '@/utils/webauthn'
+
+// Re-export WebAuthnCredential for use in other modules
+export type { WebAuthnCredential }
 import { openBadgesService } from '@/services/openbadges'
 
 export interface User {
@@ -357,7 +360,7 @@ export const useAuth = () => {
 
     try {
       // Convert isAdmin to roles structure for backend
-      const backendUpdate = { ...updatedUser }
+      const backendUpdate: Record<string, unknown> = { ...updatedUser }
       if ('isAdmin' in updatedUser) {
         backendUpdate.roles = updatedUser.isAdmin ? ['USER', 'ADMIN'] : ['USER']
         delete backendUpdate.isAdmin

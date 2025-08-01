@@ -4,13 +4,13 @@
       <h1 class="text-2xl font-bold text-gray-900">Issuer Profile</h1>
       <div class="space-x-2">
         <RouterLink
-          :to="`/issuers/${route.params.id}/edit`"
+          :to="`/issuers/${'id' in route.params ? route.params.id : ''}/edit`"
           class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg"
         >
           Edit
         </RouterLink>
         <RouterLink
-          :to="`/issuers/${route.params.id}/badges`"
+          :to="`/issuers/${'id' in route.params ? route.params.id : ''}/badges`"
           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
         >
           View Badges

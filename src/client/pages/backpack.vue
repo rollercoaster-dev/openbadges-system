@@ -410,15 +410,24 @@ import {
 } from '@heroicons/vue/24/outline'
 import { BadgeList, BadgeDisplay } from 'openbadges-ui'
 import { useAuth } from '@/composables/useAuth'
-import type { OB2 } from 'openbadges-types'
+import type { OB2, Shared } from 'openbadges-types'
 
 const { user, getUserBackpack } = useAuth()
+
+// Extended badge type that includes assertion data for display
+interface DisplayBadge extends OB2.BadgeClass {
+  issuedOn?: Shared.DateTime
+  recipient?: OB2.IdentityObject
+  evidence?: OB2.Evidence | OB2.Evidence[]
+  narrative?: string
+  expires?: Shared.DateTime
+}
 
 // Component state
 const isLoading = ref(true)
 const error = ref<string | null>(null)
 const successMessage = ref<string | null>(null)
-const badges = ref<OB2.BadgeClass[]>([])
+const badges = ref<DisplayBadge[]>([])
 const searchQuery = ref('')
 const selectedIssuer = ref('')
 const sortBy = ref('issuedOn')
@@ -428,7 +437,7 @@ const selectedBadges = ref<string[]>([])
 const showShareModal = ref(false)
 const showDetailModal = ref(false)
 const showExportMenu = ref(false)
-const selectedBadge = ref<OB2.BadgeClass | null>(null)
+const selectedBadge = ref<DisplayBadge | null>(null)
 const currentPage = ref(1)
 const pageSize = ref(12)
 
@@ -473,9 +482,9 @@ const filteredBadges = computed(() => {
         return getIssuerName(a.issuer).localeCompare(getIssuerName(b.issuer))
       case 'issuedOn':
       default: {
-        // Assuming badges have issuedOn date, fallback to creation date
-        const aDate = new Date((a as any).issuedOn || (a as any).createdAt || 0)
-        const bDate = new Date((b as any).issuedOn || (b as any).createdAt || 0)
+        // Use issuedOn date from assertion data
+        const aDate = new Date(a.issuedOn || 0)
+        const bDate = new Date(b.issuedOn || 0)
         return bDate.getTime() - aDate.getTime()
       }
     }
@@ -499,7 +508,7 @@ const badgesThisMonth = computed(() => {
   const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
   return badges.value.filter(badge => {
-    const issuedDate = new Date((badge as any).issuedOn || (badge as any).createdAt || 0)
+    const issuedDate = new Date(badge.issuedOn || 0)
     return issuedDate >= thisMonth
   }).length
 })
@@ -550,12 +559,42 @@ async function loadUserBadges() {
   try {
     const backpack = await getUserBackpack()
     if (backpack && backpack.assertions) {
-      // Convert assertions to badges for display
-      badges.value = backpack.assertions.map(assertion => ({
-        ...assertion.badge,
-        issuedOn: assertion.issuedOn,
-        recipient: assertion.recipient,
-      }))
+      // Convert assertions to badges for display - we'll store the full assertions
+      // and extract badge data when needed for display
+      badges.value = backpack.assertions.map(assertion => {
+        // If badge is an IRI, create a minimal BadgeClass structure
+        if (typeof assertion.badge === 'string') {
+          return {
+            id: assertion.badge as Shared.IRI,
+            type: 'BadgeClass' as const,
+            name: 'Badge',
+            description: 'Badge description',
+            image: '/placeholder-badge.png' as Shared.IRI,
+            criteria: { narrative: 'Badge criteria' },
+            issuer: {
+              id: 'unknown-issuer' as Shared.IRI,
+              type: 'Profile' as const,
+              name: 'Unknown Issuer',
+            },
+            // Add assertion data
+            issuedOn: assertion.issuedOn,
+            recipient: assertion.recipient,
+            evidence: assertion.evidence,
+            narrative: assertion.narrative,
+            expires: assertion.expires,
+          } as DisplayBadge
+        } else {
+          // Badge is already a BadgeClass, add assertion data
+          return {
+            ...assertion.badge,
+            issuedOn: assertion.issuedOn,
+            recipient: assertion.recipient,
+            evidence: assertion.evidence,
+            narrative: assertion.narrative,
+            expires: assertion.expires,
+          } as DisplayBadge
+        }
+      })
     }
   } catch (err) {
     console.error('Failed to load user backpack:', err)
@@ -597,7 +636,7 @@ function toggleBadgeSelection(badgeId: string) {
   }
 }
 
-function handleBadgeClick(badge: OB2.BadgeClass) {
+function handleBadgeClick(badge: DisplayBadge) {
   selectedBadge.value = badge
   showDetailModal.value = true
 }
@@ -606,16 +645,16 @@ function handlePageChange(page: number) {
   currentPage.value = page
 }
 
-function handleBadgeVerified(badge: OB2.BadgeClass) {
+function handleBadgeVerified(badge: DisplayBadge) {
   console.log('Badge verified:', badge)
 }
 
-function handleShareBadge(badge: OB2.BadgeClass) {
+function handleShareBadge(badge: DisplayBadge) {
   // TODO: Implement individual badge sharing
   console.log('Share badge:', badge)
 }
 
-function handleDownloadBadge(badge: OB2.BadgeClass) {
+function handleDownloadBadge(badge: DisplayBadge) {
   // TODO: Implement badge download
   console.log('Download badge:', badge)
 }
@@ -642,27 +681,28 @@ function shareToSocial(platform: 'twitter' | 'linkedin' | 'facebook') {
   const url = shareUrl.value
   const text = `Check out my digital badges! I've earned ${totalBadges.value} badges.`
 
-  let shareUrl = ''
+  let socialShareUrl = ''
 
   switch (platform) {
     case 'twitter':
-      shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`
+      socialShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`
       break
     case 'linkedin':
-      shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
+      socialShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`
       break
     case 'facebook':
-      shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`
+      socialShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`
       break
   }
 
-  window.open(shareUrl, '_blank', 'width=600,height=400')
+  window.open(socialShareUrl, '_blank', 'width=600,height=400')
   showShareModal.value = false
 }
 
 // Close export menu when clicking outside
-document.addEventListener('click', e => {
-  if (!e.target.closest('.relative')) {
+document.addEventListener('click', (e: Event) => {
+  const target = e.target as HTMLElement | null
+  if (target && target.closest && !target.closest('.relative')) {
     showExportMenu.value = false
   }
 })

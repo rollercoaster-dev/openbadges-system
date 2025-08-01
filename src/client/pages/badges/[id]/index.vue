@@ -4,13 +4,13 @@
       <h1 class="text-2xl font-bold text-gray-900">Badge Details</h1>
       <div class="space-x-2">
         <RouterLink
-          :to="`/badges/${route.params.id}/edit`"
+          :to="`/badges/${'id' in route.params ? route.params.id : ''}/edit`"
           class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg"
         >
           Edit
         </RouterLink>
         <RouterLink
-          :to="`/badges/${route.params.id}/issue`"
+          :to="`/badges/${'id' in route.params ? route.params.id : ''}/issue`"
           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
         >
           Issue Badge

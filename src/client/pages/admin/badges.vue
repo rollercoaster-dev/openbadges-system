@@ -215,13 +215,13 @@
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="flex items-center">
                     <img
-                      :src="getImageSrc(assertion.badge.image)"
-                      :alt="assertion.badge.name"
+                      :src="getBadgeImage(assertion.badge)"
+                      :alt="getBadgeName(assertion.badge)"
                       class="w-10 h-10 rounded-lg object-cover"
                     />
                     <div class="ml-4">
                       <div class="text-sm font-medium text-gray-900">
-                        {{ assertion.badge.name }}
+                        {{ getBadgeName(assertion.badge) }}
                       </div>
                     </div>
                   </div>
@@ -585,9 +585,19 @@ function formatDate(dateString: string): string {
   })
 }
 
-function getImageSrc(image: OB2.IRI | OB2.Image | undefined): string | undefined {
+function getImageSrc(image: string | OB2.Image | undefined): string | undefined {
   if (!image) return undefined
   if (typeof image === 'string') return image
   return image.id || undefined
+}
+
+function getBadgeImage(badge: string | OB2.BadgeClass): string | undefined {
+  if (typeof badge === 'string') return undefined
+  return getImageSrc(badge.image)
+}
+
+function getBadgeName(badge: string | OB2.BadgeClass): string {
+  if (typeof badge === 'string') return badge
+  return badge.name || 'Unknown Badge'
 }
 </script>

@@ -1,18 +1,14 @@
 import type { User } from '@/composables/useAuth'
+import type { OB2 } from 'openbadges-types'
 
 export interface OpenBadgesApiClient {
   token: string
   headers: Record<string, string>
 }
 
-export interface BadgeAssertion {
-  id: string
-  badgeClass: string
-  recipient: string
-  issuedOn: string
-  evidence?: string
-  narrative?: string
-}
+// Use official Open Badges types
+export type BadgeAssertion = OB2.Assertion
+export type BadgeClass = OB2.BadgeClass
 
 export interface UserBackpack {
   assertions: BadgeAssertion[]
@@ -27,7 +23,6 @@ export interface OAuthTokenInfo {
 }
 
 export class OpenBadgesService {
-  private baseUrl = '/api/badges'
   private badgeServerBaseUrl = import.meta.env.VITE_BADGE_SERVER_URL || 'http://localhost:3000'
 
   /**

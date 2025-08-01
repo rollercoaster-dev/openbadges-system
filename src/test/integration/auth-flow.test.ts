@@ -477,7 +477,22 @@ describe('Authentication Flow Integration Tests', () => {
     it('should integrate with OpenBadges service after authentication', async () => {
       // Mock OpenBadges API responses
       const mockBackpack = {
-        assertions: [{ id: 'assertion-1', badgeClass: 'badge-1', recipient: 'test@example.com' }],
+        assertions: [
+          {
+            id: 'assertion-1' as any,
+            type: 'Assertion' as const,
+            badge: 'badge-1' as any,
+            recipient: {
+              type: 'email',
+              identity: 'test@example.com',
+              hashed: false,
+            },
+            verification: {
+              type: 'hosted',
+            },
+            issuedOn: new Date().toISOString() as any,
+          },
+        ],
         total: 1,
       }
 
@@ -576,7 +591,7 @@ describe('Authentication Flow Integration Tests', () => {
 
     it('should handle OpenBadges API errors gracefully', async () => {
       // Mock the OpenBadges service to return null
-      vi.mocked(openBadgesService.getUserBackpack).mockResolvedValue(null)
+      vi.mocked(openBadgesService.getUserBackpack).mockResolvedValue({ assertions: [], total: 0 })
 
       const auth = useAuth()
 
@@ -637,9 +652,18 @@ describe('Authentication Flow Integration Tests', () => {
   describe('Admin User Scenarios', () => {
     it('should handle admin user badge issuance', async () => {
       const mockIssuedBadge = {
-        id: 'issued-badge-id',
-        badgeClass: 'badge-class-1',
-        recipient: 'recipient@example.com',
+        id: 'issued-badge-id' as any,
+        type: 'Assertion' as const,
+        badge: 'badge-class-1' as any,
+        recipient: {
+          type: 'email',
+          identity: 'recipient@example.com',
+          hashed: false,
+        },
+        verification: {
+          type: 'hosted',
+        },
+        issuedOn: new Date().toISOString() as any,
       }
 
       // Mock the OpenBadges service

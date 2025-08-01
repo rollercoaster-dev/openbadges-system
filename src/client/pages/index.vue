@@ -139,7 +139,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import type { OB2 } from 'openbadges-types'
+import type { OB2, Shared } from 'openbadges-types'
 import { BadgeDisplay } from 'openbadges-ui'
 
 const loading = ref(true)
@@ -152,20 +152,20 @@ const badgeError = ref<string | null>(null)
 // Fallback mock badge for when no real badges are available
 const mockBadge: OB2.BadgeClass = {
   type: 'BadgeClass',
-  id: 'urn:uuid:demobadge123-monolith-master' as OB2.IRI,
+  id: 'urn:uuid:demobadge123-monolith-master' as Shared.IRI,
   name: 'Monolith Master Badge',
   description:
     'This badge is awarded for successfully setting up the demonstration monolith application and displaying this badge.',
-  image: 'https://via.placeholder.com/150/007bff/ffffff?Text=Monolith%20Badge' as OB2.IRI,
+  image: 'https://via.placeholder.com/150/007bff/ffffff?Text=Monolith%20Badge' as Shared.IRI,
   criteria: {
     narrative:
       'Successfully integrate Bun, Hono, Vue, Vite, and display a badge from openbadges-ui using mock data.',
   },
   issuer: {
     type: 'Profile',
-    id: 'urn:uuid:issuer-demo-project' as OB2.IRI,
+    id: 'urn:uuid:issuer-demo-project' as Shared.IRI,
     name: 'OpenBadges Demo Project Issuer',
-    url: 'https://example.com/issuer/demoproject',
+    url: 'https://example.com/issuer/demoproject' as Shared.IRI,
   },
 }
 
