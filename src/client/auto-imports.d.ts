@@ -208,6 +208,7 @@ declare global {
   const useNavigatorLanguage: (typeof import('@vueuse/core'))['useNavigatorLanguage']
   const useNetwork: (typeof import('@vueuse/core'))['useNetwork']
   const useNow: (typeof import('@vueuse/core'))['useNow']
+  const useOAuth: (typeof import('./composables/useOAuth'))['useOAuth']
   const useObjectUrl: (typeof import('@vueuse/core'))['useObjectUrl']
   const useOffsetPagination: (typeof import('@vueuse/core'))['useOffsetPagination']
   const useOnline: (typeof import('@vueuse/core'))['useOnline']
@@ -343,6 +344,14 @@ declare global {
   // @ts-ignore
   export type { NavigationItem } from './composables/useNavigation'
   import('./composables/useNavigation')
+  // @ts-ignore
+  export type {
+    OAuthProvider,
+    OAuthSession,
+    OAuthUser,
+    OAuthCallback,
+  } from './composables/useOAuth'
+  import('./composables/useOAuth')
   // @ts-ignore
   export type {
     UserSearchFilters,
@@ -587,6 +596,7 @@ declare module 'vue' {
     >
     readonly useNetwork: UnwrapRef<(typeof import('@vueuse/core'))['useNetwork']>
     readonly useNow: UnwrapRef<(typeof import('@vueuse/core'))['useNow']>
+    readonly useOAuth: UnwrapRef<(typeof import('./composables/useOAuth'))['useOAuth']>
     readonly useObjectUrl: UnwrapRef<(typeof import('@vueuse/core'))['useObjectUrl']>
     readonly useOffsetPagination: UnwrapRef<(typeof import('@vueuse/core'))['useOffsetPagination']>
     readonly useOnline: UnwrapRef<(typeof import('@vueuse/core'))['useOnline']>

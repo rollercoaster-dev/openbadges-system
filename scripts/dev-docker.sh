@@ -33,12 +33,12 @@ else
     exit 1
 fi
 
-# Load Docker environment variables
-if [ -f .env.docker ]; then
-    echo "📁 Loading Docker environment variables..."
-    export $(cat .env.docker | grep -v '^#' | xargs)
+# Load environment variables
+if [ -f .env ]; then
+    echo "📁 Loading environment variables..."
+    export $(cat .env | grep -v '^#' | xargs)
 else
-    echo "❌ No .env.docker file found"
+    echo "❌ No .env file found"
     exit 1
 fi
 
