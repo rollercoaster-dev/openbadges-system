@@ -57,7 +57,7 @@ TEST_PRIVATE_KEY_CONTENT
     it('should have correct platform and client configuration', () => {
       // Mock the JWT sign function to return a token
       const mockToken = 'mock-api-client-token'
-      mockJwt.sign.mockReturnValueOnce(mockToken)
+      mockJwt.sign.mockReturnValueOnce(mockToken as never)
 
       // Test that the service has the correct configuration
       const apiClient = jwtService.createOpenBadgesApiClient({

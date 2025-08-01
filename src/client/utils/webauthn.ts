@@ -242,7 +242,7 @@ export class WebAuthnUtils {
       }
 
       // Handle specific WebAuthn errors
-      switch (error.name) {
+      switch ((error as Error).name) {
         case 'NotAllowedError':
           throw new WebAuthnError(
             'Registration cancelled',
@@ -337,7 +337,7 @@ export class WebAuthnUtils {
       }
 
       // Handle specific WebAuthn errors
-      switch (error.name) {
+      switch ((error as Error).name) {
         case 'NotAllowedError':
           throw new WebAuthnError(
             'Authentication cancelled',

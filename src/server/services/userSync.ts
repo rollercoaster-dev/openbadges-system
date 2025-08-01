@@ -221,7 +221,7 @@ export class UserSyncService {
       console.error('Error syncing user:', error)
       return {
         success: false,
-        error: `User sync failed: ${error.message}`,
+        error: `User sync failed: ${(error as Error).message}`,
       }
     }
   }

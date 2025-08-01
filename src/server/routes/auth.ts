@@ -37,7 +37,7 @@ authRoutes.post('/oauth-token', async c => {
     }
 
     // Get user's OAuth providers
-    const oauthProviders = await userService.getOAuthProvidersByUser(userId)
+    const oauthProviders = await userService?.getOAuthProvidersByUser(userId)
 
     if (!oauthProviders || oauthProviders.length === 0) {
       return c.json({ error: 'No OAuth providers found for user' }, 404)
@@ -45,6 +45,9 @@ authRoutes.post('/oauth-token', async c => {
 
     // For now, use the first available provider (typically GitHub)
     const provider = oauthProviders[0]
+    if (!provider) {
+      return c.json({ error: 'No OAuth provider available' }, 404)
+    }
 
     // Check if token is still valid (not expired)
     if (provider.token_expires_at && new Date(provider.token_expires_at) <= new Date()) {
@@ -73,7 +76,7 @@ authRoutes.post('/oauth-token/refresh', async c => {
     }
 
     // Get user's OAuth providers
-    const oauthProviders = await userService.getOAuthProvidersByUser(userId)
+    const oauthProviders = await userService?.getOAuthProvidersByUser(userId)
 
     if (!oauthProviders || oauthProviders.length === 0) {
       return c.json({ error: 'No OAuth providers found for user' }, 404)
@@ -81,6 +84,9 @@ authRoutes.post('/oauth-token/refresh', async c => {
 
     // For now, use the first available provider (typically GitHub)
     const provider = oauthProviders[0]
+    if (!provider) {
+      return c.json({ error: 'No OAuth provider available' }, 404)
+    }
 
     if (!provider.refresh_token) {
       return c.json({ error: 'No refresh token available' }, 400)
@@ -111,7 +117,7 @@ authRoutes.post('/sync-user', async c => {
     }
 
     // Get user from local database
-    const user = await userService.getUserById(userId)
+    const user = await userService?.getUserById(userId)
     if (!user) {
       return c.json({ error: 'User not found' }, 404)
     }

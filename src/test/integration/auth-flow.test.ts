@@ -64,9 +64,26 @@ vi.mock('@/services/openbadges', () => ({
   },
 }))
 
+interface TestUser {
+  id: string
+  username: string
+  email: string
+  firstName: string
+  lastName: string
+  credentials?: Array<{
+    id: string
+    publicKey: string
+    transports: string[]
+    name: string
+    type: string
+  }>
+  roles?: string[]
+  [key: string]: unknown
+}
+
 describe('Authentication Flow Integration Tests', () => {
   let mockFetch: ReturnType<typeof vi.fn>
-  let registeredUsers: unknown[] = []
+  let registeredUsers: TestUser[] = []
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -93,7 +110,7 @@ describe('Authentication Flow Integration Tests', () => {
 
           // Check against registered users first
           const foundUser = registeredUsers.find(
-            user => user.username === username || user.email === email
+            (user: TestUser) => user.username === username || user.email === email
           )
 
           if (foundUser) {
@@ -147,7 +164,7 @@ describe('Authentication Flow Integration Tests', () => {
           }
 
           // Add credential to the user
-          const user = registeredUsers.find(u => u.id === userId)
+          const user = registeredUsers.find((u: TestUser) => u.id === userId)
           if (user) {
             user.credentials = user.credentials || []
             user.credentials.push(credential)
@@ -200,7 +217,7 @@ describe('Authentication Flow Integration Tests', () => {
           const userId = urlParts[userIdIndex]
 
           // Find the user and update their profile
-          const user = registeredUsers.find(u => u.id === userId)
+          const user = registeredUsers.find((u: TestUser) => u.id === userId)
           if (user) {
             // Update user with new data
             Object.assign(user, body)

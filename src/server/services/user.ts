@@ -70,6 +70,31 @@ export interface OAuthProvider {
   updated_at: string
 }
 
+interface UserRow {
+  id: string
+  username: string
+  email: string
+  firstName: string
+  lastName: string
+  avatar?: string
+  isActive: number
+  roles: string
+  createdAt: string
+  updatedAt: string
+}
+
+interface UserCredentialRow {
+  id: string
+  userId: string
+  publicKey: string
+  transports: string
+  counter: number
+  createdAt: string
+  lastUsed: string
+  name: string
+  type: string
+}
+
 export interface OAuthSession {
   id: string
   state: string
@@ -207,17 +232,18 @@ export class UserService {
   }
 
   private parseUser(row: unknown): User {
+    const userRow = row as UserRow
     return {
-      id: row.id,
-      username: row.username,
-      email: row.email,
-      firstName: row.firstName,
-      lastName: row.lastName,
-      avatar: row.avatar,
-      isActive: Boolean(row.isActive),
-      roles: JSON.parse(row.roles),
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
+      id: userRow.id,
+      username: userRow.username,
+      email: userRow.email,
+      firstName: userRow.firstName,
+      lastName: userRow.lastName,
+      avatar: userRow.avatar,
+      isActive: Boolean(userRow.isActive),
+      roles: JSON.parse(userRow.roles),
+      createdAt: userRow.createdAt,
+      updatedAt: userRow.updatedAt,
     }
   }
 
@@ -303,7 +329,7 @@ export class UserService {
 
     // Get total count
     const totalResult = this.getQuery(`SELECT COUNT(*) as count FROM users ${whereClause}`, params)
-    const total = totalResult.count
+    const total = (totalResult as { count: number }).count
 
     // Add sorting
     const sortBy = filters?.sortBy || 'createdAt'
@@ -406,17 +432,20 @@ export class UserService {
 
   async getUserCredentials(userId: string): Promise<UserCredential[]> {
     const rows = this.allQuery('SELECT * FROM user_credentials WHERE userId = ?', [userId])
-    return rows.map(row => ({
-      id: row.id,
-      userId: row.userId,
-      publicKey: row.publicKey,
-      transports: JSON.parse(row.transports),
-      counter: row.counter,
-      createdAt: row.createdAt,
-      lastUsed: row.lastUsed,
-      name: row.name,
-      type: row.type,
-    }))
+    return rows.map(row => {
+      const credRow = row as UserCredentialRow
+      return {
+        id: credRow.id,
+        userId: credRow.userId,
+        publicKey: credRow.publicKey,
+        transports: JSON.parse(credRow.transports),
+        counter: credRow.counter,
+        createdAt: credRow.createdAt,
+        lastUsed: credRow.lastUsed,
+        name: credRow.name,
+        type: credRow.type as 'platform' | 'cross-platform',
+      }
+    })
   }
 
   async removeUserCredential(userId: string, credentialId: string): Promise<boolean> {
@@ -593,7 +622,10 @@ try {
   userService = new UserService()
   console.log('User service initialized successfully')
 } catch (error) {
-  console.warn('User service disabled due to database initialization error:', error.message)
+  console.warn(
+    'User service disabled due to database initialization error:',
+    (error as Error).message
+  )
   userService = null
 }
 

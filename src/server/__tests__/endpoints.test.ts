@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { ExecutionContext } from 'hono'
 
 // Mock the JWT service
 vi.mock('../services/jwt', () => ({
@@ -31,7 +32,13 @@ vi.mock('sqlite3', () => ({
 }))
 
 describe.skip('Server Endpoints', () => {
-  let app: Record<string, unknown>
+  let app: {
+    fetch: (
+      request: Request,
+      env?: unknown,
+      executionCtx?: ExecutionContext | undefined
+    ) => Response | Promise<Response>
+  }
   let mockFetch: ReturnType<typeof vi.fn>
 
   beforeEach(async () => {
