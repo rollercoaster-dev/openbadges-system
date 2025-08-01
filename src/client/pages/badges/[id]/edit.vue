@@ -45,10 +45,7 @@
               <button
                 class="mt-2 mr-2 text-sm text-blue-600 hover:text-blue-800"
                 aria-label="Reset to original image"
-                @click="
-                  badgeData.image = getImageSrc(originalBadge?.image) || ''
-                  isFormDirty = true
-                "
+                @click="resetImage"
               >
                 Reset to original
               </button>
@@ -152,9 +149,7 @@
                   placeholder="Describe what someone needs to do to earn this badge..."
                   aria-describedby="criteria-help criteria-error"
                   required
-                  @input="
-                    handleFieldUpdate('criteria', ($event.target as HTMLTextAreaElement).value)
-                  "
+                  @input="handleCriteriaInput"
                   @blur="handleFieldBlur('criteria')"
                 ></textarea>
                 <p
@@ -187,9 +182,7 @@
                   "
                   placeholder="https://example.com/badge-criteria"
                   aria-describedby="criteria-url-help criteria-url-error"
-                  @input="
-                    handleFieldUpdate('criteriaUrl', ($event.target as HTMLInputElement).value)
-                  "
+                  @input="handleCriteriaUrlInput"
                   @blur="handleFieldBlur('criteriaUrl')"
                 />
                 <p
@@ -222,10 +215,7 @@
                         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                         placeholder="Standard or skill name"
                         :aria-label="`Alignment ${index + 1} name`"
-                        @input="
-                          isFormDirty = true
-                          clearMessages()
-                        "
+                        @input="handleAlignmentInput"
                       />
                     </div>
                     <div class="flex-1">
@@ -235,10 +225,7 @@
                         class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                         placeholder="https://example.com/standard"
                         :aria-label="`Alignment ${index + 1} URL`"
-                        @input="
-                          isFormDirty = true
-                          clearMessages()
-                        "
+                        @input="handleAlignmentInput"
                       />
                     </div>
                     <button
@@ -751,5 +738,27 @@ function getImageSrc(image: string | OB2.Image | undefined): string | undefined 
   if (!image) return undefined
   if (typeof image === 'string') return image
   return image.id || undefined
+}
+
+// Reset image to original
+function resetImage() {
+  badgeData.value.image = getImageSrc(originalBadge.value?.image) || ''
+  isFormDirty.value = true
+}
+
+// Handle alignment input changes
+function handleAlignmentInput() {
+  isFormDirty.value = true
+  clearMessages()
+}
+
+// Handle criteria textarea input
+function handleCriteriaInput(event: any) {
+  handleFieldUpdate('criteria', event.target.value)
+}
+
+// Handle criteria URL input
+function handleCriteriaUrlInput(event: any) {
+  handleFieldUpdate('criteriaUrl', event.target.value)
 }
 </script>
