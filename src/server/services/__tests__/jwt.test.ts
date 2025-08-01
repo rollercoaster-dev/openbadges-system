@@ -58,7 +58,7 @@ TEST_PRIVATE_KEY_CONTENT
       // Mock the JWT sign function to return a token
       const mockToken = 'mock-api-client-token'
       mockJwt.sign.mockReturnValueOnce(mockToken)
-      
+
       // Test that the service has the correct configuration
       const apiClient = jwtService.createOpenBadgesApiClient({
         id: 'test-id',
@@ -68,7 +68,7 @@ TEST_PRIVATE_KEY_CONTENT
         lastName: 'User',
         isAdmin: false,
       })
-      
+
       expect(apiClient.headers['Content-Type']).toBe('application/json')
       expect(apiClient.headers.Authorization).toBe(`Bearer ${mockToken}`)
       expect(apiClient.token).toBe(mockToken)

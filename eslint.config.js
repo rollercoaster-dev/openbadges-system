@@ -3,6 +3,7 @@ import vue from 'eslint-plugin-vue'
 import ts from '@typescript-eslint/eslint-plugin'
 import tsParser from '@typescript-eslint/parser'
 import vueParser from 'vue-eslint-parser'
+import prettierConfig from 'eslint-config-prettier'
 
 export default [
   // Base JavaScript rules
@@ -10,6 +11,9 @@ export default [
 
   // Vue recommended rules
   ...vue.configs['flat/recommended'],
+
+  // Prettier config to disable conflicting rules
+  prettierConfig,
 
   // Global configuration for browser environment
   {
@@ -162,31 +166,7 @@ export default [
       'vue/no-v-html': 'warn',
       'vue/component-definition-name-casing': ['error', 'PascalCase'],
       'vue/component-name-in-template-casing': ['error', 'PascalCase'],
-      'vue/max-attributes-per-line': [
-        'error',
-        {
-          singleline: { max: 3 },
-          multiline: { max: 1 },
-        },
-      ],
-      // Relax some Vue formatting rules for better development experience
-      'vue/html-indent': ['warn', 2],
-      'vue/singleline-html-element-content-newline': 'warn',
-      'vue/html-self-closing': [
-        'warn',
-        {
-          html: {
-            void: 'always',
-            normal: 'never',
-            component: 'always',
-          },
-          svg: 'always',
-          math: 'always',
-        },
-      ],
       'vue/attributes-order': 'warn',
-      'vue/html-closing-bracket-newline': 'warn',
-      'vue/first-attribute-linebreak': 'warn',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       'no-unused-vars': 'off',
       // Enforce block order: template, script, style
@@ -215,4 +195,7 @@ export default [
       'commitlint.config.js',
     ],
   },
+
+  // Prettier config at the end to override any conflicting rules
+  prettierConfig,
 ]
