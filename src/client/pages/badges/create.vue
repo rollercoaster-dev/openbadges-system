@@ -377,8 +377,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import BadgeIssuerForm from 'openbadges-ui'
-import BadgeDisplay from 'openbadges-ui'
+import { BadgeIssuerForm, BadgeDisplay } from 'openbadges-ui'
 import type { OB2 } from 'openbadges-types'
 import { useAuth } from '@/composables/useAuth'
 import { useBadges, type CreateBadgeData } from '@/composables/useBadges'
