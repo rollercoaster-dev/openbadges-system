@@ -34,22 +34,34 @@ export class JWTService {
       process.env.PLATFORM_JWT_PRIVATE_KEY || process.env.PLATFORM_JWT_PRIVATE_KEY_B64
     const envPublic = process.env.PLATFORM_JWT_PUBLIC_KEY || process.env.PLATFORM_JWT_PUBLIC_KEY_B64
 
-    // Prefer environment-provided keys; support base64 variants
-    const decodeMaybeB64 = (val?: string): string | null => {
+    // Prefer environment-provided keys; support strict base64 variants
+    const BASE64_FULL_RE = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/
+    const decodeMaybeB64 = (val?: string, which?: 'private' | 'public'): string | null => {
       if (!val) return null
-      try {
-        // Heuristic: if ends with '=' or lacks PEM header, try base64 decode
-        if (!val.includes('BEGIN') && /[A-Za-z0-9+/=]/.test(val)) {
-          return Buffer.from(val, 'base64').toString('utf8')
+      const trimmed = val.trim()
+      // If it already looks like a PEM, return as-is
+      if (trimmed.includes('-----BEGIN ')) return trimmed
+      // Only attempt decode if the entire string matches base64
+      if (BASE64_FULL_RE.test(trimmed)) {
+        try {
+          const decoded = Buffer.from(trimmed, 'base64').toString('utf8')
+          return decoded
+        } catch (err) {
+          if (process.env.NODE_ENV !== 'test') {
+            console.error(
+              `Failed to base64 decode ${which ?? 'key'}:`,
+              err instanceof Error ? err.message : err
+            )
+          }
+          // Surface the error to avoid masking misconfiguration
+          throw err
         }
-        return val
-      } catch {
-        return val
       }
+      return trimmed
     }
 
-    const privateFromEnv = decodeMaybeB64(envPrivate)
-    const publicFromEnv = decodeMaybeB64(envPublic)
+    const privateFromEnv = decodeMaybeB64(envPrivate, 'private')
+    const publicFromEnv = decodeMaybeB64(envPublic, 'public')
 
     if (privateFromEnv && publicFromEnv) {
       this.privateKey = privateFromEnv
