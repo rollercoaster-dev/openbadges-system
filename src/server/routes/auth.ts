@@ -5,6 +5,28 @@ import { userSyncService } from '../services/userSync'
 
 const authRoutes = new Hono()
 
+// Validate current JWT (Authorization: Bearer <token>)
+authRoutes.get('/validate', async c => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ success: false, error: 'Missing token' }, 401)
+    }
+
+    const token = authHeader.slice('Bearer '.length)
+    const payload = jwtService.verifyToken(token)
+
+    if (!payload) {
+      return c.json({ success: false, error: 'Invalid token' }, 401)
+    }
+
+    return c.json({ success: true, payload })
+  } catch (error) {
+    console.error('Token validation failed:', error)
+    return c.json({ success: false, error: 'Validation error' }, 500)
+  }
+})
+
 // Generate platform token for OpenBadges API
 authRoutes.post('/platform-token', async c => {
   try {

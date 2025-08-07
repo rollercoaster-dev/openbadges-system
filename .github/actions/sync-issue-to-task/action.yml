@@ -1,0 +1,24 @@
+name: 'Sync Issue to Task'
+description: 'Creates or updates internal task based on GitHub issue for OpenBadges system'
+
+inputs:
+  issue-number:
+    description: 'GitHub issue number'
+    required: true
+  issue-title:
+    description: 'Issue title'
+    required: true
+  issue-body:
+    description: 'Issue body'
+    required: true
+  issue-labels:
+    description: 'Comma-separated list of issue labels'
+    required: false
+
+outputs:
+  task-id:
+    description: 'The UUID of the created or updated task'
+
+runs:
+  using: 'node20'
+  main: 'index.js'

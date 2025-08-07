@@ -1,0 +1,24 @@
+name: 'Update Task Status'
+description: 'Updates task status based on GitHub issue/PR events for OpenBadges system'
+
+inputs:
+  issue-number:
+    description: 'GitHub issue number'
+    required: false
+  pr-number:
+    description: 'GitHub PR number'
+    required: false
+  pr-body:
+    description: 'PR body content'
+    required: false
+  status:
+    description: 'New task status (NOT_STARTED, IN_PROGRESS, COMPLETE, CANCELLED)'
+    required: true
+
+outputs:
+  updated-tasks:
+    description: 'List of updated task IDs'
+
+runs:
+  using: 'node20'
+  main: 'index.js'

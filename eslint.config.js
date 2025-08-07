@@ -174,6 +174,71 @@ export default [
     },
   },
 
+  // GitHub Actions Node.js files
+  {
+    files: ['.github/actions/**/*.js'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        Buffer: 'readonly',
+        global: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        exports: 'readonly',
+      },
+      ecmaVersion: 2021,
+      sourceType: 'script',
+    },
+    rules: {
+      'no-console': 'off',
+      'no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
+    },
+  },
+
+  // Node/CommonJS scripts (cjs/js) in scripts directory
+  {
+    files: ['scripts/**/*.{js,cjs,mjs}'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        Buffer: 'readonly',
+        global: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        exports: 'readonly',
+      },
+      ecmaVersion: 2021,
+      sourceType: 'script',
+    },
+    rules: {
+      'no-console': 'off',
+      // Allow unused vars if prefixed with _; warn otherwise
+      'no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
+      // Allow lexical declarations in case blocks for Node scripts
+      'no-case-declarations': 'off',
+      // Some scripts run in Node contexts where globals are provided
+      'no-undef': 'off',
+    },
+  },
+
   // Global ignores
   {
     ignores: [

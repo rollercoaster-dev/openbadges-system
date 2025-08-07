@@ -226,10 +226,29 @@ export const useAuth = () => {
       // Update user with credential
       newUser.credentials = [credential]
 
-      // Set authentication state
+      // Request real platform token from backend for this user
+      try {
+        const platformRes = await fetch('/api/auth/platform-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user: newUser }),
+        })
+        if (platformRes && 'ok' in platformRes && platformRes.ok) {
+          const platformData = await platformRes.json()
+          token.value = platformData.token
+        } else {
+          // Fallback: create a temporary session token
+          token.value = `local-session-${Date.now()}`
+        }
+      } catch {
+        token.value = `local-session-${Date.now()}`
+      }
+
+      // Persist session regardless of token source
       user.value = newUser
-      token.value = 'backend-jwt-token-' + Date.now() // TODO: Get real JWT from backend
-      localStorage.setItem('auth_token', token.value)
+      if (token.value !== null) {
+        localStorage.setItem('auth_token', token.value)
+      }
       localStorage.setItem('user_data', JSON.stringify(newUser))
 
       return true
@@ -287,10 +306,28 @@ export const useAuth = () => {
         body: JSON.stringify({ lastUsed: new Date().toISOString() }),
       })
 
-      // Set authentication state
+      // Exchange for real platform token
+      try {
+        const platformRes = await fetch('/api/auth/platform-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user: foundUser }),
+        })
+        if (platformRes && 'ok' in platformRes && platformRes.ok) {
+          const platformData = await platformRes.json()
+          token.value = platformData.token
+        } else {
+          token.value = `local-session-${Date.now()}`
+        }
+      } catch (e) {
+        console.error('Token exchange failed:', e)
+        token.value = `local-session-${Date.now()}`
+      }
+
       user.value = foundUser
-      token.value = 'backend-jwt-token-' + Date.now() // TODO: Get real JWT from backend
-      localStorage.setItem('auth_token', token.value)
+      if (token.value !== null) {
+        localStorage.setItem('auth_token', token.value)
+      }
       localStorage.setItem('user_data', JSON.stringify(foundUser))
 
       return true
@@ -333,15 +370,26 @@ export const useAuth = () => {
 
     if (storedToken && storedUser) {
       try {
+        const parsedUser = JSON.parse(storedUser)
         token.value = storedToken
-        user.value = JSON.parse(storedUser)
-
-        // TODO: Validate token with backend
-        // For now, we trust localStorage
+        user.value = parsedUser
+        // Best-effort validation; only clear on explicit unauthorized
+        try {
+          const res = await fetch('/api/auth/validate', {
+            headers: { Authorization: `Bearer ${storedToken}` },
+          })
+          if (res.status === 401 || res.status === 403) {
+            throw new Error('Unauthorized')
+          }
+        } catch {
+          // Keep local session on network/other errors; do not clear here
+        }
       } catch {
-        // Clear invalid data
+        // Clear invalid JSON storage
         localStorage.removeItem('auth_token')
         localStorage.removeItem('user_data')
+        token.value = null
+        user.value = null
       }
     }
 
