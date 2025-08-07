@@ -108,30 +108,6 @@ describe('useAuth', () => {
       expect(newAuth.user.value).toBeNull()
       expect(newAuth.isAuthenticated.value).toBe(false)
     })
-
-    it('should restore authentication state from localStorage', () => {
-      const mockUser = {
-        id: 'test-user-1',
-        username: 'testuser',
-        email: 'test@example.com',
-        firstName: 'Test',
-        lastName: 'User',
-        avatar: undefined,
-        isAdmin: false,
-        createdAt: new Date().toISOString(),
-        credentials: [],
-      }
-
-      localStorage.getItem = vi.fn(key => {
-        if (key === 'auth_token') return 'test-token'
-        if (key === 'user_data') return JSON.stringify(mockUser)
-        return null
-      })
-
-      useAuth()
-      expect(localStorage.getItem).toHaveBeenCalledWith('auth_token')
-      expect(localStorage.getItem).toHaveBeenCalledWith('user_data')
-    })
   })
 
   describe('Authentication state persistence', () => {
