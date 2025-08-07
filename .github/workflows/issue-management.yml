@@ -13,42 +13,54 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Sync Issue to Task
-        uses: ./.github/actions/sync-issue-to-task
-        with:
-          issue-number: ${{ github.event.issue.number }}
-          issue-title: ${{ github.event.issue.title }}
-          issue-body: ${{ github.event.issue.body }}
-          issue-labels: ${{ join(github.event.issue.labels.*.name, ',') }}
-          
+        run: |
+          npm ci --no-audit --no-fund
+          node index.js
+        working-directory: ./.github/actions/sync-issue-to-task
+        env:
+          INPUT_ISSUE-NUMBER: ${{ github.event.issue.number }}
+          INPUT_ISSUE-TITLE: ${{ github.event.issue.title }}
+          INPUT_ISSUE-BODY: ${{ github.event.issue.body }}
+          INPUT_ISSUE-LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   update-task-status:
     runs-on: ubuntu-latest
     if: github.event.action == 'closed' && github.event.issue
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Update Task Status to Complete
-        uses: ./.github/actions/update-task-status
-        with:
-          issue-number: ${{ github.event.issue.number }}
-          status: 'COMPLETE'
-          
+        run: |
+          npm ci --no-audit --no-fund
+          node index.js
+        working-directory: ./.github/actions/update-task-status
+        env:
+          INPUT_ISSUE-NUMBER: ${{ github.event.issue.number }}
+          INPUT_STATUS: COMPLETE
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   handle-pr-events:
     runs-on: ubuntu-latest
     if: github.event.pull_request
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Update Task Status for PR
-        uses: ./.github/actions/update-task-status
-        with:
-          pr-number: ${{ github.event.pull_request.number }}
-          pr-body: ${{ github.event.pull_request.body }}
-          status: ${{ github.event.action == 'opened' && 'IN_PROGRESS' || github.event.action == 'merged' && 'COMPLETE' || 'IN_PROGRESS' }}
-          
+        run: |
+          npm ci --no-audit --no-fund
+          node index.js
+        working-directory: ./.github/actions/update-task-status
+        env:
+          INPUT_PR-NUMBER: ${{ github.event.pull_request.number }}
+          INPUT_PR-BODY: ${{ github.event.pull_request.body }}
+          INPUT_STATUS: ${{ github.event.action == 'opened' && 'IN_PROGRESS' || github.event.action == 'merged' && 'COMPLETE' || 'IN_PROGRESS' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   auto-label:
     runs-on: ubuntu-latest
     if: github.event.action == 'opened' && github.event.issue
@@ -59,7 +71,7 @@ jobs:
           script: |
             const issue = context.payload.issue;
             const body = issue.body || '';
-            
+
             // Extract component from issue template
             const componentMatch = body.match(/### Component\s*\n\s*([^\n]+)/);
             if (componentMatch) {
@@ -87,7 +99,7 @@ jobs:
                 });
               }
             }
-            
+
             // Extract priority from issue template
             const priorityMatch = body.match(/### Priority\s*\n\s*([^\n]+)/);
             if (priorityMatch) {
@@ -109,7 +121,7 @@ jobs:
                 });
               }
             }
-            
+
             // Add OpenBadges compliance label if mentioned
             if (body.toLowerCase().includes('openbadges') || body.toLowerCase().includes('compliance')) {
               await github.rest.issues.addLabels({
