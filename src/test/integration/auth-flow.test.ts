@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useAuth } from '@/composables/useAuth'
-import { openBadgesService } from '@/services/openbadges'
+import { openBadgesService, type BadgeAssertion } from '@/services/openbadges'
 
 // Mock WebAuthn utils
 vi.mock('@/utils/webauthn', () => ({
@@ -496,9 +496,9 @@ describe('Authentication Flow Integration Tests', () => {
       const mockBackpack = {
         assertions: [
           {
-            id: 'assertion-1' as any,
+            id: 'assertion-1',
             type: 'Assertion' as const,
-            badge: 'badge-1' as any,
+            badge: 'badge-1',
             recipient: {
               type: 'email',
               identity: 'test@example.com',
@@ -507,8 +507,8 @@ describe('Authentication Flow Integration Tests', () => {
             verification: {
               type: 'hosted',
             },
-            issuedOn: new Date().toISOString() as any,
-          },
+            issuedOn: new Date().toISOString(),
+          } as BadgeAssertion,
         ],
         total: 1,
       }
@@ -669,9 +669,9 @@ describe('Authentication Flow Integration Tests', () => {
   describe('Admin User Scenarios', () => {
     it('should handle admin user badge issuance', async () => {
       const mockIssuedBadge = {
-        id: 'issued-badge-id' as any,
+        id: 'issued-badge-id',
         type: 'Assertion' as const,
-        badge: 'badge-class-1' as any,
+        badge: 'badge-class-1',
         recipient: {
           type: 'email',
           identity: 'recipient@example.com',
@@ -680,8 +680,8 @@ describe('Authentication Flow Integration Tests', () => {
         verification: {
           type: 'hosted',
         },
-        issuedOn: new Date().toISOString() as any,
-      }
+        issuedOn: new Date().toISOString(),
+      } as BadgeAssertion
 
       // Mock the OpenBadges service
       vi.mocked(openBadgesService.issueBadge).mockResolvedValue(mockIssuedBadge)

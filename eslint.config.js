@@ -174,6 +174,36 @@ export default [
     },
   },
 
+  // GitHub Actions Node.js files
+  {
+    files: ['.github/actions/**/*.js'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        Buffer: 'readonly',
+        global: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        exports: 'readonly',
+      },
+      ecmaVersion: 2021,
+      sourceType: 'script',
+    },
+    rules: {
+      'no-console': 'off',
+      'no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
+    },
+  },
+
   // Global ignores
   {
     ignores: [
