@@ -232,6 +232,8 @@ export default [
           varsIgnorePattern: '^_',
         },
       ],
+      // Allow lexical declarations in case blocks for Node scripts
+      'no-case-declarations': 'off',
       // Some scripts run in Node contexts where globals are provided
       'no-undef': 'off',
     },
