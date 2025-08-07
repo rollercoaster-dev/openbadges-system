@@ -1,4 +1,7 @@
 import { nanoid } from 'nanoid'
+import { URLSearchParams } from 'url'
+import { webcrypto } from 'crypto'
+import { TextEncoder } from 'util'
 import { userService, User, OAuthProvider, OAuthSession } from './user'
 import { oauthConfig, validateOAuthConfig } from '../config/oauth'
 
@@ -44,9 +47,9 @@ export class OAuthService {
 
   // Create code challenge from verifier
   async createCodeChallenge(verifier: string): Promise<string> {
-    const encoder = new globalThis.TextEncoder()
+    const encoder = new TextEncoder()
     const data = encoder.encode(verifier)
-    const digest = await globalThis.crypto.subtle.digest('SHA-256', data)
+    const digest = await webcrypto.subtle.digest('SHA-256', data)
     return btoa(String.fromCharCode(...new Uint8Array(digest)))
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
@@ -110,7 +113,7 @@ export class OAuthService {
       throw new Error('GitHub OAuth not configured')
     }
 
-    const params = new globalThis.URLSearchParams({
+    const params = new URLSearchParams({
       client_id: config.clientId,
       redirect_uri: config.redirectUri,
       scope: config.scope.join(' '),
@@ -147,7 +150,7 @@ export class OAuthService {
       throw new Error('GitHub OAuth not configured')
     }
 
-    const params = new globalThis.URLSearchParams({
+    const params = new URLSearchParams({
       client_id: config.clientId,
       client_secret: config.clientSecret,
       code,
