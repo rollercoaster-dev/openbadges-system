@@ -190,6 +190,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useDebounceFn } from '@vueuse/core'
 import { MagnifyingGlassIcon, ChevronDownIcon, ArrowDownTrayIcon } from '@heroicons/vue/24/outline'
 
 interface SearchFilters {
@@ -247,16 +248,15 @@ const hasActiveFilters = computed(() => {
   )
 })
 
-// Watch for changes and emit search
-watch(
-  [searchQuery, filters],
-  () => {
-    if (searchQuery.value.trim() !== '' || hasActiveFilters.value) {
-      emits('search', searchQuery.value, filters.value)
-    }
-  },
-  { deep: true }
-)
+// Debounced search function to prevent excessive API calls
+const debouncedSearch = useDebounceFn(() => {
+  if (searchQuery.value.trim() !== '' || hasActiveFilters.value) {
+    emits('search', searchQuery.value, filters.value)
+  }
+}, 300)
+
+// Watch for changes and trigger debounced search
+watch([searchQuery, filters], debouncedSearch, { deep: true })
 
 function clearFilters() {
   searchQuery.value = ''
