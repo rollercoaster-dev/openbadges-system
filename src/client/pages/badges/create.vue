@@ -378,11 +378,16 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { BadgeIssuerForm, BadgeDisplay } from 'openbadges-ui'
-import type { OB2 } from 'openbadges-types'
+import type { OB2, Shared } from 'openbadges-types'
 import { useAuth } from '@/composables/useAuth'
 import { useBadges, type CreateBadgeData } from '@/composables/useBadges'
 import { useFormValidation } from '@/composables/useFormValidation'
 import { useImageUpload } from '@/composables/useImageUpload'
+
+// Extended criteria type that includes optional id field for OB2 compatibility
+interface CriteriaWithId extends NonNullable<CreateBadgeData['criteria']> {
+  id?: Shared.IRI
+}
 
 const router = useRouter()
 const { user } = useAuth()
@@ -425,22 +430,23 @@ const availableIssuers = ref<OB2.Profile[]>([])
 const criteriaUrl = ref('')
 
 // Create preview badge for display
+// Using Partial<OB2.BadgeClass> since this is preview-only data
 const previewBadge = computed(
-  (): OB2.BadgeClass => ({
-    id: '' as any, // preview only
+  (): Partial<OB2.BadgeClass> => ({
+    id: '' as Shared.IRI, // preview only - empty string for preview
     type: 'BadgeClass',
     name: badgeData.value.name || 'Badge Name',
     description: badgeData.value.description || 'Badge description will appear here',
-    image: (badgeData.value.image || '/placeholder-badge.png') as any, // preview only
+    image: (badgeData.value.image || '/placeholder-badge.png') as Shared.IRI,
     criteria: badgeData.value.criteria || {
       narrative: 'Badge criteria will appear here',
-      ...(criteriaUrl.value ? { id: criteriaUrl.value as any } : {}),
+      ...(criteriaUrl.value ? { id: criteriaUrl.value as Shared.IRI } : {}),
     },
     issuer: badgeData.value.issuer || {
-      id: '' as any, // preview only
+      id: '' as Shared.IRI, // preview only
       type: 'Issuer',
       name: 'Default Issuer',
-      url: window.location.origin as any,
+      url: window.location.origin as Shared.IRI,
       email: user.value?.email || 'admin@example.com',
     },
     tags: badgeData.value.tags || [],
@@ -521,9 +527,8 @@ const handleSubmit = async (formData: CreateBadgeData) => {
     if (criteriaUrl.value) {
       formData.criteria = {
         ...formData.criteria,
-        // @ts-expect-error: id is not in type but needed for OB2
-        id: criteriaUrl.value as any,
-      }
+        id: criteriaUrl.value as Shared.IRI,
+      } as CriteriaWithId
     }
 
     // Create the badge
