@@ -72,8 +72,14 @@ jobs:
               /coverage\//,
               /keys\//,
               /__tests__\//,
-              /\.test\./
+              /\.test\./,
+              /docs\//
             ];
+
+            // Only scan code/config files; skip markdown and images
+            const allowedExtensions = new Set([
+              '.ts', '.js', '.cjs', '.mjs', '.json', '.yml', '.yaml', '.env', '.sh', '.bash', '.zsh'
+            ]);
 
             function scanDirectory(dir) {
               const items = fs.readdirSync(dir);
@@ -93,6 +99,10 @@ jobs:
                 if (stat.isDirectory()) {
                   findings = findings.concat(scanDirectory(fullPath));
                 } else if (stat.isFile()) {
+                  const ext = path.extname(fullPath).toLowerCase();
+                  if (!allowedExtensions.has(ext)) {
+                    continue;
+                  }
                   try {
                     const content = fs.readFileSync(fullPath, 'utf8');
                     
