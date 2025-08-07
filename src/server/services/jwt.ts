@@ -30,24 +30,57 @@ export class JWTService {
   private clientId: string
 
   constructor() {
-    // Load private key from file
-    try {
-      this.privateKey = readFileSync(join(process.cwd(), 'keys', 'platform-private.pem'), 'utf8')
-    } catch (error) {
-      console.error('Failed to load private key:', error)
-      throw new Error('Private key not found. Please run the setup script to generate keys.')
+    const envPrivate =
+      process.env.PLATFORM_JWT_PRIVATE_KEY || process.env.PLATFORM_JWT_PRIVATE_KEY_B64
+    const envPublic = process.env.PLATFORM_JWT_PUBLIC_KEY || process.env.PLATFORM_JWT_PUBLIC_KEY_B64
+
+    // Prefer environment-provided keys; support base64 variants
+    const decodeMaybeB64 = (val?: string): string | null => {
+      if (!val) return null
+      try {
+        // Heuristic: if ends with '=' or lacks PEM header, try base64 decode
+        if (!val.includes('BEGIN') && /[A-Za-z0-9+/=]/.test(val)) {
+          return Buffer.from(val, 'base64').toString('utf8')
+        }
+        return val
+      } catch {
+        return val
+      }
     }
 
-    // Load public key from file
-    try {
-      this.publicKey = readFileSync(join(process.cwd(), 'keys', 'platform-public.pem'), 'utf8')
-    } catch (error) {
-      console.error('Failed to load public key:', error)
-      throw new Error('Public key not found. Please run the setup script to generate keys.')
+    const privateFromEnv = decodeMaybeB64(envPrivate)
+    const publicFromEnv = decodeMaybeB64(envPublic)
+
+    if (privateFromEnv && publicFromEnv) {
+      this.privateKey = privateFromEnv
+      this.publicKey = publicFromEnv
+    } else {
+      // Fallback to filesystem for local/dev only
+      try {
+        this.privateKey = readFileSync(join(process.cwd(), 'keys', 'platform-private.pem'), 'utf8')
+      } catch {
+        if (process.env.NODE_ENV !== 'test') {
+          console.error('Private key unavailable (env/fs).')
+        }
+        throw new Error(
+          'Private key not configured. Set PLATFORM_JWT_PRIVATE_KEY or provide keys/platform-private.pem'
+        )
+      }
+
+      try {
+        this.publicKey = readFileSync(join(process.cwd(), 'keys', 'platform-public.pem'), 'utf8')
+      } catch {
+        if (process.env.NODE_ENV !== 'test') {
+          console.error('Public key unavailable (env/fs).')
+        }
+        throw new Error(
+          'Public key not configured. Set PLATFORM_JWT_PUBLIC_KEY or provide keys/platform-public.pem'
+        )
+      }
     }
 
-    this.platformId = 'urn:uuid:a504d862-bd64-4e0d-acff-db7955955bc1'
-    this.clientId = 'openbadges-demo-main-app'
+    this.platformId = process.env.PLATFORM_ID || 'urn:uuid:a504d862-bd64-4e0d-acff-db7955955bc1'
+    this.clientId = process.env.PLATFORM_CLIENT_ID || 'openbadges-demo-main-app'
   }
 
   /**
