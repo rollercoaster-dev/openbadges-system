@@ -36,11 +36,29 @@ K+oOgCQFy3GaJvLzYSCvNzObRKXrpKgEUPClFcmHgqhE6jEOQwQhfvfJJuZAJJ7L
 TEST_PRIVATE_KEY_CONTENT
 -----END PRIVATE KEY-----`
 
+  const mockPublicKey = `-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxwye1Uf9OLXyHBHNGcHV
+gtt5AKuMzC9DN9zP9mK7UiYWemcRUpAbcdo1bFJnqkfbCQ3l5ELV8tH+KTAXQlz3
+I+WEq67HXWtfiJdLzLgysYDbAfOjN1EHSs3Ri3xRIq4MY0e5BCb9dGDrRA6W6Xnc
+T67xuyJPTJSUwHeK9D8OPXI3HTExOhP/IDAGygJyX3QqeZNAhpUKNqNaOqvua+nS
+QyKPI00pQfjTXLogOo16YTqGkhskxjxgCatC8vuvQGs8XzpcUa7RN9n/mQtRiolko
+mXbF3VCKxfVlBCzJZ2q1wiSekuFBtKIQU4BXBQlLjyE4hlUHkvh3+WfIqakHxQAe
+QIDAQAB
+-----END PUBLIC KEY-----`
+
   beforeEach(() => {
     vi.clearAllMocks()
 
-    // Set up the readFileSync mock before creating any service instances
-    vi.mocked(readFileSync).mockReturnValue(mockPrivateKey)
+    // Set up the readFileSync mock to return different keys based on filename
+    vi.mocked(readFileSync).mockImplementation(path => {
+      const pathStr = path.toString()
+      if (pathStr.includes('private')) {
+        return mockPrivateKey
+      } else if (pathStr.includes('public')) {
+        return mockPublicKey
+      }
+      return mockPrivateKey // fallback
+    })
 
     // Create service instance after mocks are set up
     jwtService = new JWTService()
@@ -142,7 +160,7 @@ TEST_PRIVATE_KEY_CONTENT
   })
 
   describe('verifyToken', () => {
-    it('should verify valid JWT token', () => {
+    it('should verify valid JWT token using public key', () => {
       const mockToken = 'valid-jwt-token'
       const mockPayload = {
         sub: 'test-user-id',
@@ -161,7 +179,14 @@ TEST_PRIVATE_KEY_CONTENT
       const result = jwtService.verifyToken(mockToken)
 
       expect(result).toEqual(mockPayload)
-      expect(mockJwt.verify).toHaveBeenCalledWith(mockToken, expect.any(String))
+      expect(mockJwt.verify).toHaveBeenCalledWith(
+        mockToken,
+        expect.stringContaining('-----BEGIN PUBLIC KEY-----'),
+        {
+          algorithms: ['RS256'],
+          issuer: 'openbadges-demo-main-app',
+        }
+      )
     })
 
     it('should return null for invalid JWT token', () => {
