@@ -7,13 +7,13 @@
         <h2 class="text-lg font-semibold mb-4">Basic Information</h2>
         <p class="text-gray-500">Edit name, description, URL, email, logo</p>
       </div>
-      
+
       <!-- Contact info edit placeholder -->
       <div class="border-2 border-dashed border-gray-300 rounded-lg p-8">
         <h2 class="text-lg font-semibold mb-4">Contact Information</h2>
         <p class="text-gray-500">Edit address, phone, social media links</p>
       </div>
-      
+
       <!-- Verification edit placeholder -->
       <div class="border-2 border-dashed border-gray-300 rounded-lg p-8">
         <h2 class="text-lg font-semibold mb-4">Verification Settings</h2>
@@ -24,6 +24,6 @@
 </template>
 
 <script setup lang="ts">
-const route = useRoute()
 // Issuer editing logic will go here
+// const route = useRoute() - will be added when implementing editing
 </script>

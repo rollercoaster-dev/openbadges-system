@@ -1,11 +1,11 @@
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 export interface NavigationItem {
   id: string
   label: string
   to?: string
-  icon?: any
+  icon?: unknown
   children?: NavigationItem[]
   requiresAuth?: boolean
   requiresAdmin?: boolean
@@ -25,7 +25,7 @@ export const useNavigation = () => {
     isAdmin: false,
     name: 'John Doe',
     email: 'john@example.com',
-    avatar: null
+    avatar: null,
   })
 
   // Toggle mobile menu
@@ -94,12 +94,12 @@ export const useNavigation = () => {
       if (!canAccessRoute(item)) {
         return false
       }
-      
+
       if (item.children) {
         item.children = filterNavigationItems(item.children)
         return item.children.length > 0
       }
-      
+
       return true
     })
   }
@@ -117,22 +117,21 @@ export const useNavigation = () => {
   const generateBreadcrumbs = () => {
     const pathSegments = route.path.split('/').filter(Boolean)
     const breadcrumbs = []
-    
+
     let currentPath = ''
     for (const segment of pathSegments) {
       currentPath += `/${segment}`
-      
+
       // Generate label from segment
-      const label = segment.replace(/[-_]/g, ' ')
-        .replace(/\b\w/g, char => char.toUpperCase())
-      
+      const label = segment.replace(/[-_]/g, ' ').replace(/\b\w/g, char => char.toUpperCase())
+
       breadcrumbs.push({
         label,
         to: currentPath,
-        active: currentPath === route.path
+        active: currentPath === route.path,
       })
     }
-    
+
     return breadcrumbs
   }
 
@@ -142,14 +141,14 @@ export const useNavigation = () => {
     isMobileMenuOpen,
     activeDropdowns,
     user,
-    
+
     // Methods
     toggleMobileMenu,
     closeMobileMenu,
     toggleDropdown,
     closeDropdown,
     closeAllDropdowns,
-    
+
     // Helpers
     isActiveRoute,
     isDropdownActive,
@@ -157,6 +156,6 @@ export const useNavigation = () => {
     canAccessRoute,
     filterNavigationItems,
     getPageTitle,
-    generateBreadcrumbs
+    generateBreadcrumbs,
   }
 }

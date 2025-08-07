@@ -60,8 +60,8 @@ export class WebAuthnUtils {
     return !!(
       window.PublicKeyCredential &&
       window.navigator.credentials &&
-      window.navigator.credentials.create &&
-      window.navigator.credentials.get
+      typeof window.navigator.credentials.create === 'function' &&
+      typeof window.navigator.credentials.get === 'function'
     )
   }
 
@@ -70,7 +70,7 @@ export class WebAuthnUtils {
    */
   static async isPlatformAuthenticatorAvailable(): Promise<boolean> {
     if (!this.isSupported()) return false
-    
+
     try {
       return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
     } catch {
@@ -84,7 +84,7 @@ export class WebAuthnUtils {
   static generateChallenge(): ArrayBuffer {
     const challenge = new Uint8Array(32)
     crypto.getRandomValues(challenge)
-    return challenge
+    return challenge.buffer
   }
 
   /**
@@ -94,12 +94,9 @@ export class WebAuthnUtils {
     const bytes = new Uint8Array(buffer)
     let binary = ''
     for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i])
+      binary += String.fromCharCode(bytes[i]!)
     }
-    return btoa(binary)
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '')
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
   }
 
   /**
@@ -110,7 +107,7 @@ export class WebAuthnUtils {
       .replace(/-/g, '+')
       .replace(/_/g, '/')
       .padEnd(base64url.length + ((4 - (base64url.length % 4)) % 4), '=')
-    
+
     const binary = atob(base64)
     const bytes = new Uint8Array(binary.length)
     for (let i = 0; i < binary.length; i++) {
@@ -134,32 +131,32 @@ export class WebAuthnUtils {
     return {
       challenge: this.arrayBufferToBase64Url(challenge),
       user: {
-        id: this.arrayBufferToBase64Url(userIdBuffer),
+        id: this.arrayBufferToBase64Url(userIdBuffer.slice().buffer),
         name: username,
-        displayName: displayName
+        displayName: displayName,
       },
       rp: {
         name: this.RP_NAME,
-        id: this.RP_ID
+        id: this.RP_ID,
       },
       pubKeyCredParams: [
-        { alg: -7, type: 'public-key' },  // ES256
+        { alg: -7, type: 'public-key' }, // ES256
         { alg: -35, type: 'public-key' }, // ES384
         { alg: -36, type: 'public-key' }, // ES512
-        { alg: -257, type: 'public-key' } // RS256
+        { alg: -257, type: 'public-key' }, // RS256
       ],
       timeout: this.TIMEOUT,
       attestation: 'direct',
       excludeCredentials: existingCredentials.map(cred => ({
         id: this.base64UrlToArrayBuffer(cred.id),
         type: 'public-key' as const,
-        transports: cred.transports
+        transports: cred.transports,
       })),
       authenticatorSelection: {
         authenticatorAttachment: 'platform',
         userVerification: 'preferred',
-        requireResidentKey: false
-      }
+        requireResidentKey: false,
+      },
     }
   }
 
@@ -178,9 +175,9 @@ export class WebAuthnUtils {
       allowCredentials: credentials.map(cred => ({
         id: this.base64UrlToArrayBuffer(cred.id),
         type: 'public-key' as const,
-        transports: cred.transports
+        transports: cred.transports,
       })),
-      userVerification: 'preferred'
+      userVerification: 'preferred',
     }
   }
 
@@ -208,18 +205,18 @@ export class WebAuthnUtils {
         user: {
           id: this.base64UrlToArrayBuffer(options.user.id),
           name: options.user.name,
-          displayName: options.user.displayName
+          displayName: options.user.displayName,
         },
         pubKeyCredParams: options.pubKeyCredParams,
         timeout: options.timeout,
         attestation: options.attestation,
         excludeCredentials: options.excludeCredentials,
-        authenticatorSelection: options.authenticatorSelection
+        authenticatorSelection: options.authenticatorSelection,
       }
 
-      const credential = await navigator.credentials.create({
-        publicKey: publicKeyCredentialCreationOptions
-      }) as PublicKeyCredential
+      const credential = (await navigator.credentials.create({
+        publicKey: publicKeyCredentialCreationOptions,
+      })) as PublicKeyCredential
 
       if (!credential) {
         throw new WebAuthnError(
@@ -235,16 +232,17 @@ export class WebAuthnUtils {
       return {
         id: this.arrayBufferToBase64Url(credential.rawId),
         publicKey: this.arrayBufferToBase64Url(response.getPublicKey()!),
-        transports,
-        authenticatorAttachment: credential.authenticatorAttachment
+        transports: transports as AuthenticatorTransport[],
+        authenticatorAttachment:
+          credential.authenticatorAttachment as AuthenticatorAttachment | null,
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof WebAuthnError) {
         throw error
       }
 
       // Handle specific WebAuthn errors
-      switch (error.name) {
+      switch ((error as Error).name) {
         case 'NotAllowedError':
           throw new WebAuthnError(
             'Registration cancelled',
@@ -309,12 +307,12 @@ export class WebAuthnUtils {
         timeout: options.timeout,
         rpId: options.rpId,
         allowCredentials: options.allowCredentials,
-        userVerification: options.userVerification
+        userVerification: options.userVerification,
       }
 
-      const credential = await navigator.credentials.get({
-        publicKey: publicKeyCredentialRequestOptions
-      }) as PublicKeyCredential
+      const credential = (await navigator.credentials.get({
+        publicKey: publicKeyCredentialRequestOptions,
+      })) as PublicKeyCredential
 
       if (!credential) {
         throw new WebAuthnError(
@@ -331,15 +329,15 @@ export class WebAuthnUtils {
         signature: this.arrayBufferToBase64Url(response.signature),
         authenticatorData: this.arrayBufferToBase64Url(response.authenticatorData),
         clientDataJSON: this.arrayBufferToBase64Url(response.clientDataJSON),
-        userHandle: response.userHandle ? this.arrayBufferToBase64Url(response.userHandle) : null
+        userHandle: response.userHandle ? this.arrayBufferToBase64Url(response.userHandle) : null,
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof WebAuthnError) {
         throw error
       }
 
       // Handle specific WebAuthn errors
-      switch (error.name) {
+      switch ((error as Error).name) {
         case 'NotAllowedError':
           throw new WebAuthnError(
             'Authentication cancelled',

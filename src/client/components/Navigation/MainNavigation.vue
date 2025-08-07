@@ -1,17 +1,28 @@
 <template>
-  <nav class="bg-white shadow-sm border-b border-gray-200" role="navigation" aria-label="Main navigation">
+  <nav
+    class="bg-white shadow-sm border-b border-gray-200"
+    role="navigation"
+    aria-label="Main navigation"
+  >
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-16">
         <!-- Logo/Brand -->
         <div class="flex items-center">
-          <RouterLink 
-            to="/" 
+          <RouterLink
+            to="/"
             class="flex items-center space-x-2 hover:opacity-80 transition-opacity"
             aria-label="OpenBadges Demo - Home"
           >
-            <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+            <div
+              class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center"
+            >
               <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             </div>
             <span class="text-xl font-bold text-gray-900">OpenBadges</span>
@@ -34,22 +45,22 @@
             </RouterLink>
 
             <!-- Dropdown menu -->
-            <div v-else class="relative" ref="dropdownRefs">
+            <div v-else ref="dropdownRefs" class="relative">
               <button
-                @click="toggleDropdown(item.id)"
-                @keydown.escape="closeDropdown(item.id)"
+                :id="`menu-button-${item.id}`"
                 class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 hover:bg-gray-100 hover:text-gray-900"
                 :class="getNavItemClass(item)"
                 :aria-expanded="openDropdowns.has(item.id)"
                 :aria-haspopup="true"
-                :id="`menu-button-${item.id}`"
+                @click="toggleDropdown(item.id)"
+                @keydown.escape="closeDropdown(item.id)"
               >
                 <component :is="item.icon" class="w-4 h-4 mr-1.5" aria-hidden="true" />
                 {{ item.label }}
-                <ChevronDownIcon 
-                  class="w-4 h-4 ml-1 transition-transform duration-200" 
+                <ChevronDownIcon
+                  class="w-4 h-4 ml-1 transition-transform duration-200"
                   :class="{ 'rotate-180': openDropdowns.has(item.id) }"
-                  aria-hidden="true" 
+                  aria-hidden="true"
                 />
               </button>
 
@@ -90,14 +101,14 @@
         <div class="flex items-center space-x-2">
           <!-- User Menu (Desktop) -->
           <UserMenu v-if="!isMobile" />
-          
+
           <!-- Mobile menu button -->
           <button
-            @click="toggleMobileMenu"
             class="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 transition-colors duration-200"
             :aria-expanded="isMobileMenuOpen"
             aria-controls="mobile-menu"
             aria-label="Toggle navigation menu"
+            @click="toggleMobileMenu"
           >
             <span class="sr-only">{{ isMobileMenuOpen ? 'Close' : 'Open' }} main menu</span>
             <Bars3Icon v-if="!isMobileMenuOpen" class="w-6 h-6" aria-hidden="true" />
@@ -116,17 +127,17 @@
       leave-from-class="transform opacity-100 scale-100"
       leave-to-class="transform opacity-0 scale-95"
     >
-      <div v-if="isMobileMenuOpen" class="md:hidden" id="mobile-menu">
+      <div v-if="isMobileMenuOpen" id="mobile-menu" class="md:hidden">
         <div class="px-2 pt-2 pb-3 space-y-1 bg-white border-t border-gray-200">
           <template v-for="item in navigationItems" :key="`mobile-${item.id}`">
             <!-- Simple mobile link -->
             <RouterLink
               v-if="!item.children"
               :to="item.to"
-              @click="closeMobileMenu"
               class="flex items-center px-3 py-2 text-base font-medium rounded-md transition-colors duration-200 hover:bg-gray-100 hover:text-gray-900"
               :class="getMobileNavItemClass(item)"
               :aria-current="isActiveRoute(item.to) ? 'page' : undefined"
+              @click="closeMobileMenu"
             >
               <component :is="item.icon" class="w-5 h-5 mr-3" aria-hidden="true" />
               {{ item.label }}
@@ -135,19 +146,19 @@
             <!-- Mobile dropdown section -->
             <div v-else class="space-y-1">
               <button
-                @click="toggleMobileDropdown(item.id)"
                 class="flex items-center justify-between w-full px-3 py-2 text-base font-medium rounded-md transition-colors duration-200 hover:bg-gray-100 hover:text-gray-900"
                 :class="getMobileNavItemClass(item)"
                 :aria-expanded="openMobileDropdowns.has(item.id)"
+                @click="toggleMobileDropdown(item.id)"
               >
                 <div class="flex items-center">
                   <component :is="item.icon" class="w-5 h-5 mr-3" aria-hidden="true" />
                   {{ item.label }}
                 </div>
-                <ChevronDownIcon 
-                  class="w-4 h-4 transition-transform duration-200" 
+                <ChevronDownIcon
+                  class="w-4 h-4 transition-transform duration-200"
                   :class="{ 'rotate-180': openMobileDropdowns.has(item.id) }"
-                  aria-hidden="true" 
+                  aria-hidden="true"
                 />
               </button>
 
@@ -164,10 +175,13 @@
                     v-for="child in item.children"
                     :key="`mobile-${child.id}`"
                     :to="child.to"
-                    @click="closeMobileMenu"
                     class="flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200 hover:bg-gray-100 hover:text-gray-900"
-                    :class="{ 'bg-gray-50 text-gray-900': isActiveRoute(child.to), 'text-gray-700': !isActiveRoute(child.to) }"
+                    :class="{
+                      'bg-gray-50 text-gray-900': isActiveRoute(child.to),
+                      'text-gray-700': !isActiveRoute(child.to),
+                    }"
                     :aria-current="isActiveRoute(child.to) ? 'page' : undefined"
+                    @click="closeMobileMenu"
                   >
                     <component :is="child.icon" class="w-4 h-4 mr-2" aria-hidden="true" />
                     {{ child.label }}
@@ -188,18 +202,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { 
-  Bars3Icon, 
-  XMarkIcon, 
+import {
+  Bars3Icon,
+  XMarkIcon,
   ChevronDownIcon,
   HomeIcon,
   AcademicCapIcon,
   UserGroupIcon,
   RectangleStackIcon,
   ClipboardDocumentListIcon,
-  Cog6ToothIcon
+  Cog6ToothIcon,
 } from '@heroicons/vue/24/outline'
 import UserMenu from './UserMenu.vue'
 
@@ -209,7 +223,7 @@ const navigationItems = [
     id: 'home',
     label: 'Dashboard',
     to: '/',
-    icon: HomeIcon
+    icon: HomeIcon,
   },
   {
     id: 'badges',
@@ -218,8 +232,13 @@ const navigationItems = [
     children: [
       { id: 'browse-badges', label: 'Browse Badges', to: '/badges', icon: AcademicCapIcon },
       { id: 'create-badge', label: 'Create Badge', to: '/badges/create', icon: AcademicCapIcon },
-      { id: 'issued-badges', label: 'Issued Badges', to: '/badges/issued', icon: ClipboardDocumentListIcon }
-    ]
+      {
+        id: 'issued-badges',
+        label: 'Issued Badges',
+        to: '/badges/issued',
+        icon: ClipboardDocumentListIcon,
+      },
+    ],
   },
   {
     id: 'issuers',
@@ -228,15 +247,15 @@ const navigationItems = [
     children: [
       { id: 'browse-issuers', label: 'Browse Issuers', to: '/issuers', icon: UserGroupIcon },
       { id: 'create-issuer', label: 'Create Issuer', to: '/issuers/create', icon: UserGroupIcon },
-      { id: 'manage-issuers', label: 'Manage Issuers', to: '/issuers/manage', icon: Cog6ToothIcon }
-    ]
+      { id: 'manage-issuers', label: 'Manage Issuers', to: '/issuers/manage', icon: Cog6ToothIcon },
+    ],
   },
   {
     id: 'backpack',
     label: 'My Backpack',
     to: '/backpack',
-    icon: RectangleStackIcon
-  }
+    icon: RectangleStackIcon,
+  },
 ]
 
 // Reactive state
@@ -285,18 +304,22 @@ const isActiveRoute = (path: string) => {
 }
 
 const getNavItemClass = (item: any) => {
-  const isActive = item.to ? isActiveRoute(item.to) : item.children?.some((child: any) => isActiveRoute(child.to))
+  const isActive = item.to
+    ? isActiveRoute(item.to)
+    : item.children?.some((child: any) => isActiveRoute(child.to))
   return {
     'text-blue-600 bg-blue-50': isActive,
-    'text-gray-700': !isActive
+    'text-gray-700': !isActive,
   }
 }
 
 const getMobileNavItemClass = (item: any) => {
-  const isActive = item.to ? isActiveRoute(item.to) : item.children?.some((child: any) => isActiveRoute(child.to))
+  const isActive = item.to
+    ? isActiveRoute(item.to)
+    : item.children?.some((child: any) => isActiveRoute(child.to))
   return {
     'text-blue-600 bg-blue-50': isActive,
-    'text-gray-700': !isActive
+    'text-gray-700': !isActive,
   }
 }
 
