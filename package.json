@@ -26,7 +26,13 @@
     "type-check": "vue-tsc --noEmit",
     "pre-commit": "lint-staged",
     "commitlint": "commitlint --edit",
-    "prepare": "husky"
+    "prepare": "husky",
+    "review:fetch": "node scripts/coderabbit-review-automation.cjs fetch",
+    "review:update": "node scripts/coderabbit-review-automation.cjs update",
+    "review:fix": "node scripts/coderabbit-review-automation.cjs fix",
+    "review:fix:critical": "node scripts/coderabbit-review-automation.cjs fix --priority=Critical",
+    "review:fix:security": "node scripts/coderabbit-review-automation.cjs fix --priority=High",
+    "review:auto": "node scripts/coderabbit-review-automation.cjs auto"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.8.1",
