@@ -1,5 +1,9 @@
 # Gap Analysis and Task Plan — OpenBadges System
 
+## Progress
+
+- PR #3 opened: feat(auth): add /api/auth/validate and verify platform token on badges proxy. All tests pass locally. Branch: `feature/real-jwt-auth-integration`.
+
 ## Top priorities (P0)
 
 - **Replace placeholder auth tokens**
@@ -72,6 +76,21 @@
   - Add: Minimal OpenAPI for server routes (`/api/auth`, `/api/bs/users`, `/api/oauth`, `/api/badges` proxy contract)
   - Branch: `docs/openapi-basics`
   - Est: 0.5 day
+
+## CI fixes (PR #2)
+
+- **YAML trailing spaces**: Clean up in `.github/ISSUE_TEMPLATE/*.yml` and workflows.
+  - Branch: `chore/ci-yamllint-fixes`
+- **actionlint event**: Fix invalid `pull_request` event type `merged` in `issue-management.yml`.
+  - Branch: `fix/actionlint-events`
+- **Security scan job**: Add checkout + pnpm install steps; ensure correct file paths.
+  - Branch: `ci/security-scan-job-fix`
+- **markdownlint**: Add language specifiers to fenced code blocks; convert emphasized headings to proper headings.
+  - Branch: `docs/markdownlint-fixes`
+- **Custom actions polish**: Add `branding`, `permissions`, default inputs, and package metadata (`private`, `license`, `engines`).
+  - Branch: `chore/actions-metadata`
+- **Shellcheck warnings**: Address unused vars in `scripts/setup-github-project.sh` or pass them through usage.
+  - Branch: `chore/scripts-shellcheck`
 
 ## Future (Parking lot)
 

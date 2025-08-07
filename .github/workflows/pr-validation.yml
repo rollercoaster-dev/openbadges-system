@@ -10,87 +10,96 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
-          
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: latest
-          
+
       - name: Install Dependencies
         run: pnpm install
-        
+
       - name: Lint
         run: pnpm run lint
-        
+
       - name: Type Check
         run: pnpm run type-check
-        
+
       - name: Format Check
         run: pnpm run format:check
-        
+
       - name: Unit Tests
         run: pnpm run test:run
-        
+
       - name: Build
         run: pnpm run build
-        
+
       - name: Check Task Link
         uses: ./.github/actions/check-task-link
         with:
           pr-body: ${{ github.event.pull_request.body }}
-          
+
   validate-openbadges-compliance:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
-          
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: latest
-          
+
       - name: Install Dependencies
         run: pnpm install
-        
+
       - name: OpenBadges Compliance Check
-        uses: ./.github/actions/validate-openbadges-compliance
-        with:
-          pr-files: ${{ github.event.pull_request.changed_files }}
-          
+        # Ensure local action dependencies are installed and token is available
+        run: |
+          npm ci --no-audit --no-fund
+          node index.js
+        working-directory: ./.github/actions/validate-openbadges-compliance
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   security-scan:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
       - name: Run Security Audit
         run: pnpm audit --audit-level moderate
-        
+
       - name: Check for sensitive data
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
             const path = require('path');
-            
+
             // Get changed files
             const { data: files } = await github.rest.pulls.listFiles({
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: context.issue.number
             });
-            
+
             const sensitivePatterns = [
               /password\s*=\s*['"]/i,
               /api[_-]?key\s*=\s*['"]/i,
@@ -98,9 +107,9 @@ jobs:
               /token\s*=\s*['"]/i,
               /private[_-]?key/i
             ];
-            
+
             let foundSensitive = false;
-            
+
             for (const file of files) {
               if (file.status === 'added' || file.status === 'modified') {
                 try {
@@ -116,11 +125,11 @@ jobs:
                 }
               }
             }
-            
+
             if (foundSensitive) {
               core.setFailed('Potential sensitive data detected in PR. Please review and remove any hardcoded secrets.');
             }
-            
+
   pr-title-check:
     runs-on: ubuntu-latest
     steps:
@@ -130,7 +139,7 @@ jobs:
           script: |
             const title = context.payload.pull_request.title;
             const conventionalCommitPattern = /^(feat|fix|docs|style|refactor|perf|test|chore|ci|build)(\(.+\))?: .+/;
-            
+
             if (!conventionalCommitPattern.test(title)) {
               core.setFailed(`PR title "${title}" does not follow conventional commit format. 
               Expected format: type(scope): description
