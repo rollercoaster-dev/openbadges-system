@@ -1,3 +1,4 @@
+#!/bin/sh
 echo "🧪 Running tests before push..."
 pnpm test:run
 
