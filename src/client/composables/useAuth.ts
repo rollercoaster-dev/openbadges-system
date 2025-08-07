@@ -226,11 +226,23 @@ export const useAuth = () => {
       // Update user with credential
       newUser.credentials = [credential]
 
-      // Set authentication state
-      user.value = newUser
-      token.value = 'backend-jwt-token-' + Date.now() // TODO: Get real JWT from backend
-      localStorage.setItem('auth_token', token.value)
-      localStorage.setItem('user_data', JSON.stringify(newUser))
+      // Request real platform token from backend for this user
+      try {
+        const platformRes = await fetch('/api/auth/platform-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user: newUser }),
+        })
+        if (!platformRes.ok) throw new Error('Failed to get auth token')
+        const platformData = await platformRes.json()
+        token.value = platformData.token
+        user.value = newUser
+        localStorage.setItem('auth_token', token.value)
+        localStorage.setItem('user_data', JSON.stringify(newUser))
+      } catch {
+        error.value = 'Failed to establish session. Please try logging in.'
+        return false
+      }
 
       return true
     } catch (err) {
@@ -287,11 +299,24 @@ export const useAuth = () => {
         body: JSON.stringify({ lastUsed: new Date().toISOString() }),
       })
 
-      // Set authentication state
-      user.value = foundUser
-      token.value = 'backend-jwt-token-' + Date.now() // TODO: Get real JWT from backend
-      localStorage.setItem('auth_token', token.value)
-      localStorage.setItem('user_data', JSON.stringify(foundUser))
+      // Exchange for real platform token
+      try {
+        const platformRes = await fetch('/api/auth/platform-token', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user: foundUser }),
+        })
+        if (!platformRes.ok) throw new Error('Failed to get auth token')
+        const platformData = await platformRes.json()
+        token.value = platformData.token
+        user.value = foundUser
+        localStorage.setItem('auth_token', token.value)
+        localStorage.setItem('user_data', JSON.stringify(foundUser))
+      } catch (e) {
+        console.error('Token exchange failed:', e)
+        error.value = 'Authentication failed. Please try again.'
+        return false
+      }
 
       return true
     } catch (err) {
@@ -335,13 +360,18 @@ export const useAuth = () => {
       try {
         token.value = storedToken
         user.value = JSON.parse(storedUser)
-
-        // TODO: Validate token with backend
-        // For now, we trust localStorage
+        // Validate token with backend
+        const res = await fetch('/api/auth/validate', {
+          headers: { Authorization: `Bearer ${storedToken}` },
+        })
+        if (!res.ok) {
+          throw new Error('Invalid token')
+        }
       } catch {
-        // Clear invalid data
         localStorage.removeItem('auth_token')
         localStorage.removeItem('user_data')
+        token.value = null
+        user.value = null
       }
     }
 

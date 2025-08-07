@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { jwtService } from '../services/jwt'
 
 const badgesRoutes = new Hono()
 
@@ -49,6 +50,13 @@ badgesRoutes.all('/*', async c => {
     const authHeader = c.req.header('Authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return c.json({ error: 'Platform token required' }, 401)
+    }
+
+    // Verify platform token before proxying
+    const token = authHeader.slice('Bearer '.length)
+    const payload = jwtService.verifyToken(token)
+    if (!payload) {
+      return c.json({ error: 'Invalid platform token' }, 401)
     }
 
     const headers = new Headers(c.req.raw.headers)
