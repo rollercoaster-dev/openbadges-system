@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { oauthService } from '../services/oauth'
 import { userService } from '../services/user'
 import { userSyncService } from '../services/userSync'
+import { jwtService } from '../services/jwt'
 
 const oauthRoutes = new Hono()
 
@@ -151,7 +152,14 @@ oauthRoutes.get('/github/callback', async c => {
     }
 
     // Generate JWT token for authentication
-    const jwtToken = 'oauth-jwt-token-' + Date.now() // TODO: Generate real JWT token
+    const jwtToken = jwtService.generatePlatformToken({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      isAdmin: user.roles?.includes('ADMIN') || false,
+    })
 
     // Check if this is an API request or browser redirect
     const acceptHeader = c.req.header('Accept')
