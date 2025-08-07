@@ -131,7 +131,7 @@ export class WebAuthnUtils {
     return {
       challenge: this.arrayBufferToBase64Url(challenge),
       user: {
-        id: this.arrayBufferToBase64Url(userIdBuffer.buffer.slice(0) as ArrayBuffer),
+        id: this.arrayBufferToBase64Url(userIdBuffer.slice().buffer),
         name: username,
         displayName: displayName,
       },
