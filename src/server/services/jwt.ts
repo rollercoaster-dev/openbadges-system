@@ -25,6 +25,7 @@ interface JWTPayload {
 
 export class JWTService {
   private privateKey: string
+  private publicKey: string
   private platformId: string
   private clientId: string
 
@@ -35,6 +36,14 @@ export class JWTService {
     } catch (error) {
       console.error('Failed to load private key:', error)
       throw new Error('Private key not found. Please run the setup script to generate keys.')
+    }
+
+    // Load public key from file
+    try {
+      this.publicKey = readFileSync(join(process.cwd(), 'keys', 'platform-public.pem'), 'utf8')
+    } catch (error) {
+      console.error('Failed to load public key:', error)
+      throw new Error('Public key not found. Please run the setup script to generate keys.')
     }
 
     this.platformId = 'urn:uuid:a504d862-bd64-4e0d-acff-db7955955bc1'
@@ -65,11 +74,18 @@ export class JWTService {
   }
 
   /**
-   * Verify JWT token (for debugging purposes)
+   * Verify JWT token using the public key
+   *
+   * @param token - JWT token to verify
+   * @returns Decoded JWT payload or null if verification fails
+   * @note This method uses the public key for secure token verification
    */
   verifyToken(token: string): JWTPayload | null {
     try {
-      return jwt.verify(token, this.privateKey) as JWTPayload
+      return jwt.verify(token, this.publicKey, {
+        algorithms: ['RS256'],
+        issuer: this.clientId,
+      }) as JWTPayload
     } catch (error) {
       if (process.env.NODE_ENV !== 'test') {
         console.error('JWT verification failed:', error)
