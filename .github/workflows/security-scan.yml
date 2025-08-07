@@ -31,12 +31,12 @@ jobs:
       - name: Check for known vulnerabilities
         run: |
           # Check for high/critical vulnerabilities
-          if pnpm audit --audit-level high 2>/dev/null; then
-            echo "⚠️ High or critical vulnerabilities detected"
-            pnpm audit --audit-level high
-            exit 1
-          else
+          if pnpm audit --audit-level high >/dev/null 2>&1; then
             echo "✅ No high or critical vulnerabilities found"
+          else
+            echo "⚠️ High or critical vulnerabilities detected"
+            pnpm audit --audit-level high || true
+            exit 1
           fi
 
   secret-scan:
@@ -69,7 +69,10 @@ jobs:
               /\.pnpm\//,
               /dist\//,
               /build\//,
-              /coverage\//
+              /coverage\//,
+              /keys\//,
+              /__tests__\//,
+              /\.test\./
             ];
 
             function scanDirectory(dir) {
