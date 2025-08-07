@@ -40,11 +40,12 @@ jobs:
         run: pnpm run build
 
       - name: Check Task Link
-        run: |
-          npm ci --no-audit --no-fund
-          node -e "process.env['INPUT_PR-BODY'] = `${{ github.event.pull_request.body }}`; require('./index.js')"
-        working-directory: ./.github/actions/check-task-link
+        uses: ./.github/actions/check-task-link
+        with:
+          pr-body: ${{ github.event.pull_request.body }}
         env:
+          # Provide alternative env keys for robustness if input is empty
+          INPUT_PR_BODY: ${{ github.event.pull_request.body }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   validate-openbadges-compliance:
