@@ -379,6 +379,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { BadgeIssuerForm, BadgeDisplay } from 'openbadges-ui'
 import type { OB2, Shared } from 'openbadges-types'
+import { createIRI } from 'openbadges-types'
 import { useAuth } from '@/composables/useAuth'
 import { useBadges, type CreateBadgeData } from '@/composables/useBadges'
 import { useFormValidation } from '@/composables/useFormValidation'
@@ -387,6 +388,31 @@ import { useImageUpload } from '@/composables/useImageUpload'
 // Extended criteria type that includes optional id field for OB2 compatibility
 interface CriteriaWithId extends NonNullable<CreateBadgeData['criteria']> {
   id?: Shared.IRI
+}
+
+// Preview-specific interfaces to avoid type assertions
+interface PreviewIssuer {
+  id: string
+  type: string | string[]
+  name: string
+  url?: string
+  email?: string
+  description?: string
+}
+
+interface PreviewBadgeData {
+  id: string
+  type: 'BadgeClass'
+  name: string
+  description: string
+  image: string
+  criteria: {
+    narrative: string
+    id?: string
+  }
+  issuer: PreviewIssuer
+  tags: string[]
+  alignment: any[]
 }
 
 const router = useRouter()
@@ -430,23 +456,23 @@ const availableIssuers = ref<OB2.Profile[]>([])
 const criteriaUrl = ref('')
 
 // Create preview badge for display
-// Using Partial<OB2.BadgeClass> since this is preview-only data
+// Using PreviewBadgeData interface to avoid type assertions
 const previewBadge = computed(
-  (): Partial<OB2.BadgeClass> => ({
-    id: '' as Shared.IRI, // preview only - empty string for preview
+  (): PreviewBadgeData => ({
+    id: '', // preview only - empty string for preview
     type: 'BadgeClass',
     name: badgeData.value.name || 'Badge Name',
     description: badgeData.value.description || 'Badge description will appear here',
-    image: (badgeData.value.image || '/placeholder-badge.png') as Shared.IRI,
-    criteria: badgeData.value.criteria || {
-      narrative: 'Badge criteria will appear here',
-      ...(criteriaUrl.value ? { id: criteriaUrl.value as Shared.IRI } : {}),
+    image: badgeData.value.image || '/placeholder-badge.png',
+    criteria: {
+      narrative: badgeData.value.criteria?.narrative || 'Badge criteria will appear here',
+      ...(criteriaUrl.value ? { id: criteriaUrl.value } : {}),
     },
     issuer: badgeData.value.issuer || {
-      id: '' as Shared.IRI, // preview only
+      id: '', // preview only
       type: 'Issuer',
       name: 'Default Issuer',
-      url: window.location.origin as Shared.IRI,
+      url: window.location.origin,
       email: user.value?.email || 'admin@example.com',
     },
     tags: badgeData.value.tags || [],
@@ -467,19 +493,19 @@ onMounted(async () => {
 
   // Create default issuer if user is available
   if (user.value) {
-    availableIssuers.value = [
-      {
-        id: '' as any, // preview only
-        type: 'Issuer',
-        name: `${user.value.firstName} ${user.value.lastName}`,
-        url: window.location.origin as any,
-        email: user.value.email,
-        description: `Badge issuer profile for ${user.value.firstName} ${user.value.lastName}`,
-      },
-    ]
+    const defaultIssuer: OB2.Profile = {
+      id: createIRI(''), // preview only - will be set by server
+      type: 'Issuer',
+      name: `${user.value.firstName} ${user.value.lastName}`,
+      url: createIRI(window.location.origin),
+      email: user.value.email,
+      description: `Badge issuer profile for ${user.value.firstName} ${user.value.lastName}`,
+    }
+
+    availableIssuers.value = [defaultIssuer]
 
     // Set default issuer
-    badgeData.value.issuer = availableIssuers.value[0]
+    badgeData.value.issuer = defaultIssuer
   }
 })
 
@@ -527,7 +553,7 @@ const handleSubmit = async (formData: CreateBadgeData) => {
     if (criteriaUrl.value) {
       formData.criteria = {
         ...formData.criteria,
-        id: criteriaUrl.value as Shared.IRI,
+        id: createIRI(criteriaUrl.value),
       } as CriteriaWithId
     }
 
@@ -572,11 +598,11 @@ const handleCancel = () => {
 }
 
 // Handle image upload
-const handleImageUpload = async (event: any) => {
+const handleImageUpload = async (event: Event) => {
   clearError()
   clearMessages()
-  const target = event.target as any
-  const file = target?.files?.[0]
+  const target = event.target as globalThis.HTMLInputElement
+  const file = target.files?.[0]
   if (!file) return
   const result = await uploadImage(file)
   if (result) {
@@ -587,7 +613,7 @@ const handleImageUpload = async (event: any) => {
 }
 
 // Handle drag and drop for image
-const handleImageDrop = async (event: any) => {
+const handleImageDrop = async (event: globalThis.DragEvent) => {
   event.preventDefault()
   clearError()
   clearMessages()
@@ -600,7 +626,7 @@ const handleImageDrop = async (event: any) => {
     error.value = uploadError.value
   }
 }
-const handleDragOver = (event: any) => {
+const handleDragOver = (event: globalThis.DragEvent) => {
   event.preventDefault()
 }
 
@@ -609,7 +635,7 @@ const addAlignment = () => {
   badgeData.value.alignment = badgeData.value.alignment || []
   badgeData.value.alignment.push({
     targetName: '',
-    targetUrl: '' as any,
+    targetUrl: createIRI(''),
     targetDescription: '',
   })
 }
