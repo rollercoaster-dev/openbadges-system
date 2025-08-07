@@ -246,7 +246,9 @@ export const useAuth = () => {
 
       // Persist session regardless of token source
       user.value = newUser
-      localStorage.setItem('auth_token', token.value)
+      if (token.value !== null) {
+        localStorage.setItem('auth_token', token.value)
+      }
       localStorage.setItem('user_data', JSON.stringify(newUser))
 
       return true
@@ -323,7 +325,9 @@ export const useAuth = () => {
       }
 
       user.value = foundUser
-      localStorage.setItem('auth_token', token.value)
+      if (token.value !== null) {
+        localStorage.setItem('auth_token', token.value)
+      }
       localStorage.setItem('user_data', JSON.stringify(foundUser))
 
       return true
