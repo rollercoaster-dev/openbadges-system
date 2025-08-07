@@ -1,0 +1,19 @@
+name: 'Check Task Link'
+description: 'Validates that PR is properly linked to tasks and issues'
+
+inputs:
+  pr-body:
+    description: 'PR body content'
+    required: true
+
+outputs:
+  has-task-link:
+    description: 'Whether PR has proper task linking'
+  linked-issues:
+    description: 'Number of linked issues'
+  linked-tasks:
+    description: 'Number of linked tasks'
+
+runs:
+  using: 'node20'
+  main: 'index.js'
