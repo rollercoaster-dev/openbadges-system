@@ -14,16 +14,20 @@ export interface AuthPayload {
 }
 
 export function extractBearerToken(c: Context): string | null {
-  const authHeader = c.req.header('Authorization')
+  const authHeader = c.req.header('authorization') ?? c.req.header('Authorization')
   if (!authHeader || !authHeader.startsWith('Bearer ')) return null
-  return authHeader.slice('Bearer '.length)
+  return authHeader.slice('Bearer '.length).trim()
 }
 
 export function getAuthPayload(c: Context): AuthPayload | null {
   const token = extractBearerToken(c)
   if (!token) return null
-  const payload = jwtService.verifyToken(token)
-  return (payload as AuthPayload) || null
+  try {
+    const payload = jwtService.verifyToken(token)
+    return (payload as AuthPayload) || null
+  } catch {
+    return null
+  }
 }
 
 export async function requireAuth(c: Context, next: Next) {

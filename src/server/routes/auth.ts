@@ -3,7 +3,7 @@ import { jwtService } from '../services/jwt'
 import { userService } from '../services/user'
 import { userSyncService } from '../services/userSync'
 import { z } from 'zod'
-import { requireAuth } from '../middleware/auth'
+import { requireAuth, requireSelfOrAdminFromParam, requireAdmin } from '../middleware/auth'
 
 const authRoutes = new Hono()
 
@@ -41,7 +41,7 @@ const platformTokenSchema = z.object({
 })
 
 // Generate platform token for OpenBadges API
-authRoutes.post('/platform-token', async c => {
+authRoutes.post('/platform-token', requireAdmin, async c => {
   try {
     let body: unknown
     try {
@@ -219,34 +219,39 @@ authRoutes.post('/sync-user', requireAuth, async c => {
 })
 
 // Get badge server user profile
-authRoutes.get('/badge-server-profile/:userId', requireAuth, async c => {
-  try {
-    const userId = c.req.param('userId')
+authRoutes.get(
+  '/badge-server-profile/:userId',
+  requireAuth,
+  requireSelfOrAdminFromParam('userId'),
+  async c => {
+    try {
+      const userId = c.req.param('userId')
 
-    if (!userId) {
-      return c.json({ error: 'User ID is required' }, 400)
+      if (!userId) {
+        return c.json({ error: 'User ID is required' }, 400)
+      }
+
+      const profile = await userSyncService.getBadgeServerUserProfile(userId)
+
+      if (profile) {
+        return c.json({
+          success: true,
+          profile,
+        })
+      } else {
+        return c.json(
+          {
+            success: false,
+            error: 'Profile not found',
+          },
+          404
+        )
+      }
+    } catch (error) {
+      console.error('Failed to get badge server profile:', error)
+      return c.json({ error: 'Failed to get profile' }, 500)
     }
-
-    const profile = await userSyncService.getBadgeServerUserProfile(userId)
-
-    if (profile) {
-      return c.json({
-        success: true,
-        profile,
-      })
-    } else {
-      return c.json(
-        {
-          success: false,
-          error: 'Profile not found',
-        },
-        404
-      )
-    }
-  } catch (error) {
-    console.error('Failed to get badge server profile:', error)
-    return c.json({ error: 'Failed to get profile' }, 500)
   }
-})
+)
 
 export { authRoutes }
