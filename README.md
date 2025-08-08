@@ -135,12 +135,15 @@ Proxy auth toggle:
 Environment variables (non-sensitive examples):
 
 - `PORT` (default `8888`)
-- `OPENBADGES_SERVER_URL` (default `http://localhost:3000`)
+- `OPENBADGES_SERVER_URL` (default `http://localhost:8888`)
 - `OPENBADGES_AUTH_ENABLED` (default `true`)
 - `OPENBADGES_AUTH_MODE` (`docker` uses Basic, `local` uses API key/basic from env)
 - `OPENBADGES_PROXY_PUBLIC` (`false` by default)
 - `PLATFORM_JWT_PRIVATE_KEY` / `PLATFORM_JWT_PUBLIC_KEY` (PEM) or base64 variants `*_B64`
 - `PLATFORM_ID`, `PLATFORM_CLIENT_ID`
+
+> Note: If `OPENBADGES_AUTH_ENABLED=false`, all endpoints are public regardless of `OPENBADGES_PROXY_PUBLIC`.
+> When auth is enabled, setting `OPENBADGES_PROXY_PUBLIC=true` allows proxy endpoints (`/api/bs/*`) to bypass auth.
 
 ## License
 
