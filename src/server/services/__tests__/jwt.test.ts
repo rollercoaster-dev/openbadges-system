@@ -123,12 +123,11 @@ QIDAQAB
           },
         },
         expect.any(String),
-        {
+        expect.objectContaining({
           algorithm: 'RS256',
           issuer: 'openbadges-demo-main-app',
-          audience: undefined,
           expiresIn: '1h',
-        }
+        })
       )
     })
 
@@ -205,6 +204,11 @@ QIDAQAB
 
   describe('issuer/audience/clock options', () => {
     it('uses env overrides for issuer/audience and clock tolerance when provided', () => {
+      const prev = {
+        PLATFORM_JWT_ISSUER: process.env.PLATFORM_JWT_ISSUER,
+        PLATFORM_JWT_AUDIENCE: process.env.PLATFORM_JWT_AUDIENCE,
+        JWT_CLOCK_TOLERANCE_SEC: process.env.JWT_CLOCK_TOLERANCE_SEC,
+      }
       process.env.PLATFORM_JWT_ISSUER = 'urn:test:issuer'
       process.env.PLATFORM_JWT_AUDIENCE = 'urn:test:aud'
       process.env.JWT_CLOCK_TOLERANCE_SEC = '60'
@@ -243,9 +247,9 @@ QIDAQAB
         })
       )
 
-      delete process.env.PLATFORM_JWT_ISSUER
-      delete process.env.PLATFORM_JWT_AUDIENCE
-      delete process.env.JWT_CLOCK_TOLERANCE_SEC
+      process.env.PLATFORM_JWT_ISSUER = prev.PLATFORM_JWT_ISSUER
+      process.env.PLATFORM_JWT_AUDIENCE = prev.PLATFORM_JWT_AUDIENCE
+      process.env.JWT_CLOCK_TOLERANCE_SEC = prev.JWT_CLOCK_TOLERANCE_SEC
     })
   })
 

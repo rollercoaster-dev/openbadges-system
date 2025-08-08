@@ -140,6 +140,9 @@ Environment variables (non-sensitive examples):
 - `OPENBADGES_AUTH_MODE` (`docker` uses Basic, `local` uses API key/basic from env)
 - `OPENBADGES_PROXY_PUBLIC` (`false` by default)
 - `PLATFORM_JWT_PRIVATE_KEY` / `PLATFORM_JWT_PUBLIC_KEY` (PEM) or base64 variants `*_B64`
+- `PLATFORM_JWT_ISSUER` (optional; defaults to `PLATFORM_CLIENT_ID` for backwards-compat)
+- `PLATFORM_JWT_AUDIENCE` (optional; when set, enforced on sign/verify)
+- `JWT_CLOCK_TOLERANCE_SEC` (optional; default `0`; allows small clock skew for `exp`/`nbf` checks)
 - `PLATFORM_ID`, `PLATFORM_CLIENT_ID`
 
 > Note: If `OPENBADGES_AUTH_ENABLED=false`, all endpoints are public regardless of `OPENBADGES_PROXY_PUBLIC`.

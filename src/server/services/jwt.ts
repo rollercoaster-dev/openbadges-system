@@ -100,7 +100,11 @@ export class JWTService {
     this.tokenIssuer = process.env.PLATFORM_JWT_ISSUER || this.clientId
     // Audience is optional; when set, both sign and verify will enforce it
     this.tokenAudience = process.env.PLATFORM_JWT_AUDIENCE || undefined
-    this.clockToleranceSec = Number(process.env.JWT_CLOCK_TOLERANCE_SEC || '0') || 0
+    {
+      const raw = process.env.JWT_CLOCK_TOLERANCE_SEC
+      const n = raw?.trim() ? Number(raw) : 0
+      this.clockToleranceSec = Number.isFinite(n) ? Math.max(0, Math.trunc(n)) : 0
+    }
   }
 
   /**
@@ -119,12 +123,13 @@ export class JWTService {
       },
     }
 
-    return jwt.sign(payload, this.privateKey, {
-      algorithm: 'RS256',
+    const signOpts = {
+      algorithm: 'RS256' as const,
       issuer: this.tokenIssuer,
-      audience: this.tokenAudience,
       expiresIn: '1h',
-    })
+      ...(this.tokenAudience ? { audience: this.tokenAudience } : {}),
+    }
+    return jwt.sign(payload, this.privateKey, signOpts)
   }
 
   /**
@@ -136,7 +141,7 @@ export class JWTService {
    */
   verifyToken(token: string): JWTPayload | null {
     try {
-      const options: any = {
+      const options: jwt.VerifyOptions = {
         algorithms: ['RS256'],
         issuer: this.tokenIssuer,
         clockTolerance: this.clockToleranceSec,
@@ -144,7 +149,11 @@ export class JWTService {
       if (this.tokenAudience) {
         options.audience = this.tokenAudience
       }
-      return jwt.verify(token, this.publicKey, options) as JWTPayload
+      const decoded = jwt.verify(token, this.publicKey, options)
+      if (!decoded || typeof decoded === 'string') {
+        return null
+      }
+      return decoded as unknown as JWTPayload
     } catch (error) {
       if (process.env.NODE_ENV !== 'test') {
         console.error('JWT verification failed:', error)
