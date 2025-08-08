@@ -118,6 +118,7 @@ async function validateFile(filePath) {
   try {
     const content = fs.readFileSync(filePath, 'utf8')
     const fileName = path.basename(filePath)
+    const ext = path.extname(filePath).toLowerCase()
 
     // OpenBadges-specific validation rules
     const validationRules = [
@@ -125,10 +126,22 @@ async function validateFile(filePath) {
         name: 'Badge Schema Validation',
         pattern: /badge.*schema|schema.*badge/i,
         check: content => {
-          if (content.includes('BadgeClass') || content.includes('Assertion')) {
-            // Check for required OpenBadges fields
+          // Only enforce strict schema validation on JSON files to avoid false positives in TS/JS
+          if (ext !== '.json') return null
+
+          try {
+            const json = JSON.parse(content)
+            const looksLikeBadge =
+              json['@context']?.toString().includes('openbadges') ||
+              json.type === 'BadgeClass' ||
+              (Array.isArray(json.type) && json.type.includes('BadgeClass')) ||
+              json.type === 'Assertion' ||
+              (Array.isArray(json.type) && json.type.includes('Assertion'))
+
+            if (!looksLikeBadge) return null
+
             const requiredFields = ['id', 'type', 'name', 'description', 'image', 'criteria']
-            const missingFields = requiredFields.filter(field => !content.includes(field))
+            const missingFields = requiredFields.filter(field => !(field in json))
 
             if (missingFields.length > 0) {
               return {
@@ -137,6 +150,9 @@ async function validateFile(filePath) {
                 suggestion: 'Ensure all required OpenBadges 2.x/3.0 fields are included',
               }
             }
+          } catch {
+            // Not valid JSON; skip strict validation
+            return null
           }
           return null
         },
