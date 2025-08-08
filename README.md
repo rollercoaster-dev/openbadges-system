@@ -15,7 +15,7 @@ An implementation of the OpenBadges standard for managing digital credentials.
 
 ### Prerequisites
 
-- [Bun](https://bun.sh) (v1.2.10+) 
+- [Bun](https://bun.sh) (v1.2.10+)
 - [pnpm](https://pnpm.io/)
 - [Docker](https://www.docker.com/) (optional, for containerized development)
 
@@ -38,8 +38,9 @@ pnpm dev
 ```
 
 This will start:
-- Backend server using Bun (with hot reloading) at `http://localhost:3000`
-- Frontend Vue app using Vite at `http://localhost:5173`
+
+- Backend server using Bun (with hot reloading) at `http://localhost:8888`
+- Frontend Vue app using Vite at `http://localhost:7777`
 
 ### Alternative Run Commands
 
@@ -106,6 +107,40 @@ openbadges-system/
 ├── package.json          # Project dependencies & scripts
 └── vite.config.js        # Vite configuration
 ```
+
+## Authentication and Authorization
+
+- The backend issues and validates RS256 JWTs. Protected endpoints require an `Authorization: Bearer <token>` header.
+- Middleware:
+  - `requireAuth` protects authenticated endpoints
+  - `requireAdmin` restricts to admin users
+  - `requireSelfOrAdminFromParam('<param>')` allows access to the resource owner (matching `sub`) or admins
+
+Applied protections:
+
+- `GET /api/bs/users`: admin only
+- `GET /api/bs/users/:id`: self or admin
+- `POST /api/bs/users`: admin only
+- `PUT /api/bs/users/:id`: self or admin
+- `DELETE /api/bs/users/:id`: admin only
+- `POST /api/auth/oauth-token`, `POST /api/auth/oauth-token/refresh`, `POST /api/auth/sync-user`, `GET /api/auth/badge-server-profile/:userId`: authenticated users
+
+Proxy auth toggle:
+
+- The badge server proxy `/api/bs/*` requires auth by default.
+- To allow public access (dev/testing), set env `OPENBADGES_PROXY_PUBLIC=true`.
+
+## Configuration
+
+Environment variables (non-sensitive examples):
+
+- `PORT` (default `8888`)
+- `OPENBADGES_SERVER_URL` (default `http://localhost:3000`)
+- `OPENBADGES_AUTH_ENABLED` (default `true`)
+- `OPENBADGES_AUTH_MODE` (`docker` uses Basic, `local` uses API key/basic from env)
+- `OPENBADGES_PROXY_PUBLIC` (`false` by default)
+- `PLATFORM_JWT_PRIVATE_KEY` / `PLATFORM_JWT_PUBLIC_KEY` (PEM) or base64 variants `*_B64`
+- `PLATFORM_ID`, `PLATFORM_CLIENT_ID`
 
 ## License
 
