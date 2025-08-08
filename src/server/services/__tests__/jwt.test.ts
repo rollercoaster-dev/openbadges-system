@@ -24,17 +24,10 @@ const mockJwt = vi.mocked(jwt)
 
 describe('JWTService', () => {
   let jwtService: JWTService
-  const mockPrivateKey = `-----BEGIN PRIVATE KEY-----
-MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDHDJ7FR/04tfIc
-Ec0ZwdWC23kAq4zML0M33M/2YrtSJhZ6ZxFSkBtx2jVsUmeqR9sJDeXkQtXy0f4p
-MBdDXPcj5YSrrsdda1+Il0vMuDKxgNsB86M3UQdKzdGLfFEirgxjR7kEJv10YOtE
-DpbpedxPrvG7Ik9MlJTAd4r0Pw49cjcdMTE6E/8gMAbKAnJfdCp5k0CGlQo2o1o6
-q+5r6dJDIo8jTSlB+NNcuiA6jXphOoaSGyTGPGAJq0Ly+69AazxfOlxRrtE32f+Z
-C1GKiWSiZdsXdUIrF9WUELMlnarXCJJ6S4UG0ohBTgFcFDYuPITiGVQeS+Hf5Z8i
-pqQfFAB5AgMBAAECggEABvGpEcxHxUl2HBnzOGGqmcfXhxvhgzPFKWJaOBvQXQCb
-K+oOgCQFy3GaJvLzYSCvNzObRKXrpKgEUPClFcmHgqhE6jEOQwQhfvfJJuZAJJ7L
-TEST_PRIVATE_KEY_CONTENT
------END PRIVATE KEY-----`
+  // Note: This is a mock private key used exclusively for testing purposes.
+  // It is intentionally not a real PEM and should not be treated as sensitive.
+  // Using a placeholder avoids CI secret scanners.
+  const mockPrivateKey = 'MOCK_TEST_PRIVATE_KEY'
 
   const mockPublicKey = `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxwye1Uf9OLXyHBHNGcHV
