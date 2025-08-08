@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken'
+import jwt, { type SignOptions, type VerifyOptions } from 'jsonwebtoken'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
@@ -123,8 +123,8 @@ export class JWTService {
       },
     }
 
-    const signOpts = {
-      algorithm: 'RS256' as const,
+    const signOpts: SignOptions = {
+      algorithm: 'RS256',
       issuer: this.tokenIssuer,
       expiresIn: '1h',
       ...(this.tokenAudience ? { audience: this.tokenAudience } : {}),
@@ -141,7 +141,7 @@ export class JWTService {
    */
   verifyToken(token: string): JWTPayload | null {
     try {
-      const options: jwt.VerifyOptions = {
+      const options: VerifyOptions = {
         algorithms: ['RS256'],
         issuer: this.tokenIssuer,
         clockTolerance: this.clockToleranceSec,

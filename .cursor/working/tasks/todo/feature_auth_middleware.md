@@ -44,7 +44,7 @@ Add JWT-based authentication and role-based authorization middleware. Protect se
 - Wired protections into `users` and `auth` routes; gated `/api/bs/*` proxy by default
 - Added unit tests: `src/server/middleware/__tests__/auth.test.ts` (9 tests, passing)
 - All tests green locally (81 passed, 16 skipped)
-- Opened PR: feat(auth): add JWT auth middleware; protect routes and proxy; add tests
+- Merged PR #15: feat(auth): add JWT auth middleware; protect routes and proxy; add tests (2025-08-08)
   - URL: https://github.com/rollercoaster-dev/openbadges-system/pull/15
 
 ## Notes
