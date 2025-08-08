@@ -28,6 +28,9 @@ export class JWTService {
   private publicKey: string
   private platformId: string
   private clientId: string
+  private tokenIssuer: string
+  private tokenAudience?: string
+  private clockToleranceSec: number
 
   constructor() {
     const envPrivate =
@@ -93,6 +96,11 @@ export class JWTService {
 
     this.platformId = process.env.PLATFORM_ID || 'urn:uuid:a504d862-bd64-4e0d-acff-db7955955bc1'
     this.clientId = process.env.PLATFORM_CLIENT_ID || 'openbadges-demo-main-app'
+    // Issuer defaults to clientId for backwards compatibility; can be overridden
+    this.tokenIssuer = process.env.PLATFORM_JWT_ISSUER || this.clientId
+    // Audience is optional; when set, both sign and verify will enforce it
+    this.tokenAudience = process.env.PLATFORM_JWT_AUDIENCE || undefined
+    this.clockToleranceSec = Number(process.env.JWT_CLOCK_TOLERANCE_SEC || '0') || 0
   }
 
   /**
@@ -113,7 +121,8 @@ export class JWTService {
 
     return jwt.sign(payload, this.privateKey, {
       algorithm: 'RS256',
-      issuer: this.clientId,
+      issuer: this.tokenIssuer,
+      audience: this.tokenAudience,
       expiresIn: '1h',
     })
   }
@@ -129,7 +138,9 @@ export class JWTService {
     try {
       return jwt.verify(token, this.publicKey, {
         algorithms: ['RS256'],
-        issuer: this.clientId,
+        issuer: this.tokenIssuer,
+        audience: this.tokenAudience,
+        clockTolerance: this.clockToleranceSec,
       }) as JWTPayload
     } catch (error) {
       if (process.env.NODE_ENV !== 'test') {
