@@ -3,6 +3,7 @@
 ## Progress
 
 - PR #3 opened: feat(auth): add /api/auth/validate and verify platform token on badges proxy. All tests pass locally. Branch: `feature/real-jwt-auth-integration`.
+- Completed: Real JWT auth integration (#6) merged via PR #3.
 
 ## Top priorities (P0)
 
