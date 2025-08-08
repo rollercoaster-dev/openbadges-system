@@ -126,6 +126,7 @@ QIDAQAB
         {
           algorithm: 'RS256',
           issuer: 'openbadges-demo-main-app',
+          audience: undefined,
           expiresIn: '1h',
         }
       )
@@ -182,10 +183,11 @@ QIDAQAB
       expect(mockJwt.verify).toHaveBeenCalledWith(
         mockToken,
         expect.stringContaining('-----BEGIN PUBLIC KEY-----'),
-        {
+        expect.objectContaining({
           algorithms: ['RS256'],
           issuer: 'openbadges-demo-main-app',
-        }
+          clockTolerance: 0,
+        })
       )
     })
 
@@ -198,6 +200,52 @@ QIDAQAB
       const result = jwtService.verifyToken(mockToken)
 
       expect(result).toBeNull()
+    })
+  })
+
+  describe('issuer/audience/clock options', () => {
+    it('uses env overrides for issuer/audience and clock tolerance when provided', () => {
+      process.env.PLATFORM_JWT_ISSUER = 'urn:test:issuer'
+      process.env.PLATFORM_JWT_AUDIENCE = 'urn:test:aud'
+      process.env.JWT_CLOCK_TOLERANCE_SEC = '60'
+
+      const svc = new JWTService()
+      const token = 'valid-token'
+      const payload = { sub: 'u1', platformId: 'p', displayName: 'd', email: 'e' }
+
+      // Sign options should include issuer/audience
+      mockJwt.sign.mockReturnValue('signed-token' as never)
+      svc.generatePlatformToken({
+        id: 'u1',
+        username: 'u',
+        email: 'e',
+        firstName: 'f',
+        lastName: 'l',
+        isAdmin: false,
+      })
+      expect(mockJwt.sign).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.any(String),
+        expect.objectContaining({ issuer: 'urn:test:issuer', audience: 'urn:test:aud' })
+      )
+
+      // Verify options should include issuer/audience
+      mockJwt.verify.mockReturnValue(payload as never)
+      const res = svc.verifyToken(token)
+      expect(res).toEqual(payload)
+      expect(mockJwt.verify).toHaveBeenCalledWith(
+        token,
+        expect.any(String),
+        expect.objectContaining({
+          issuer: 'urn:test:issuer',
+          audience: 'urn:test:aud',
+          clockTolerance: 60,
+        })
+      )
+
+      delete process.env.PLATFORM_JWT_ISSUER
+      delete process.env.PLATFORM_JWT_AUDIENCE
+      delete process.env.JWT_CLOCK_TOLERANCE_SEC
     })
   })
 

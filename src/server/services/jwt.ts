@@ -136,12 +136,15 @@ export class JWTService {
    */
   verifyToken(token: string): JWTPayload | null {
     try {
-      return jwt.verify(token, this.publicKey, {
+      const options: any = {
         algorithms: ['RS256'],
         issuer: this.tokenIssuer,
-        audience: this.tokenAudience,
         clockTolerance: this.clockToleranceSec,
-      }) as JWTPayload
+      }
+      if (this.tokenAudience) {
+        options.audience = this.tokenAudience
+      }
+      return jwt.verify(token, this.publicKey, options) as JWTPayload
     } catch (error) {
       if (process.env.NODE_ENV !== 'test') {
         console.error('JWT verification failed:', error)
