@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { userService } from '../services/user'
+import { requireAdmin, requireSelfOrAdminFromParam } from '../middleware/auth'
 
 const userRoutes = new Hono()
 
@@ -39,7 +40,7 @@ const credentialSchema = z.object({
 })
 
 // Get all users with pagination and filtering
-userRoutes.get('/', async c => {
+userRoutes.get('/', requireAdmin, async c => {
   if (!userService) {
     return c.json({ error: 'User service unavailable' }, 503)
   }
@@ -65,7 +66,7 @@ userRoutes.get('/', async c => {
 })
 
 // Create new user
-userRoutes.post('/', async c => {
+userRoutes.post('/', requireAdmin, async c => {
   if (!userService) {
     return c.json({ error: 'User service unavailable' }, 503)
   }
@@ -89,7 +90,7 @@ userRoutes.post('/', async c => {
 })
 
 // Get user by ID
-userRoutes.get('/:id', async c => {
+userRoutes.get('/:id', requireSelfOrAdminFromParam('id'), async c => {
   if (!userService) {
     return c.json({ error: 'User service unavailable' }, 503)
   }
@@ -105,7 +106,7 @@ userRoutes.get('/:id', async c => {
 })
 
 // Update user
-userRoutes.put('/:id', async c => {
+userRoutes.put('/:id', requireSelfOrAdminFromParam('id'), async c => {
   if (!userService) {
     return c.json({ error: 'User service unavailable' }, 503)
   }
@@ -131,7 +132,7 @@ userRoutes.put('/:id', async c => {
 })
 
 // Delete user
-userRoutes.delete('/:id', async c => {
+userRoutes.delete('/:id', requireAdmin, async c => {
   if (!userService) {
     return c.json({ error: 'User service unavailable' }, 503)
   }
@@ -146,7 +147,7 @@ userRoutes.delete('/:id', async c => {
 })
 
 // Add user credential
-userRoutes.post('/:id/credentials', async c => {
+userRoutes.post('/:id/credentials', requireSelfOrAdminFromParam('id'), async c => {
   if (!userService) {
     return c.json({ error: 'User service unavailable' }, 503)
   }
@@ -171,7 +172,7 @@ userRoutes.post('/:id/credentials', async c => {
 })
 
 // Get user credentials
-userRoutes.get('/:id/credentials', async c => {
+userRoutes.get('/:id/credentials', requireSelfOrAdminFromParam('id'), async c => {
   if (!userService) {
     return c.json({ error: 'User service unavailable' }, 503)
   }
@@ -186,7 +187,7 @@ userRoutes.get('/:id/credentials', async c => {
 })
 
 // Remove user credential
-userRoutes.delete('/:id/credentials/:credentialId', async c => {
+userRoutes.delete('/:id/credentials/:credentialId', requireSelfOrAdminFromParam('id'), async c => {
   if (!userService) {
     return c.json({ error: 'User service unavailable' }, 503)
   }

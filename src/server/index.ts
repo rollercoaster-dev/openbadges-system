@@ -5,6 +5,7 @@ import { userRoutes } from './routes/users'
 import { authRoutes } from './routes/auth'
 import { badgesRoutes } from './routes/badges'
 import { oauthRoutes } from './routes/oauth'
+import { requireAuth } from './middleware/auth'
 
 // Define a simpler JSON value type to avoid deep type recursion
 type JSONValue =
@@ -68,7 +69,9 @@ async function safeJsonResponse(response: Response): Promise<JSONValue> {
 }
 
 // Proxy endpoint for OpenBadges server (excluding user routes)
-app.all('/api/bs/*', async c => {
+const proxyRequiresAuth = (process.env.OPENBADGES_PROXY_PUBLIC ?? 'false') !== 'true'
+
+app.all('/api/bs/*', proxyRequiresAuth ? requireAuth : (c, next) => next(), async c => {
   // Skip user management endpoints - they are handled by userRoutes
   if (c.req.path.startsWith('/api/bs/users')) {
     return c.json({ error: 'Route not found' }, 404)
