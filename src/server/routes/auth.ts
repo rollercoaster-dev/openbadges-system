@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { jwtService } from '../services/jwt'
 import { userService } from '../services/user'
 import { userSyncService } from '../services/userSync'
+import { z } from 'zod'
 
 const authRoutes = new Hono()
 
@@ -27,16 +28,36 @@ authRoutes.get('/validate', async c => {
   }
 })
 
+const platformTokenSchema = z.object({
+  user: z.object({
+    id: z.string().min(1),
+    email: z.string().email(),
+    username: z.string().min(1).optional(),
+    firstName: z.string().min(1).optional(),
+    lastName: z.string().min(1).optional(),
+    isAdmin: z.boolean().optional(),
+  }),
+})
+
 // Generate platform token for OpenBadges API
 authRoutes.post('/platform-token', async c => {
   try {
-    const { user } = await c.req.json()
-
-    if (!user || !user.id || !user.email) {
+    const body = await c.req.json()
+    const parsed = platformTokenSchema.safeParse(body)
+    if (!parsed.success) {
       return c.json({ error: 'Invalid user data' }, 400)
     }
+    const { user } = parsed.data
+    const platformUser = {
+      id: user.id,
+      email: user.email,
+      username: user.username ?? '',
+      firstName: user.firstName ?? '',
+      lastName: user.lastName ?? '',
+      isAdmin: user.isAdmin ?? false,
+    }
 
-    const apiClient = jwtService.createOpenBadgesApiClient(user)
+    const apiClient = jwtService.createOpenBadgesApiClient(platformUser)
 
     return c.json({
       success: true,
@@ -49,14 +70,17 @@ authRoutes.post('/platform-token', async c => {
   }
 })
 
+const oauthTokenSchema = z.object({ userId: z.string().min(1) })
+
 // Get OAuth access token for badge server
 authRoutes.post('/oauth-token', async c => {
   try {
-    const { userId } = await c.req.json()
-
-    if (!userId) {
+    const body = await c.req.json()
+    const parsed = oauthTokenSchema.safeParse(body)
+    if (!parsed.success) {
       return c.json({ error: 'User ID is required' }, 400)
     }
+    const { userId } = parsed.data
 
     // Get user's OAuth providers
     const oauthProviders = await userService?.getOAuthProvidersByUser(userId)
@@ -91,11 +115,12 @@ authRoutes.post('/oauth-token', async c => {
 // Refresh OAuth access token
 authRoutes.post('/oauth-token/refresh', async c => {
   try {
-    const { userId } = await c.req.json()
-
-    if (!userId) {
+    const body = await c.req.json()
+    const parsed = oauthTokenSchema.safeParse(body)
+    if (!parsed.success) {
       return c.json({ error: 'User ID is required' }, 400)
     }
+    const { userId } = parsed.data
 
     // Get user's OAuth providers
     const oauthProviders = await userService?.getOAuthProvidersByUser(userId)
@@ -129,14 +154,17 @@ authRoutes.post('/oauth-token/refresh', async c => {
   }
 })
 
+const syncUserSchema = z.object({ userId: z.string().min(1) })
+
 // Sync user data with badge server
 authRoutes.post('/sync-user', async c => {
   try {
-    const { userId } = await c.req.json()
-
-    if (!userId) {
+    const body = await c.req.json()
+    const parsed = syncUserSchema.safeParse(body)
+    if (!parsed.success) {
       return c.json({ error: 'User ID is required' }, 400)
     }
+    const { userId } = parsed.data
 
     // Get user from local database
     const user = await userService?.getUserById(userId)

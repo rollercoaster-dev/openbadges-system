@@ -53,6 +53,12 @@ importers:
       vue-router:
         specifier: ^4.3.0
         version: 4.5.1(vue@3.5.14(typescript@5.8.3))
+      zod:
+        specifier: ^4.0.15
+        version: 4.0.15
+      zod-form-data:
+        specifier: ^3.0.0
+        version: 3.0.0(zod@4.0.15)
     devDependencies:
       '@commitlint/cli':
         specifier: ^19.8.1
@@ -69,6 +75,9 @@ importers:
       '@types/bun':
         specifier: latest
         version: 1.2.18(@types/react@19.1.8)
+      '@types/express-validator':
+        specifier: ^3.0.2
+        version: 3.0.2
       '@types/node':
         specifier: ^22.15.21
         version: 22.15.21
@@ -150,6 +159,9 @@ importers:
       vue-tsc:
         specifier: ^3.0.1
         version: 3.0.1(typescript@5.8.3)
+      zod-to-ts:
+        specifier: ^1.2.0
+        version: 1.2.0(typescript@5.8.3)(zod@4.0.15)
 
 packages:
 
@@ -779,6 +791,9 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@rvf/set-get@7.0.1':
+    resolution: {integrity: sha512-GkTSn9K1GrTYoTUqlUs36k6nJnzjQaFBTTEIqUYmzBcsGsoJM8xG7EAx2WLHWAA4QzFjcwWUSHQ3vM3Fbw50Tg==}
+
   '@tootallnate/once@1.1.2':
     resolution: {integrity: sha512-RbzJvlNzmRq5c3O09UipeuXno4tA1FE6ikOjxZK0tuxVv3412l64l5t1W5pj4+rJq9vpkm/kwiR07aZXnsKPxw==}
     engines: {node: '>= 6'}
@@ -800,6 +815,10 @@ packages:
 
   '@types/estree@1.0.7':
     resolution: {integrity: sha512-w28IoSUCJpidD/TGviZwwMJckNESJZXFu7NBZ5YJ4mEUnNraUn9Pm8HSZm/jDF1pDWYKspWE7oVphigUPRakIQ==}
+
+  '@types/express-validator@3.0.2':
+    resolution: {integrity: sha512-dV+1u6absDDEIVe5jd5ID1XYvPPvOSvggMWh09VYM3TeBjAjBDtwJWyJg/5PnK7s8FRgbOtHgD6oX3N2MKWwDw==}
+    deprecated: This is a stub types definition. express-validator provides its own type definitions, so you do not need this installed.
 
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
@@ -1557,6 +1576,10 @@ packages:
   expect-type@1.2.2:
     resolution: {integrity: sha512-JhFGDVJ7tmDJItKhYgJCGLOWjuK9vPxiXoUFLwLDc99NlmklilbiQJwoctZtt13+xMw91MCk/REan6MWHqDjyA==}
     engines: {node: '>=12.0.0'}
+
+  express-validator@7.2.1:
+    resolution: {integrity: sha512-CjNE6aakfpuwGaHQZ3m8ltCG2Qvivd7RHtVMS/6nVxOM7xVGqr4bhflsm4+N5FP5zI7Zxp+Hae+9RE+o8e3ZOQ==}
+    engines: {node: '>= 8.0.0'}
 
   exsolve@1.0.5:
     resolution: {integrity: sha512-pz5dvkYYKQ1AHVrgOzBKWeP4u4FRb3a6DNK2ucr0OoNwYIU4QWsJ+NM36LLzORT+z845MzKHHhpXiUF5nvQoJg==}
@@ -2897,6 +2920,10 @@ packages:
     resolution: {integrity: sha512-b+1eJOlsR9K8HJpow9Ok3fiWOWSIcIzXodvv0rQjVoOVNpWMpxf1wZNpt4y9h10odCNrqnYp1OBzRktckBe3sA==}
     hasBin: true
 
+  validator@13.12.0:
+    resolution: {integrity: sha512-c1Q0mCiPlgdTVVVIJIrBuxNicYE+t/7oKeI9MWLj3fh/uq2Pxh/3eeWbVZ4OcGW1TUf53At0njHw5SMdA3tmMg==}
+    engines: {node: '>= 0.10'}
+
   vite-node@3.2.4:
     resolution: {integrity: sha512-EbKSKh+bh1E1IFxeO0pg1n4dvoOTt0UDiXMd/qn++r98+jPO1xtJilvXldeuQ8giIB5IkpjCgMleHMNEsGH6pg==}
     engines: {node: ^18.0.0 || ^20.0.0 || >=22.0.0}
@@ -3118,6 +3145,20 @@ packages:
   yocto-queue@1.2.1:
     resolution: {integrity: sha512-AyeEbWOu/TAXdxlV9wmGcR0+yh2j3vYPGOECcIj2S7MkrLyC7ne+oye2BKTItt0ii2PHk4cDy+95+LshzbXnGg==}
     engines: {node: '>=12.20'}
+
+  zod-form-data@3.0.0:
+    resolution: {integrity: sha512-jTQbmXQU5wMfI+ERZH6EuATzeD9FEOviPasLL2hCUP+FcLagXLtboUM95PHsSOFseL8Nv91YKlwln3zo1sAS2g==}
+    peerDependencies:
+      zod: '>= 3.25.0'
+
+  zod-to-ts@1.2.0:
+    resolution: {integrity: sha512-x30XE43V+InwGpvTySRNz9kB7qFU8DlyEy7BsSTCHPH1R0QasMmHWZDCzYm6bVXtj/9NNJAZF3jW8rzFvH5OFA==}
+    peerDependencies:
+      typescript: ^4.9.4 || ^5.0.2
+      zod: ^3
+
+  zod@4.0.15:
+    resolution: {integrity: sha512-2IVHb9h4Mt6+UXkyMs0XbfICUh1eUrlJJAOupBHUhLRnKkruawyDddYRCs0Eizt900ntIMk9/4RksYl+FgSpcQ==}
 
 snapshots:
 
@@ -3721,6 +3762,8 @@ snapshots:
   '@rollup/rollup-win32-x64-msvc@4.41.0':
     optional: true
 
+  '@rvf/set-get@7.0.1': {}
+
   '@tootallnate/once@1.1.2':
     optional: true
 
@@ -3745,6 +3788,10 @@ snapshots:
   '@types/deep-eql@4.0.2': {}
 
   '@types/estree@1.0.7': {}
+
+  '@types/express-validator@3.0.2':
+    dependencies:
+      express-validator: 7.2.1
 
   '@types/json-schema@7.0.15': {}
 
@@ -4648,6 +4695,11 @@ snapshots:
   expand-template@2.0.3: {}
 
   expect-type@1.2.2: {}
+
+  express-validator@7.2.1:
+    dependencies:
+      lodash: 4.17.21
+      validator: 13.12.0
 
   exsolve@1.0.5: {}
 
@@ -6054,6 +6106,8 @@ snapshots:
 
   uuid@9.0.1: {}
 
+  validator@13.12.0: {}
+
   vite-node@3.2.4(@types/node@22.15.21)(jiti@2.4.2)(yaml@2.8.0):
     dependencies:
       cac: 6.7.14
@@ -6273,3 +6327,15 @@ snapshots:
   yocto-queue@0.1.0: {}
 
   yocto-queue@1.2.1: {}
+
+  zod-form-data@3.0.0(zod@4.0.15):
+    dependencies:
+      '@rvf/set-get': 7.0.1
+      zod: 4.0.15
+
+  zod-to-ts@1.2.0(typescript@5.8.3)(zod@4.0.15):
+    dependencies:
+      typescript: 5.8.3
+      zod: 4.0.15
+
+  zod@4.0.15: {}
