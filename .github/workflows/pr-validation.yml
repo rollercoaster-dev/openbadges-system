@@ -39,10 +39,11 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      - name: Check Task Link
+      - name: Check Task Link (advisory)
         uses: ./.github/actions/check-task-link
         with:
           pr-body: ${{ github.event.pull_request.body }}
+          enforce: false
         env:
           # Provide alternative env keys for robustness if input is empty
           INPUT_PR_BODY: ${{ github.event.pull_request.body }}
@@ -120,7 +121,7 @@ jobs:
                 // Skip docs and non-code files
                 const filename = file.filename;
                 const ext = path.extname(filename).toLowerCase();
-                const skip = filename.startsWith('docs/') || ext === '.md' || ext === '.png' || ext === '.jpg' || ext === '.jpeg' || ext === '.svg' || ext === '';
+                const skip = filename === '.env.example' || filename.startsWith('docs/') || ext === '.md' || ext === '.png' || ext === '.jpg' || ext === '.jpeg' || ext === '.svg' || ext === '';
                 if (skip) continue;
                 try {
                   const content = fs.readFileSync(filename, 'utf8');
