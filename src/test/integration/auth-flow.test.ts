@@ -536,7 +536,7 @@ describe('Authentication Flow Integration Tests', () => {
     })
 
     it('should handle badge management operations', async () => {
-      const mockPlatformToken = 'mock-platform-jwt-token'
+      const mockPlatformToken = 'jwt-mock-platform'
       const mockNewAssertion = {
         id: 'new-assertion',
         badgeClass: 'badge-class-1',

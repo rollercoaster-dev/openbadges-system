@@ -24,17 +24,10 @@ const mockJwt = vi.mocked(jwt)
 
 describe('JWTService', () => {
   let jwtService: JWTService
-  const mockPrivateKey = `-----BEGIN PRIVATE KEY-----
-MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDHDJ7FR/04tfIc
-Ec0ZwdWC23kAq4zML0M33M/2YrtSJhZ6ZxFSkBtx2jVsUmeqR9sJDeXkQtXy0f4p
-MBdDXPcj5YSrrsdda1+Il0vMuDKxgNsB86M3UQdKzdGLfFEirgxjR7kEJv10YOtE
-DpbpedxPrvG7Ik9MlJTAd4r0Pw49cjcdMTE6E/8gMAbKAnJfdCp5k0CGlQo2o1o6
-q+5r6dJDIo8jTSlB+NNcuiA6jXphOoaSGyTGPGAJq0Ly+69AazxfOlxRrtE32f+Z
-C1GKiWSiZdsXdUIrF9WUELMlnarXCJJ6S4UG0ohBTgFcFDYuPITiGVQeS+Hf5Z8i
-pqQfFAB5AgMBAAECggEABvGpEcxHxUl2HBnzOGGqmcfXhxvhgzPFKWJaOBvQXQCb
-K+oOgCQFy3GaJvLzYSCvNzObRKXrpKgEUPClFcmHgqhE6jEOQwQhfvfJJuZAJJ7L
-TEST_PRIVATE_KEY_CONTENT
------END PRIVATE KEY-----`
+  // Note: This is a mock private key used exclusively for testing purposes.
+  // It is intentionally not a real PEM and should not be treated as sensitive.
+  // Using a placeholder avoids CI secret scanners.
+  const mockPrivateKey = 'MOCK_TEST_PRIVATE_KEY'
 
   const mockPublicKey = `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxwye1Uf9OLXyHBHNGcHV
@@ -73,9 +66,9 @@ QIDAQAB
     })
 
     it('should have correct platform and client configuration', () => {
-      // Mock the JWT sign function to return a token
-      const mockToken = 'mock-api-client-token'
-      mockJwt.sign.mockReturnValueOnce(mockToken as never)
+      // Mock the JWT sign function to return a token-like value
+      const jwtMockValue = 'jwt-mock-client'
+      mockJwt.sign.mockReturnValueOnce(jwtMockValue as never)
 
       // Test that the service has the correct configuration
       const apiClient = jwtService.createOpenBadgesApiClient({
@@ -88,8 +81,8 @@ QIDAQAB
       })
 
       expect(apiClient.headers['Content-Type']).toBe('application/json')
-      expect(apiClient.headers.Authorization).toBe(`Bearer ${mockToken}`)
-      expect(apiClient.token).toBe(mockToken)
+      expect(apiClient.headers.Authorization).toBe(`Bearer ${jwtMockValue}`)
+      expect(apiClient.token).toBe(jwtMockValue)
     })
   })
 
@@ -104,12 +97,12 @@ QIDAQAB
         isAdmin: false,
       }
 
-      const mockToken = 'mock-jwt-token'
-      mockJwt.sign.mockImplementation(() => mockToken)
+      const jwtMockValue = 'jwt-mock'
+      mockJwt.sign.mockImplementation(() => jwtMockValue)
 
       const result = jwtService.generatePlatformToken(mockUser)
 
-      expect(result).toBe(mockToken)
+      expect(result).toBe(jwtMockValue)
       expect(mockJwt.sign).toHaveBeenCalledWith(
         {
           sub: 'test-user-id',
@@ -123,11 +116,11 @@ QIDAQAB
           },
         },
         expect.any(String),
-        {
+        expect.objectContaining({
           algorithm: 'RS256',
           issuer: 'openbadges-demo-main-app',
           expiresIn: '1h',
-        }
+        })
       )
     })
 
@@ -141,12 +134,12 @@ QIDAQAB
         isAdmin: true,
       }
 
-      const mockToken = 'mock-admin-jwt-token'
-      mockJwt.sign.mockImplementation(() => mockToken)
+      const jwtMockValue = 'jwt-mock-admin'
+      mockJwt.sign.mockImplementation(() => jwtMockValue)
 
       const result = jwtService.generatePlatformToken(mockUser)
 
-      expect(result).toBe(mockToken)
+      expect(result).toBe(jwtMockValue)
       expect(mockJwt.sign).toHaveBeenCalledWith(
         expect.objectContaining({
           metadata: expect.objectContaining({
@@ -161,7 +154,7 @@ QIDAQAB
 
   describe('verifyToken', () => {
     it('should verify valid JWT token using public key', () => {
-      const mockToken = 'valid-jwt-token'
+      const jwtMockValue = 'jwt-valid'
       const mockPayload = {
         sub: 'test-user-id',
         platformId: 'urn:uuid:a504d862-bd64-4e0d-acff-db7955955bc1',
@@ -176,28 +169,80 @@ QIDAQAB
 
       mockJwt.verify.mockImplementation(() => mockPayload)
 
-      const result = jwtService.verifyToken(mockToken)
+      const result = jwtService.verifyToken(jwtMockValue)
 
       expect(result).toEqual(mockPayload)
       expect(mockJwt.verify).toHaveBeenCalledWith(
-        mockToken,
+        jwtMockValue,
         expect.stringContaining('-----BEGIN PUBLIC KEY-----'),
-        {
+        expect.objectContaining({
           algorithms: ['RS256'],
           issuer: 'openbadges-demo-main-app',
-        }
+          clockTolerance: 0,
+        })
       )
     })
 
     it('should return null for invalid JWT token', () => {
-      const mockToken = 'invalid-jwt-token'
+      const jwtMockValue = 'jwt-invalid'
       mockJwt.verify.mockImplementation(() => {
         throw new Error('Invalid token')
       })
 
-      const result = jwtService.verifyToken(mockToken)
+      const result = jwtService.verifyToken(jwtMockValue)
 
       expect(result).toBeNull()
+    })
+  })
+
+  describe('issuer/audience/clock options', () => {
+    it('uses env overrides for issuer/audience and clock tolerance when provided', () => {
+      const prev = {
+        PLATFORM_JWT_ISSUER: process.env.PLATFORM_JWT_ISSUER,
+        PLATFORM_JWT_AUDIENCE: process.env.PLATFORM_JWT_AUDIENCE,
+        JWT_CLOCK_TOLERANCE_SEC: process.env.JWT_CLOCK_TOLERANCE_SEC,
+      }
+      process.env.PLATFORM_JWT_ISSUER = 'urn:test:issuer'
+      process.env.PLATFORM_JWT_AUDIENCE = 'urn:test:aud'
+      process.env.JWT_CLOCK_TOLERANCE_SEC = '60'
+
+      const svc = new JWTService()
+      const token = 'valid-token'
+      const payload = { sub: 'u1', platformId: 'p', displayName: 'd', email: 'e' }
+
+      // Sign options should include issuer/audience
+      mockJwt.sign.mockReturnValue('signed-token' as never)
+      svc.generatePlatformToken({
+        id: 'u1',
+        username: 'u',
+        email: 'e',
+        firstName: 'f',
+        lastName: 'l',
+        isAdmin: false,
+      })
+      expect(mockJwt.sign).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.any(String),
+        expect.objectContaining({ issuer: 'urn:test:issuer', audience: 'urn:test:aud' })
+      )
+
+      // Verify options should include issuer/audience
+      mockJwt.verify.mockReturnValue(payload as never)
+      const res = svc.verifyToken(token)
+      expect(res).toEqual(payload)
+      expect(mockJwt.verify).toHaveBeenCalledWith(
+        token,
+        expect.any(String),
+        expect.objectContaining({
+          issuer: 'urn:test:issuer',
+          audience: 'urn:test:aud',
+          clockTolerance: 60,
+        })
+      )
+
+      process.env.PLATFORM_JWT_ISSUER = prev.PLATFORM_JWT_ISSUER
+      process.env.PLATFORM_JWT_AUDIENCE = prev.PLATFORM_JWT_AUDIENCE
+      process.env.JWT_CLOCK_TOLERANCE_SEC = prev.JWT_CLOCK_TOLERANCE_SEC
     })
   })
 
@@ -212,14 +257,14 @@ QIDAQAB
         isAdmin: false,
       }
 
-      const mockToken = 'mock-jwt-token'
-      mockJwt.sign.mockImplementation(() => mockToken)
+      const jwtMockValue = 'jwt-mock'
+      mockJwt.sign.mockImplementation(() => jwtMockValue)
 
       const result = jwtService.createOpenBadgesApiClient(mockUser)
 
-      expect(result.token).toBe(mockToken)
+      expect(result.token).toBe(jwtMockValue)
       expect(result.headers).toEqual({
-        Authorization: `Bearer ${mockToken}`,
+        Authorization: `Bearer ${jwtMockValue}`,
         'Content-Type': 'application/json',
       })
     })

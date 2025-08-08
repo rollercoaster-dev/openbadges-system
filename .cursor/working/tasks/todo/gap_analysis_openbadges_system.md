@@ -5,6 +5,7 @@
 - PR #3 opened: feat(auth): add /api/auth/validate and verify platform token on badges proxy. All tests pass locally. Branch: `feature/real-jwt-auth-integration`.
 - Completed: Real JWT auth integration (#6) merged via PR #3.
 - Completed: Secure key management for platform JWT (#7) merged via PR #13.
+- Completed: AuthN/AuthZ middleware (#30) merged via PR #15.
 
 ## Top priorities (P0)
 
@@ -27,7 +28,7 @@
   - Branch: `chore/add-zod-validation`
   - Est: 1 day
 
-- **AuthN/AuthZ middleware**
+- **AuthN/AuthZ middleware** (Completed via PR #15)
   - Add: JWT verification middleware for protected routes; role checks for admin ops
   - Branch: `feature/auth-middleware`
   - Est: 0.5 day

@@ -81,15 +81,15 @@ describe('OpenBadgesService', () => {
 
   describe('refreshOAuthToken', () => {
     it('should refresh OAuth token successfully', async () => {
-      const mockToken = 'refreshed-oauth-token'
+      const oauthMock = 'oauth-refreshed'
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ access_token: mockToken }),
+        json: () => Promise.resolve({ access_token: oauthMock }),
       })
 
       const token = await service.refreshOAuthToken(mockUser)
 
-      expect(token).toBe(mockToken)
+      expect(token).toBe(oauthMock)
       expect(mockFetch).toHaveBeenCalledWith('/api/auth/oauth-token/refresh', {
         method: 'POST',
         headers: {
@@ -114,17 +114,17 @@ describe('OpenBadgesService', () => {
 
   describe('createApiClient', () => {
     it('should create API client with correct headers', async () => {
-      const mockToken = 'test-oauth-token'
+      const oauthMock = 'oauth-test'
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ access_token: mockToken }),
+        json: () => Promise.resolve({ access_token: oauthMock }),
       })
 
       const client = await service.createApiClient(mockUser)
 
-      expect(client.token).toBe(mockToken)
+      expect(client.token).toBe(oauthMock)
       expect(client.headers).toEqual({
-        Authorization: `Bearer ${mockToken}`,
+        Authorization: `Bearer ${oauthMock}`,
         'Content-Type': 'application/json',
       })
     })
@@ -132,7 +132,7 @@ describe('OpenBadgesService', () => {
 
   describe('getUserBackpack', () => {
     it('should get user backpack successfully', async () => {
-      const mockToken = 'test-oauth-token'
+      const oauthMock = 'oauth-test'
       const mockBackpack = {
         assertions: [{ id: 'assertion-1', badgeClass: 'badge-1', recipient: 'test@example.com' }],
         total: 1,
@@ -141,7 +141,7 @@ describe('OpenBadgesService', () => {
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ access_token: mockToken }),
+          json: () => Promise.resolve({ access_token: oauthMock }),
         })
         .mockResolvedValueOnce({
           ok: true,
@@ -153,18 +153,18 @@ describe('OpenBadgesService', () => {
       expect(backpack).toEqual(mockBackpack)
       expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v1/assertions', {
         headers: {
-          Authorization: `Bearer ${mockToken}`,
+          Authorization: `Bearer ${oauthMock}`,
           'Content-Type': 'application/json',
         },
       })
     })
 
     it('should throw error when backpack request fails', async () => {
-      const mockToken = 'test-oauth-token'
+      const oauthMock = 'oauth-test'
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ access_token: mockToken }),
+          json: () => Promise.resolve({ access_token: oauthMock }),
         })
         .mockResolvedValueOnce({
           ok: false,
@@ -177,8 +177,8 @@ describe('OpenBadgesService', () => {
     })
 
     it('should refresh token and retry on 401 error', async () => {
-      const mockToken = 'test-oauth-token'
-      const mockRefreshToken = 'refreshed-oauth-token'
+      const oauthMock = 'oauth-test'
+      const oauthRefreshed = 'oauth-refreshed'
       const mockBackpack = {
         assertions: [{ id: 'assertion-1', badgeClass: 'badge-1', recipient: 'test@example.com' }],
         total: 1,
@@ -187,7 +187,7 @@ describe('OpenBadgesService', () => {
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ access_token: mockToken }),
+          json: () => Promise.resolve({ access_token: oauthMock }),
         })
         .mockResolvedValueOnce({
           ok: false,
@@ -195,7 +195,7 @@ describe('OpenBadgesService', () => {
         })
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ access_token: mockRefreshToken }),
+          json: () => Promise.resolve({ access_token: oauthRefreshed }),
         })
         .mockResolvedValueOnce({
           ok: true,
@@ -205,7 +205,18 @@ describe('OpenBadgesService', () => {
       const backpack = await service.getUserBackpack(mockUser)
 
       expect(backpack).toEqual(mockBackpack)
-      expect(mockFetch).toHaveBeenCalledTimes(4)
+      expect(mockFetch).toHaveBeenNthCalledWith(2, 'http://localhost:3000/api/v1/assertions', {
+        headers: {
+          Authorization: `Bearer ${oauthMock}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      expect(mockFetch).toHaveBeenNthCalledWith(4, 'http://localhost:3000/api/v1/assertions', {
+        headers: {
+          Authorization: `Bearer ${oauthRefreshed}`,
+          'Content-Type': 'application/json',
+        },
+      })
     })
   })
 

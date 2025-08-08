@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken'
+import jwt, { type SignOptions, type VerifyOptions } from 'jsonwebtoken'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 
@@ -28,6 +28,9 @@ export class JWTService {
   private publicKey: string
   private platformId: string
   private clientId: string
+  private tokenIssuer: string
+  private tokenAudience?: string
+  private clockToleranceSec: number
 
   constructor() {
     const envPrivate =
@@ -93,6 +96,15 @@ export class JWTService {
 
     this.platformId = process.env.PLATFORM_ID || 'urn:uuid:a504d862-bd64-4e0d-acff-db7955955bc1'
     this.clientId = process.env.PLATFORM_CLIENT_ID || 'openbadges-demo-main-app'
+    // Issuer defaults to clientId for backwards compatibility; can be overridden
+    this.tokenIssuer = process.env.PLATFORM_JWT_ISSUER || this.clientId
+    // Audience is optional; when set, both sign and verify will enforce it
+    this.tokenAudience = process.env.PLATFORM_JWT_AUDIENCE || undefined
+    {
+      const raw = process.env.JWT_CLOCK_TOLERANCE_SEC
+      const n = raw?.trim() ? Number(raw) : 0
+      this.clockToleranceSec = Number.isFinite(n) ? Math.max(0, Math.trunc(n)) : 0
+    }
   }
 
   /**
@@ -111,11 +123,13 @@ export class JWTService {
       },
     }
 
-    return jwt.sign(payload, this.privateKey, {
+    const signOpts: SignOptions = {
       algorithm: 'RS256',
-      issuer: this.clientId,
+      issuer: this.tokenIssuer,
       expiresIn: '1h',
-    })
+      ...(this.tokenAudience ? { audience: this.tokenAudience } : {}),
+    }
+    return jwt.sign(payload, this.privateKey, signOpts)
   }
 
   /**
@@ -127,10 +141,19 @@ export class JWTService {
    */
   verifyToken(token: string): JWTPayload | null {
     try {
-      return jwt.verify(token, this.publicKey, {
+      const options: VerifyOptions = {
         algorithms: ['RS256'],
-        issuer: this.clientId,
-      }) as JWTPayload
+        issuer: this.tokenIssuer,
+        clockTolerance: this.clockToleranceSec,
+      }
+      if (this.tokenAudience) {
+        options.audience = this.tokenAudience
+      }
+      const decoded = jwt.verify(token, this.publicKey, options)
+      if (!decoded || typeof decoded === 'string') {
+        return null
+      }
+      return decoded as unknown as JWTPayload
     } catch (error) {
       if (process.env.NODE_ENV !== 'test') {
         console.error('JWT verification failed:', error)

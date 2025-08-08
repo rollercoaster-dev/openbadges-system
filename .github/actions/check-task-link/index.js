@@ -8,7 +8,15 @@ async function run() {
     const defaultBranch =
       ctx.payload && ctx.payload.repository && ctx.payload.repository.default_branch
     const baseBranch = isPr ? ctx.payload.pull_request.base.ref : ''
-    const enforce = isPr && defaultBranch && baseBranch === defaultBranch
+    // Determine enforcement policy
+    // If INPUT_ENFORCE is provided, honor it. Values: 'true' | 'false' | 'auto'
+    const enforceInput = (process.env['INPUT_ENFORCE'] || '').toString().trim().toLowerCase()
+    const enforce =
+      enforceInput === 'true'
+        ? true
+        : enforceInput === 'false'
+          ? false
+          : isPr && defaultBranch && baseBranch === defaultBranch
 
     // Prefer explicit input, but fall back to common env var formats when running as a plain Node script
     const inputFromCore = core.getInput('pr-body')
