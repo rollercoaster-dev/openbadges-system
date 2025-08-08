@@ -6,8 +6,8 @@ const userRoutes = new Hono()
 
 // Schemas
 const paginationSchema = z.object({
-  page: z.string().optional(),
-  limit: z.string().optional(),
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().max(100).default(10),
   search: z.string().optional(),
   role: z.string().optional(),
   status: z.string().optional(),
@@ -48,9 +48,7 @@ userRoutes.get('/', async c => {
     if (!parsed.success) {
       return c.json({ error: 'Invalid query parameters' }, 400)
     }
-    const { page: qPage, limit: qLimit, search = '', role, status, dateFrom, dateTo } = parsed.data
-    const page = parseInt(qPage || '1') || 1
-    const limit = parseInt(qLimit || '10') || 10
+    const { page, limit, search = '', role, status, dateFrom, dateTo } = parsed.data
     const filters = {
       role,
       status,
@@ -72,7 +70,12 @@ userRoutes.post('/', async c => {
     return c.json({ error: 'User service unavailable' }, 503)
   }
   try {
-    const body = await c.req.json()
+    let body: unknown
+    try {
+      body = await c.req.json()
+    } catch {
+      return c.json({ error: 'Invalid JSON body' }, 400)
+    }
     const parsed = userCreateSchema.safeParse(body)
     if (!parsed.success) {
       return c.json({ error: 'Invalid user data' }, 400)
@@ -108,7 +111,12 @@ userRoutes.put('/:id', async c => {
   }
   try {
     const userId = c.req.param('id')
-    const body = await c.req.json()
+    let body: unknown
+    try {
+      body = await c.req.json()
+    } catch {
+      return c.json({ error: 'Invalid JSON body' }, 400)
+    }
     const parsed = userUpdateSchema.safeParse(body)
     if (!parsed.success) {
       return c.json({ error: 'Invalid user data' }, 400)
@@ -144,7 +152,12 @@ userRoutes.post('/:id/credentials', async c => {
   }
   try {
     const userId = c.req.param('id')
-    const body = await c.req.json()
+    let body: unknown
+    try {
+      body = await c.req.json()
+    } catch {
+      return c.json({ error: 'Invalid JSON body' }, 400)
+    }
     const parsed = credentialSchema.safeParse(body)
     if (!parsed.success) {
       return c.json({ error: 'Invalid credential data' }, 400)

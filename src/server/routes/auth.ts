@@ -42,7 +42,12 @@ const platformTokenSchema = z.object({
 // Generate platform token for OpenBadges API
 authRoutes.post('/platform-token', async c => {
   try {
-    const body = await c.req.json()
+    let body: unknown
+    try {
+      body = await c.req.json()
+    } catch {
+      return c.json({ error: 'Invalid JSON body' }, 400)
+    }
     const parsed = platformTokenSchema.safeParse(body)
     if (!parsed.success) {
       return c.json({ error: 'Invalid user data' }, 400)
@@ -75,7 +80,12 @@ const oauthTokenSchema = z.object({ userId: z.string().min(1) })
 // Get OAuth access token for badge server
 authRoutes.post('/oauth-token', async c => {
   try {
-    const body = await c.req.json()
+    let body: unknown
+    try {
+      body = await c.req.json()
+    } catch {
+      return c.json({ error: 'Invalid JSON body' }, 400)
+    }
     const parsed = oauthTokenSchema.safeParse(body)
     if (!parsed.success) {
       return c.json({ error: 'User ID is required' }, 400)
@@ -115,7 +125,12 @@ authRoutes.post('/oauth-token', async c => {
 // Refresh OAuth access token
 authRoutes.post('/oauth-token/refresh', async c => {
   try {
-    const body = await c.req.json()
+    let body: unknown
+    try {
+      body = await c.req.json()
+    } catch {
+      return c.json({ error: 'Invalid JSON body' }, 400)
+    }
     const parsed = oauthTokenSchema.safeParse(body)
     if (!parsed.success) {
       return c.json({ error: 'User ID is required' }, 400)
@@ -159,7 +174,12 @@ const syncUserSchema = z.object({ userId: z.string().min(1) })
 // Sync user data with badge server
 authRoutes.post('/sync-user', async c => {
   try {
-    const body = await c.req.json()
+    let body: unknown
+    try {
+      body = await c.req.json()
+    } catch {
+      return c.json({ error: 'Invalid JSON body' }, 400)
+    }
     const parsed = syncUserSchema.safeParse(body)
     if (!parsed.success) {
       return c.json({ error: 'User ID is required' }, 400)
