@@ -66,9 +66,9 @@ QIDAQAB
     })
 
     it('should have correct platform and client configuration', () => {
-      // Mock the JWT sign function to return a token
-      const mockToken = 'mock-api-client-token'
-      mockJwt.sign.mockReturnValueOnce(mockToken as never)
+      // Mock the JWT sign function to return a token-like value
+      const jwtMockValue = 'jwt-mock-client'
+      mockJwt.sign.mockReturnValueOnce(jwtMockValue as never)
 
       // Test that the service has the correct configuration
       const apiClient = jwtService.createOpenBadgesApiClient({
@@ -81,8 +81,8 @@ QIDAQAB
       })
 
       expect(apiClient.headers['Content-Type']).toBe('application/json')
-      expect(apiClient.headers.Authorization).toBe(`Bearer ${mockToken}`)
-      expect(apiClient.token).toBe(mockToken)
+      expect(apiClient.headers.Authorization).toBe(`Bearer ${jwtMockValue}`)
+      expect(apiClient.token).toBe(jwtMockValue)
     })
   })
 
@@ -97,12 +97,12 @@ QIDAQAB
         isAdmin: false,
       }
 
-      const mockToken = 'mock-jwt-token'
-      mockJwt.sign.mockImplementation(() => mockToken)
+      const jwtMockValue = 'jwt-mock'
+      mockJwt.sign.mockImplementation(() => jwtMockValue)
 
       const result = jwtService.generatePlatformToken(mockUser)
 
-      expect(result).toBe(mockToken)
+      expect(result).toBe(jwtMockValue)
       expect(mockJwt.sign).toHaveBeenCalledWith(
         {
           sub: 'test-user-id',
@@ -134,12 +134,12 @@ QIDAQAB
         isAdmin: true,
       }
 
-      const mockToken = 'mock-admin-jwt-token'
-      mockJwt.sign.mockImplementation(() => mockToken)
+      const jwtMockValue = 'jwt-mock-admin'
+      mockJwt.sign.mockImplementation(() => jwtMockValue)
 
       const result = jwtService.generatePlatformToken(mockUser)
 
-      expect(result).toBe(mockToken)
+      expect(result).toBe(jwtMockValue)
       expect(mockJwt.sign).toHaveBeenCalledWith(
         expect.objectContaining({
           metadata: expect.objectContaining({
@@ -154,7 +154,7 @@ QIDAQAB
 
   describe('verifyToken', () => {
     it('should verify valid JWT token using public key', () => {
-      const mockToken = 'valid-jwt-token'
+      const jwtMockValue = 'jwt-valid'
       const mockPayload = {
         sub: 'test-user-id',
         platformId: 'urn:uuid:a504d862-bd64-4e0d-acff-db7955955bc1',
@@ -169,11 +169,11 @@ QIDAQAB
 
       mockJwt.verify.mockImplementation(() => mockPayload)
 
-      const result = jwtService.verifyToken(mockToken)
+      const result = jwtService.verifyToken(jwtMockValue)
 
       expect(result).toEqual(mockPayload)
       expect(mockJwt.verify).toHaveBeenCalledWith(
-        mockToken,
+        jwtMockValue,
         expect.stringContaining('-----BEGIN PUBLIC KEY-----'),
         expect.objectContaining({
           algorithms: ['RS256'],
@@ -184,12 +184,12 @@ QIDAQAB
     })
 
     it('should return null for invalid JWT token', () => {
-      const mockToken = 'invalid-jwt-token'
+      const jwtMockValue = 'jwt-invalid'
       mockJwt.verify.mockImplementation(() => {
         throw new Error('Invalid token')
       })
 
-      const result = jwtService.verifyToken(mockToken)
+      const result = jwtService.verifyToken(jwtMockValue)
 
       expect(result).toBeNull()
     })
@@ -257,14 +257,14 @@ QIDAQAB
         isAdmin: false,
       }
 
-      const mockToken = 'mock-jwt-token'
-      mockJwt.sign.mockImplementation(() => mockToken)
+      const jwtMockValue = 'jwt-mock'
+      mockJwt.sign.mockImplementation(() => jwtMockValue)
 
       const result = jwtService.createOpenBadgesApiClient(mockUser)
 
-      expect(result.token).toBe(mockToken)
+      expect(result.token).toBe(jwtMockValue)
       expect(result.headers).toEqual({
-        Authorization: `Bearer ${mockToken}`,
+        Authorization: `Bearer ${jwtMockValue}`,
         'Content-Type': 'application/json',
       })
     })
