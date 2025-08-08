@@ -70,7 +70,7 @@ jobs:
       - name: OpenBadges Compliance Check
         # Ensure local action dependencies are installed and token is available
         run: |
-          npm ci --no-audit --no-fund
+          npm ci --no-audit --no-fund || npm install --no-audit --no-fund
           node index.js
         working-directory: ./.github/actions/validate-openbadges-compliance
         env:
