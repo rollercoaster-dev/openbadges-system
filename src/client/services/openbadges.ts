@@ -113,8 +113,22 @@ export class OpenBadgesService {
         timestamp: errorData.timestamp || new Date().toISOString(),
       }
     } catch {
+      // Include statusText and response excerpt for debugging
+      let debugDetails = response.statusText
+      try {
+        const responseText = await response.text()
+        if (responseText && responseText.length > 0) {
+          debugDetails = debugDetails 
+            ? `${debugDetails}: ${responseText.substring(0, 100)}` 
+            : responseText.substring(0, 100)
+        }
+      } catch {
+        // Ignore additional error when reading response text
+      }
+      
       return {
         error: `Request failed with status ${response.status}`,
+        details: debugDetails,
         timestamp: new Date().toISOString(),
       }
     }
@@ -455,29 +469,19 @@ export class OpenBadgesService {
   }> {
     try {
       const response = await this.makePublicRequest('/api/badges/revocation-list')
-      const revocationList = await response.json()
+      const revocationList = (await response.json()) as Array<{
+        id: string
+        reason?: string
+        revokedAt?: string
+      }>
 
       // Check if the assertion is in the revocation list
-      const revokedAssertion = revocationList.find(
-        (item: unknown) =>
-          typeof item === 'object' &&
-          item !== null &&
-          'id' in item &&
-          (item as { id: string }).id === assertionId
-      )
+      const revokedAssertion = revocationList.find(item => item.id === assertionId)
 
       return {
         revoked: !!revokedAssertion,
-        reason:
-          revokedAssertion && typeof revokedAssertion === 'object' && 'reason' in revokedAssertion
-            ? (revokedAssertion as { reason?: string }).reason
-            : undefined,
-        revokedAt:
-          revokedAssertion &&
-          typeof revokedAssertion === 'object' &&
-          'revokedAt' in revokedAssertion
-            ? (revokedAssertion as { revokedAt?: string }).revokedAt
-            : undefined,
+        reason: revokedAssertion?.reason,
+        revokedAt: revokedAssertion?.revokedAt,
       }
     } catch {
       // If we can't check revocation status, assume not revoked but add warning

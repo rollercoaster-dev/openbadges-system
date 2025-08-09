@@ -261,6 +261,14 @@ export default [
     ],
   },
 
+  // Test files configuration - allow any type for mocking and test data
+  {
+    files: ['**/*.test.ts', '**/*.test.js', '**/test/**/*.ts', '**/test/**/*.js', '**/__tests__/**/*.ts', '**/__tests__/**/*.js'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off', // Allow any type in tests for flexibility with mocks
+    },
+  },
+
   // Prettier config at the end to override any conflicting rules
   prettierConfig,
 ]
