@@ -88,13 +88,45 @@ export class OAuthService {
 
     const session = await userService.getOAuthSession(state)
 
-    // Check if session has expired
+    // Check if session has expired or been used (replay protection handled in userService)
     if (session && new Date(session.expires_at) < new Date()) {
       await userService.removeOAuthSession(state)
       return null
     }
 
     return session
+  }
+
+  // Mark OAuth session as used for replay protection
+  async markOAuthSessionAsUsed(state: string): Promise<boolean> {
+    if (!userService) {
+      throw new Error('User service not available')
+    }
+
+    return await userService.markOAuthSessionAsUsed(state)
+  }
+
+  // Validate PKCE code challenge
+  async validateCodeChallenge(codeVerifier: string, codeChallenge: string): Promise<boolean> {
+    try {
+      const computedChallenge = await this.createCodeChallenge(codeVerifier)
+      return computedChallenge === codeChallenge
+    } catch (error) {
+      console.error('PKCE validation error:', error)
+      return false
+    }
+  }
+
+  // Enhanced state validation
+  validateStateFormat(state: string): boolean {
+    // State should be 32 characters long (nanoid default for security)
+    if (!state || typeof state !== 'string' || state.length !== 32) {
+      return false
+    }
+    
+    // Check for valid nanoid characters (URL-safe base64)
+    const nanoidPattern = /^[A-Za-z0-9_-]+$/
+    return nanoidPattern.test(state)
   }
 
   // Remove OAuth session
@@ -322,6 +354,7 @@ export class OAuthService {
     }
 
     await userService.cleanupExpiredOAuthSessions()
+    await userService.cleanupUsedOAuthSessions()
   }
 }
 
