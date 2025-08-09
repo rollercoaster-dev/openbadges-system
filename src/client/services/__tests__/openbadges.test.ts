@@ -60,11 +60,10 @@ describe('OpenBadgesService', () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 500,
+        json: vi.fn().mockResolvedValue({ error: 'Internal server error' }),
       })
 
-      await expect(service.getOAuthToken(mockUser)).rejects.toThrow(
-        'Failed to get OAuth token for badge server'
-      )
+      await expect(service.getOAuthToken(mockUser)).rejects.toThrow('Internal server error')
     })
 
     it('should throw authentication error for 401 status', async () => {
@@ -104,11 +103,10 @@ describe('OpenBadgesService', () => {
       mockFetch.mockResolvedValueOnce({
         ok: false,
         status: 500,
+        json: vi.fn().mockResolvedValue({ error: 'Internal server error' }),
       })
 
-      await expect(service.refreshOAuthToken(mockUser)).rejects.toThrow(
-        'Failed to refresh OAuth token'
-      )
+      await expect(service.refreshOAuthToken(mockUser)).rejects.toThrow('Internal server error')
     })
   })
 
@@ -375,7 +373,12 @@ describe('OpenBadgesService', () => {
       const badgeClasses = await service.getBadgeClasses()
 
       expect(badgeClasses).toEqual(mockBadgeClasses)
-      expect(mockFetch).toHaveBeenCalledWith('http://localhost:3000/api/v2/badge-classes')
+      expect(mockFetch).toHaveBeenCalledWith(
+        '/api/v2/badge-classes',
+        expect.objectContaining({
+          headers: { 'Content-Type': 'application/json' },
+        })
+      )
     })
 
     it('should throw error when badge classes request fails', async () => {
@@ -385,7 +388,7 @@ describe('OpenBadgesService', () => {
       })
 
       await expect(service.getBadgeClasses()).rejects.toThrow(
-        'Network error. Please check your connection and try again.'
+        'Badge server error. Please try again later.'
       )
     })
   })

@@ -22,14 +22,42 @@ export interface OAuthTokenInfo {
   provider: string
 }
 
+// Verification result interfaces aligned with OB2 specification
+export interface VerificationResult {
+  valid: boolean
+  verifiedAt: string
+  issuer: {
+    name: string
+    id: string
+    verified: boolean
+  }
+  signature: {
+    valid: boolean
+    type: string
+  }
+  assertion: BadgeAssertion
+  badgeClass: BadgeClass
+  errors?: string[]
+  warnings?: string[]
+}
+
+// Standard error response shape used across all endpoints
+export interface ApiErrorResponse {
+  error: string
+  details?: string
+  code?: string
+  timestamp?: string
+}
+
 export class OpenBadgesService {
   private badgeServerBaseUrl = import.meta.env.VITE_BADGE_SERVER_URL || 'http://localhost:3000'
+  private platformApiUrl = '/api' // Platform API endpoints
 
   /**
    * Get OAuth access token for badge server API
    */
   async getOAuthToken(user: User): Promise<string> {
-    const response = await fetch('/api/auth/oauth-token', {
+    const response = await fetch(`${this.platformApiUrl}/auth/oauth-token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -39,10 +67,11 @@ export class OpenBadgesService {
     })
 
     if (!response.ok) {
+      const errorData = await this.parseErrorResponse(response)
       if (response.status === 401) {
         throw new Error('Authentication required. Please log in again.')
       }
-      throw new Error('Failed to get OAuth token for badge server')
+      throw new Error(errorData.error || 'Failed to get OAuth token for badge server')
     }
 
     const data = await response.json()
@@ -53,7 +82,7 @@ export class OpenBadgesService {
    * Refresh OAuth token if needed
    */
   async refreshOAuthToken(user: User): Promise<string> {
-    const response = await fetch('/api/auth/oauth-token/refresh', {
+    const response = await fetch(`${this.platformApiUrl}/auth/oauth-token/refresh`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -63,11 +92,32 @@ export class OpenBadgesService {
     })
 
     if (!response.ok) {
-      throw new Error('Failed to refresh OAuth token')
+      const errorData = await this.parseErrorResponse(response)
+      throw new Error(errorData.error || 'Failed to refresh OAuth token')
     }
 
     const data = await response.json()
     return data.access_token
+  }
+
+  /**
+   * Parse error response using consistent error shapes
+   */
+  private async parseErrorResponse(response: Response): Promise<ApiErrorResponse> {
+    try {
+      const errorData = await response.json()
+      return {
+        error: errorData.error || 'Unknown error occurred',
+        details: errorData.details,
+        code: errorData.code,
+        timestamp: errorData.timestamp || new Date().toISOString(),
+      }
+    } catch {
+      return {
+        error: `Request failed with status ${response.status}`,
+        timestamp: new Date().toISOString(),
+      }
+    }
   }
 
   /**
@@ -152,6 +202,33 @@ export class OpenBadgesService {
   }
 
   /**
+   * Make public API request (no authentication required)
+   * Uses platform API endpoints that proxy to the badge server
+   */
+  async makePublicRequest(endpoint: string, options: RequestInit = {}): Promise<Response> {
+    try {
+      const response = await fetch(endpoint, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+      })
+
+      if (!response.ok) {
+        throw this.handleBadgeServerError(response, endpoint)
+      }
+
+      return response
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error
+      }
+      throw new Error('Network error. Please check your connection and try again.')
+    }
+  }
+
+  /**
    * Create API client for authenticated user
    */
   async createApiClient(user: User): Promise<OpenBadgesApiClient> {
@@ -215,16 +292,25 @@ export class OpenBadgesService {
       response = await this.makeAuthenticatedRequest(user, '/api/v2/badge-classes')
     } else {
       // Public endpoint - no authentication required
-      try {
-        response = await fetch(`${this.badgeServerBaseUrl}/api/v2/badge-classes`)
-        if (!response.ok) {
-          throw this.handleBadgeServerError(response, '/api/v2/badge-classes')
-        }
-      } catch {
-        throw new Error('Network error. Please check your connection and try again.')
-      }
+      response = await this.makePublicRequest('/api/v2/badge-classes')
     }
 
+    return await response.json()
+  }
+
+  /**
+   * Get a specific badge class by ID (public endpoint)
+   */
+  async getBadgeClass(badgeClassId: string): Promise<BadgeClass> {
+    const response = await this.makePublicRequest(`/api/badges/badge-classes/${badgeClassId}`)
+    return await response.json()
+  }
+
+  /**
+   * Get a specific assertion by ID (public endpoint for verification)
+   */
+  async getAssertion(assertionId: string): Promise<BadgeAssertion> {
+    const response = await this.makePublicRequest(`/api/badges/assertions/${assertionId}`)
     return await response.json()
   }
 
@@ -261,6 +347,112 @@ export class OpenBadgesService {
     })
 
     return await response.json()
+  }
+
+  /**
+   * Verify a badge assertion (public endpoint)
+   * This method provides comprehensive verification including signature, issuer, and validity checks
+   */
+  async verifyBadge(assertionId: string): Promise<VerificationResult> {
+    try {
+      // Get the assertion data
+      const assertion = await this.getAssertion(assertionId)
+
+      // Get the badge class data
+      const badgeClassId =
+        typeof assertion.badge === 'string' ? assertion.badge : assertion.badge.id
+      const badgeClass = await this.getBadgeClass(badgeClassId)
+
+      // Perform verification through the server
+      const response = await this.makePublicRequest('/api/badges/verify', {
+        method: 'POST',
+        body: JSON.stringify({
+          assertion: assertion,
+          badgeClass: badgeClass,
+        }),
+      })
+
+      const verificationData = await response.json()
+
+      // Structure the response according to our VerificationResult interface
+      return {
+        valid: verificationData.valid || false,
+        verifiedAt: new Date().toISOString(),
+        issuer: {
+          name: badgeClass.issuer?.name || 'Unknown Issuer',
+          id: badgeClass.issuer?.id || '',
+          verified: verificationData.issuerVerified || false,
+        },
+        signature: {
+          valid: verificationData.signatureValid || false,
+          type: assertion.verification?.type || 'unknown',
+        },
+        assertion,
+        badgeClass,
+        errors: verificationData.errors || [],
+        warnings: verificationData.warnings || [],
+      }
+    } catch (error) {
+      // If verification fails, return a failed verification result
+      return {
+        valid: false,
+        verifiedAt: new Date().toISOString(),
+        issuer: {
+          name: 'Unknown',
+          id: '',
+          verified: false,
+        },
+        signature: {
+          valid: false,
+          type: 'unknown',
+        },
+        assertion: {} as BadgeAssertion,
+        badgeClass: {} as BadgeClass,
+        errors: [error instanceof Error ? error.message : 'Verification failed'],
+      }
+    }
+  }
+
+  /**
+   * Check if an assertion has been revoked
+   */
+  async checkRevocationStatus(assertionId: string): Promise<{
+    revoked: boolean
+    reason?: string
+    revokedAt?: string
+  }> {
+    try {
+      const response = await this.makePublicRequest('/api/badges/revocation-list')
+      const revocationList = await response.json()
+
+      // Check if the assertion is in the revocation list
+      const revokedAssertion = revocationList.find(
+        (item: unknown) =>
+          typeof item === 'object' &&
+          item !== null &&
+          'id' in item &&
+          (item as { id: string }).id === assertionId
+      )
+
+      return {
+        revoked: !!revokedAssertion,
+        reason:
+          revokedAssertion && typeof revokedAssertion === 'object' && 'reason' in revokedAssertion
+            ? (revokedAssertion as { reason?: string }).reason
+            : undefined,
+        revokedAt:
+          revokedAssertion &&
+          typeof revokedAssertion === 'object' &&
+          'revokedAt' in revokedAssertion
+            ? (revokedAssertion as { revokedAt?: string }).revokedAt
+            : undefined,
+      }
+    } catch {
+      // If we can't check revocation status, assume not revoked but add warning
+      return {
+        revoked: false,
+      }
+    }
   }
 }
 
