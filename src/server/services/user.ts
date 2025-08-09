@@ -206,7 +206,6 @@ export class UserService {
         CREATE INDEX IF NOT EXISTS idx_oauth_providers_user_id ON oauth_providers(user_id);
         CREATE INDEX IF NOT EXISTS idx_oauth_providers_provider ON oauth_providers(provider);
         CREATE INDEX IF NOT EXISTS idx_oauth_providers_provider_user_id ON oauth_providers(provider, provider_user_id);
-        CREATE INDEX IF NOT EXISTS idx_oauth_sessions_state ON oauth_sessions(state);
         CREATE INDEX IF NOT EXISTS idx_oauth_sessions_expires_at ON oauth_sessions(expires_at);
         CREATE INDEX IF NOT EXISTS idx_oauth_sessions_used_at ON oauth_sessions(used_at);
       `)
@@ -623,8 +622,11 @@ export class UserService {
 
   async markOAuthSessionAsUsed(state: string): Promise<boolean> {
     const now = new Date().toISOString()
-    const changes = this.runQuery('UPDATE oauth_sessions SET used_at = ? WHERE state = ? AND used_at IS NULL', [now, state])
-    return changes > 0
+    const stmt = this.getDb().prepare(
+      'UPDATE oauth_sessions SET used_at = ? WHERE state = ? AND used_at IS NULL'
+    )
+    const result = stmt.run(now, state) // RunResult with `changes`
+    return result.changes > 0
   }
 
   async removeOAuthSession(state: string): Promise<boolean> {

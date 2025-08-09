@@ -174,7 +174,8 @@ oauthRoutes.get('/github/callback', async c => {
 
     // Enhanced state validation
     if (!oauthService.validateStateFormat(state)) {
-      console.warn(`Invalid state format received: ${state}`)
+      const maskedState = `${state.slice(0, 4)}...${state.slice(-4)}`
+      console.warn(`Invalid state format received: ${maskedState}`)
       return c.json(
         {
           success: false,
@@ -205,7 +206,7 @@ oauthRoutes.get('/github/callback', async c => {
           success: false,
           error: 'Session has already been used',
         },
-        400
+        409
       )
     }
 
@@ -213,7 +214,7 @@ oauthRoutes.get('/github/callback', async c => {
     if (session.code_verifier) {
       // Note: GitHub OAuth callback doesn't include code_challenge, 
       // so we'll validate it during token exchange
-      console.log('PKCE flow detected, will validate during token exchange')
+      console.debug('PKCE flow detected; provider will validate during token exchange')
     }
 
     // Exchange code for access token
@@ -365,7 +366,8 @@ oauthRoutes.get('/google/callback', async c => {
 
     // Enhanced state validation
     if (!oauthService.validateStateFormat(state)) {
-      console.warn(`Invalid state format received: ${state}`)
+      const maskedState = `${state.slice(0, 4)}...${state.slice(-4)}`
+      console.warn(`Invalid state format received: ${maskedState}`)
       return c.json(
         {
           success: false,
@@ -396,7 +398,7 @@ oauthRoutes.get('/google/callback', async c => {
           success: false,
           error: 'Session has already been used',
         },
-        400
+        409
       )
     }
 
@@ -546,7 +548,8 @@ oauthRoutes.get('/discord/callback', async c => {
 
     // Enhanced state validation
     if (!oauthService.validateStateFormat(state)) {
-      console.warn(`Invalid state format received: ${state}`)
+      const maskedState = `${state.slice(0, 4)}...${state.slice(-4)}`
+      console.warn(`Invalid state format received: ${maskedState}`)
       return c.json(
         {
           success: false,
@@ -577,7 +580,7 @@ oauthRoutes.get('/discord/callback', async c => {
           success: false,
           error: 'Session has already been used',
         },
-        400
+        409
       )
     }
 

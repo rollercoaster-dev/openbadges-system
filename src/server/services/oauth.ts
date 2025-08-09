@@ -120,20 +120,9 @@ export class OAuthService {
     return await userService.markOAuthSessionAsUsed(state)
   }
 
-  // Validate PKCE code challenge
-  async validateCodeChallenge(codeVerifier: string, codeChallenge: string): Promise<boolean> {
-    try {
-      const computedChallenge = await this.createCodeChallenge(codeVerifier)
-      return computedChallenge === codeChallenge
-    } catch (error) {
-      console.error('PKCE validation error:', error)
-      return false
-    }
-  }
-
   // Enhanced state validation
   validateStateFormat(state: string): boolean {
-    // State should be 32 characters long (nanoid default for security)
+    // State should be 32 characters long (explicitly generated via nanoid for ~192 bits of entropy)
     if (!state || typeof state !== 'string' || state.length !== 32) {
       return false
     }
