@@ -686,6 +686,25 @@ export class OAuthService {
     await userService.cleanupExpiredOAuthSessions()
     await userService.cleanupUsedOAuthSessions()
   }
+
+  // Initialize OAuth service (cleanup expired sessions)
+  async initialize(): Promise<void> {
+    try {
+      await this.cleanupExpiredSessions()
+      console.log('OAuth service initialized and expired sessions cleaned up')
+    } catch (error) {
+      console.error('OAuth service initialization failed:', error)
+    }
+  }
+
+  // Get OAuth configuration summary (for diagnostics)
+  getConfigSummary(): { [key: string]: boolean } {
+    return {
+      github: !!this.config.github,
+      google: !!this.config.google,
+      discord: !!this.config.discord,
+    }
+  }
 }
 
 // Validate OAuth configuration on startup
@@ -721,4 +740,9 @@ export const oauthService = new OAuthService({
         scope: oauthConfig.providers.discord.scope,
       }
     : undefined,
+})
+
+// Initialize OAuth service
+oauthService.initialize().catch(error => {
+  console.error('Failed to initialize OAuth service:', error)
 })
