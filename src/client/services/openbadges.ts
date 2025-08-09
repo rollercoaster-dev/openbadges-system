@@ -207,7 +207,11 @@ export class OpenBadgesService {
    */
   async makePublicRequest(endpoint: string, options: RequestInit = {}): Promise<Response> {
     try {
-      const response = await fetch(endpoint, {
+      const url =
+        endpoint.startsWith('/api') || endpoint.startsWith('http')
+          ? endpoint
+          : `${this.platformApiUrl}${endpoint}`
+      const response = await fetch(url, {
         ...options,
         headers: {
           'Content-Type': 'application/json',

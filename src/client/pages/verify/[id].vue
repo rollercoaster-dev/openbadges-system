@@ -82,9 +82,9 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <!-- Badge Display -->
           <div class="space-y-4">
-            <div v-if="verificationResult.badgeClass.image" class="flex justify-center">
+            <div v-if="badgeImageUrl" class="flex justify-center">
               <img
-                :src="verificationResult.badgeClass.image"
+                :src="badgeImageUrl"
                 :alt="verificationResult.badgeClass.name"
                 class="w-24 h-24 object-contain rounded-lg border border-gray-200"
               />
@@ -250,7 +250,7 @@
                   class="text-blue-600 hover:text-blue-800 text-sm"
                 >
                   View Evidence
-                  <ExternalLinkIcon class="w-4 h-4 inline ml-1" />
+                  <ArrowTopRightOnSquareIcon class="w-4 h-4 inline ml-1" />
                 </a>
                 <div
                   v-else-if="Array.isArray(verificationResult.assertion.evidence)"
@@ -269,7 +269,7 @@
                       class="text-blue-600 hover:text-blue-800"
                     >
                       Evidence {{ index + 1 }}
-                      <ExternalLinkIcon class="w-4 h-4 inline ml-1" />
+                      <ArrowTopRightOnSquareIcon class="w-4 h-4 inline ml-1" />
                     </a>
                     <div v-else class="text-gray-900">
                       {{ evidence.narrative || 'Evidence provided' }}
@@ -315,7 +315,7 @@ import {
   CheckBadgeIcon,
   CalendarDaysIcon,
   LinkIcon,
-  ExternalLinkIcon,
+  ArrowTopRightOnSquareIcon,
 } from '@heroicons/vue/24/outline'
 import { openBadgesService, type VerificationResult } from '@/services/openbadges'
 
@@ -331,7 +331,10 @@ const revocationStatus = ref<{
 const urlCopied = ref(false)
 
 // Extract assertion ID from route parameter
-const assertionId = computed(() => route.params.id as string)
+const assertionId = computed(() => {
+  const id = route.params.id
+  return Array.isArray(id) ? id[0] : id || ''
+})
 
 // Formatted dates
 const formattedVerificationDate = computed(() => {
@@ -347,6 +350,13 @@ const formattedIssuedDate = computed(() => {
 const formattedExpiryDate = computed(() => {
   if (!verificationResult.value?.assertion.expires) return ''
   return new Date(verificationResult.value.assertion.expires).toLocaleString()
+})
+
+// Safely extract badge image URL
+const badgeImageUrl = computed(() => {
+  if (!verificationResult.value?.badgeClass.image) return undefined
+  const image = verificationResult.value.badgeClass.image
+  return typeof image === 'string' ? image : undefined
 })
 
 // Verify the badge when component mounts

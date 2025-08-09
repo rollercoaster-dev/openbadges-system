@@ -31,7 +31,7 @@ vi.mock('sqlite3', () => ({
   })),
 }))
 
-describe.skip('Server Endpoints', () => {
+describe('Server Endpoints', () => {
   let app: {
     fetch: (
       request: Request,
