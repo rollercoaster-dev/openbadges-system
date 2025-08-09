@@ -101,6 +101,7 @@ export interface OAuthSession {
   code_verifier?: string
   redirect_uri?: string
   provider: string
+  used_at?: string
   created_at: string
   expires_at: string
 }
@@ -149,23 +150,23 @@ export class UserService {
           roles TEXT NOT NULL DEFAULT '["USER"]',
           createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
           updatedAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-        );
+        )
       `)
 
-      // Create user credentials table
+      // Create user credentials table for WebAuthn
       this.getDb().exec(`
         CREATE TABLE IF NOT EXISTS user_credentials (
           id TEXT PRIMARY KEY,
           userId TEXT NOT NULL,
           publicKey TEXT NOT NULL,
-          transports TEXT NOT NULL DEFAULT '[]',
+          transports TEXT NOT NULL,
           counter INTEGER NOT NULL DEFAULT 0,
           createdAt TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
           lastUsed TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          name TEXT NOT NULL,
-          type TEXT NOT NULL CHECK (type IN ('platform', 'cross-platform')),
+          name TEXT NOT NULL DEFAULT 'Unnamed Credential',
+          type TEXT NOT NULL DEFAULT 'platform',
           FOREIGN KEY (userId) REFERENCES users (id) ON DELETE CASCADE
-        );
+        )
       `)
 
       // Create OAuth providers table
@@ -182,35 +183,37 @@ export class UserService {
           created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
           updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
-        );
+        )
       `)
 
-      // Create OAuth sessions table
+      // Create OAuth sessions table with replay protection
       this.getDb().exec(`
         CREATE TABLE IF NOT EXISTS oauth_sessions (
           id TEXT PRIMARY KEY,
-          state TEXT NOT NULL,
+          state TEXT NOT NULL UNIQUE,
           code_verifier TEXT,
           redirect_uri TEXT,
           provider TEXT NOT NULL,
+          used_at TEXT,
           created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
           expires_at TEXT NOT NULL
-        );
+        )
       `)
 
-      // Create indexes for better performance
+      // Create indexes
       this.getDb().exec(`
-        CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
-        CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-        CREATE INDEX IF NOT EXISTS idx_credentials_userId ON user_credentials(userId);
+        CREATE INDEX IF NOT EXISTS idx_user_credentials_userId ON user_credentials(userId);
         CREATE INDEX IF NOT EXISTS idx_oauth_providers_user_id ON oauth_providers(user_id);
         CREATE INDEX IF NOT EXISTS idx_oauth_providers_provider ON oauth_providers(provider);
+        CREATE INDEX IF NOT EXISTS idx_oauth_providers_provider_user_id ON oauth_providers(provider, provider_user_id);
         CREATE INDEX IF NOT EXISTS idx_oauth_sessions_state ON oauth_sessions(state);
+        CREATE INDEX IF NOT EXISTS idx_oauth_sessions_expires_at ON oauth_sessions(expires_at);
+        CREATE INDEX IF NOT EXISTS idx_oauth_sessions_used_at ON oauth_sessions(used_at);
       `)
 
       console.log('Database initialized successfully')
     } catch (error) {
-      console.error('Error initializing database:', error)
+      console.error('Database initialization failed:', error)
       throw error
     }
   }
@@ -594,7 +597,34 @@ export class UserService {
 
   async getOAuthSession(state: string): Promise<OAuthSession | null> {
     const row = this.getQuery('SELECT * FROM oauth_sessions WHERE state = ?', [state])
-    return row ? (row as OAuthSession) : null
+    
+    if (!row) {
+      return null
+    }
+    
+    const session = row as OAuthSession
+    
+    // Check if session has been used (replay protection)
+    if (session.used_at) {
+      console.warn(`Replay attempt detected for OAuth session: ${state}`)
+      return null
+    }
+    
+    // Check if session has expired
+    if (new Date(session.expires_at) < new Date()) {
+      console.warn(`Expired OAuth session accessed: ${state}`)
+      // Clean up expired session
+      this.runQuery('DELETE FROM oauth_sessions WHERE state = ?', [state])
+      return null
+    }
+    
+    return session
+  }
+
+  async markOAuthSessionAsUsed(state: string): Promise<boolean> {
+    const now = new Date().toISOString()
+    const changes = this.runQuery('UPDATE oauth_sessions SET used_at = ? WHERE state = ? AND used_at IS NULL', [now, state])
+    return changes > 0
   }
 
   async removeOAuthSession(state: string): Promise<boolean> {
@@ -605,6 +635,12 @@ export class UserService {
   async cleanupExpiredOAuthSessions(): Promise<void> {
     const now = new Date().toISOString()
     this.runQuery('DELETE FROM oauth_sessions WHERE expires_at < ?', [now])
+  }
+
+  async cleanupUsedOAuthSessions(): Promise<void> {
+    // Clean up sessions that have been used and are older than 1 hour
+    const cutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+    this.runQuery('DELETE FROM oauth_sessions WHERE used_at IS NOT NULL AND used_at < ?', [cutoff])
   }
 
   async close(): Promise<void> {

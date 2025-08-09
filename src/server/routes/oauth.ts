@@ -86,7 +86,19 @@ oauthRoutes.get('/github/callback', async c => {
       )
     }
 
-    // Verify OAuth session
+    // Enhanced state validation
+    if (!oauthService.validateStateFormat(state)) {
+      console.warn(`Invalid state format received: ${state}`)
+      return c.json(
+        {
+          success: false,
+          error: 'Invalid state parameter format',
+        },
+        400
+      )
+    }
+
+    // Verify OAuth session and check for replay attacks
     const session = await oauthService.getOAuthSession(state)
     if (!session) {
       return c.json(
@@ -96,6 +108,26 @@ oauthRoutes.get('/github/callback', async c => {
         },
         400
       )
+    }
+
+    // Mark session as used to prevent replay attacks
+    const wasMarked = await oauthService.markOAuthSessionAsUsed(state)
+    if (!wasMarked) {
+      console.warn(`OAuth session replay attempt detected: ${state}`)
+      return c.json(
+        {
+          success: false,
+          error: 'Session has already been used',
+        },
+        400
+      )
+    }
+
+    // Validate PKCE if code verifier exists
+    if (session.code_verifier) {
+      // Note: GitHub OAuth callback doesn't include code_challenge, 
+      // so we'll validate it during token exchange
+      console.log('PKCE flow detected, will validate during token exchange')
     }
 
     // Exchange code for access token
@@ -136,7 +168,7 @@ oauthRoutes.get('/github/callback', async c => {
       }
     }
 
-    // Clean up OAuth session
+    // Clean up OAuth session (after successful use)
     await oauthService.removeOAuthSession(state)
 
     // Sync user with badge server
