@@ -8,6 +8,20 @@ export interface OAuthConfig {
       callbackUrl: string
       scope: string[]
     }
+    google: {
+      enabled: boolean
+      clientId: string
+      clientSecret: string
+      callbackUrl: string
+      scope: string[]
+    }
+    discord: {
+      enabled: boolean
+      clientId: string
+      clientSecret: string
+      callbackUrl: string
+      scope: string[]
+    }
   }
   session: {
     secret: string
@@ -25,6 +39,22 @@ export const oauthConfig: OAuthConfig = {
       callbackUrl:
         process.env.OAUTH_GITHUB_CALLBACK_URL || 'http://localhost:8888/api/oauth/github/callback',
       scope: ['user:email', 'read:user'],
+    },
+    google: {
+      enabled: process.env.OAUTH_GOOGLE_ENABLED === 'true',
+      clientId: process.env.OAUTH_GOOGLE_CLIENT_ID || '',
+      clientSecret: process.env.OAUTH_GOOGLE_CLIENT_SECRET || '',
+      callbackUrl:
+        process.env.OAUTH_GOOGLE_CALLBACK_URL || 'http://localhost:8888/api/oauth/google/callback',
+      scope: ['openid', 'profile', 'email'],
+    },
+    discord: {
+      enabled: process.env.OAUTH_DISCORD_ENABLED === 'true',
+      clientId: process.env.OAUTH_DISCORD_CLIENT_ID || '',
+      clientSecret: process.env.OAUTH_DISCORD_CLIENT_SECRET || '',
+      callbackUrl:
+        process.env.OAUTH_DISCORD_CALLBACK_URL || 'http://localhost:8888/api/oauth/discord/callback',
+      scope: ['identify', 'email'],
     },
   },
   session: {
@@ -51,6 +81,26 @@ export function validateOAuthConfig(): void {
     }
   }
 
+  // Validate Google configuration
+  if (oauthConfig.providers.google.enabled) {
+    if (!oauthConfig.providers.google.clientId) {
+      errors.push('OAUTH_GOOGLE_CLIENT_ID is required when Google OAuth is enabled')
+    }
+    if (!oauthConfig.providers.google.clientSecret) {
+      errors.push('OAUTH_GOOGLE_CLIENT_SECRET is required when Google OAuth is enabled')
+    }
+  }
+
+  // Validate Discord configuration
+  if (oauthConfig.providers.discord.enabled) {
+    if (!oauthConfig.providers.discord.clientId) {
+      errors.push('OAUTH_DISCORD_CLIENT_ID is required when Discord OAuth is enabled')
+    }
+    if (!oauthConfig.providers.discord.clientSecret) {
+      errors.push('OAUTH_DISCORD_CLIENT_SECRET is required when Discord OAuth is enabled')
+    }
+  }
+
   // Validate session configuration
   if (
     oauthConfig.session.secret === 'change-in-production' &&
@@ -69,6 +119,10 @@ export function getOAuthProviderConfig(provider: string) {
   switch (provider) {
     case 'github':
       return oauthConfig.providers.github
+    case 'google':
+      return oauthConfig.providers.google
+    case 'discord':
+      return oauthConfig.providers.discord
     default:
       throw new Error(`Unknown OAuth provider: ${provider}`)
   }

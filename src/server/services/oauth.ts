@@ -12,6 +12,18 @@ export interface OAuthProviderConfig {
     redirectUri: string
     scope: string[]
   }
+  google?: {
+    clientId: string
+    clientSecret: string
+    redirectUri: string
+    scope: string[]
+  }
+  discord?: {
+    clientId: string
+    clientSecret: string
+    redirectUri: string
+    scope: string[]
+  }
 }
 
 export interface OAuthUserProfile {
@@ -20,16 +32,18 @@ export interface OAuthUserProfile {
   email: string
   name: string
   avatar_url?: string
+  provider?: string
 }
 
 export interface OAuthTokens {
   access_token: string
   refresh_token?: string
   expires_in?: number
+  id_token?: string // For OpenID Connect providers like Google
 }
 
 export class OAuthService {
-  private config: OAuthProviderConfig
+  public config: OAuthProviderConfig
 
   constructor(config: OAuthProviderConfig) {
     this.config = config
@@ -161,6 +175,68 @@ export class OAuthService {
     return `https://github.com/login/oauth/authorize?${params.toString()}`
   }
 
+  // Get Google authorization URL
+  getGoogleAuthUrl(state: string, codeChallenge?: string): string {
+    const config = this.config.google
+    if (!config) {
+      throw new Error('Google OAuth not configured')
+    }
+
+    const params = new URLSearchParams({
+      client_id: config.clientId,
+      redirect_uri: config.redirectUri,
+      scope: config.scope.join(' '),
+      state,
+      response_type: 'code',
+      access_type: 'offline', // To get refresh token
+      prompt: 'consent', // To ensure refresh token is returned
+    })
+
+    if (codeChallenge) {
+      params.append('code_challenge', codeChallenge)
+      params.append('code_challenge_method', 'S256')
+    }
+
+    return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
+  }
+
+  // Get Discord authorization URL
+  getDiscordAuthUrl(state: string, codeChallenge?: string): string {
+    const config = this.config.discord
+    if (!config) {
+      throw new Error('Discord OAuth not configured')
+    }
+
+    const params = new URLSearchParams({
+      client_id: config.clientId,
+      redirect_uri: config.redirectUri,
+      scope: config.scope.join(' '),
+      state,
+      response_type: 'code',
+    })
+
+    if (codeChallenge) {
+      params.append('code_challenge', codeChallenge)
+      params.append('code_challenge_method', 'S256')
+    }
+
+    return `https://discord.com/api/oauth2/authorize?${params.toString()}`
+  }
+
+  // Get authorization URL for any provider
+  getAuthUrl(provider: string, state: string, codeChallenge?: string): string {
+    switch (provider) {
+      case 'github':
+        return this.getGitHubAuthUrl(state, codeChallenge)
+      case 'google':
+        return this.getGoogleAuthUrl(state, codeChallenge)
+      case 'discord':
+        return this.getDiscordAuthUrl(state, codeChallenge)
+      default:
+        throw new Error(`Unsupported OAuth provider: ${provider}`)
+    }
+  }
+
   // Exchange authorization code for access token
   async exchangeCodeForToken(
     provider: string,
@@ -170,6 +246,10 @@ export class OAuthService {
     switch (provider) {
       case 'github':
         return this.exchangeGitHubCode(code, codeVerifier)
+      case 'google':
+        return this.exchangeGoogleCode(code, codeVerifier)
+      case 'discord':
+        return this.exchangeDiscordCode(code, codeVerifier)
       default:
         throw new Error(`Unsupported OAuth provider: ${provider}`)
     }
@@ -219,11 +299,210 @@ export class OAuthService {
     }
   }
 
+  // Exchange Google authorization code for access token
+  private async exchangeGoogleCode(code: string, codeVerifier?: string): Promise<OAuthTokens> {
+    const config = this.config.google
+    if (!config) {
+      throw new Error('Google OAuth not configured')
+    }
+
+    const params = new URLSearchParams({
+      client_id: config.clientId,
+      client_secret: config.clientSecret,
+      code,
+      redirect_uri: config.redirectUri,
+      grant_type: 'authorization_code',
+    })
+
+    if (codeVerifier) {
+      params.append('code_verifier', codeVerifier)
+    }
+
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Google token exchange failed: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    if (data.error) {
+      throw new Error(`Google OAuth error: ${data.error_description || data.error}`)
+    }
+
+    return {
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      expires_in: data.expires_in,
+      id_token: data.id_token,
+    }
+  }
+
+  // Exchange Discord authorization code for access token
+  private async exchangeDiscordCode(code: string, codeVerifier?: string): Promise<OAuthTokens> {
+    const config = this.config.discord
+    if (!config) {
+      throw new Error('Discord OAuth not configured')
+    }
+
+    const params = new URLSearchParams({
+      client_id: config.clientId,
+      client_secret: config.clientSecret,
+      code,
+      redirect_uri: config.redirectUri,
+      grant_type: 'authorization_code',
+    })
+
+    if (codeVerifier) {
+      params.append('code_verifier', codeVerifier)
+    }
+
+    const response = await fetch('https://discord.com/api/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Discord token exchange failed: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    if (data.error) {
+      throw new Error(`Discord OAuth error: ${data.error_description || data.error}`)
+    }
+
+    return {
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      expires_in: data.expires_in,
+    }
+  }
+
+  // Refresh token for providers that support it
+  async refreshAccessToken(provider: string, refreshToken: string): Promise<OAuthTokens> {
+    switch (provider) {
+      case 'google':
+        return this.refreshGoogleToken(refreshToken)
+      case 'discord':
+        return this.refreshDiscordToken(refreshToken)
+      case 'github':
+        throw new Error('GitHub does not support refresh tokens')
+      default:
+        throw new Error(`Unsupported OAuth provider: ${provider}`)
+    }
+  }
+
+  // Refresh Google access token
+  private async refreshGoogleToken(refreshToken: string): Promise<OAuthTokens> {
+    const config = this.config.google
+    if (!config) {
+      throw new Error('Google OAuth not configured')
+    }
+
+    const params = new URLSearchParams({
+      client_id: config.clientId,
+      client_secret: config.clientSecret,
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token',
+    })
+
+    const response = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Google token refresh failed: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    if (data.error) {
+      throw new Error(`Google token refresh error: ${data.error_description || data.error}`)
+    }
+
+    return {
+      access_token: data.access_token,
+      refresh_token: data.refresh_token || refreshToken, // Google may not return new refresh token
+      expires_in: data.expires_in,
+      id_token: data.id_token,
+    }
+  }
+
+  // Refresh Discord access token
+  private async refreshDiscordToken(refreshToken: string): Promise<OAuthTokens> {
+    const config = this.config.discord
+    if (!config) {
+      throw new Error('Discord OAuth not configured')
+    }
+
+    const params = new URLSearchParams({
+      client_id: config.clientId,
+      client_secret: config.clientSecret,
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token',
+    })
+
+    const response = await fetch('https://discord.com/api/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Discord token refresh failed: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    if (data.error) {
+      throw new Error(`Discord token refresh error: ${data.error_description || data.error}`)
+    }
+
+    return {
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      expires_in: data.expires_in,
+    }
+  }
+
+  // Check if provider supports refresh tokens
+  supportsRefreshTokens(provider: string): boolean {
+    switch (provider) {
+      case 'google':
+      case 'discord':
+        return true
+      case 'github':
+        return false
+      default:
+        return false
+    }
+  }
+
   // Get user profile from OAuth provider
   async getUserProfile(provider: string, accessToken: string): Promise<OAuthUserProfile> {
     switch (provider) {
       case 'github':
         return this.getGitHubUserProfile(accessToken)
+      case 'google':
+        return this.getGoogleUserProfile(accessToken)
+      case 'discord':
+        return this.getDiscordUserProfile(accessToken)
       default:
         throw new Error(`Unsupported OAuth provider: ${provider}`)
     }
@@ -269,6 +548,57 @@ export class OAuthService {
       email,
       name: profile.name || profile.login,
       avatar_url: profile.avatar_url,
+      provider: 'github',
+    }
+  }
+
+  // Get Google user profile
+  private async getGoogleUserProfile(accessToken: string): Promise<OAuthUserProfile> {
+    const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Google API error: ${response.status}`)
+    }
+
+    const profile = await response.json()
+
+    return {
+      id: profile.id,
+      login: profile.email.split('@')[0], // Use email prefix as login
+      email: profile.email,
+      name: profile.name || profile.given_name || profile.email,
+      avatar_url: profile.picture,
+      provider: 'google',
+    }
+  }
+
+  // Get Discord user profile
+  private async getDiscordUserProfile(accessToken: string): Promise<OAuthUserProfile> {
+    const response = await fetch('https://discord.com/api/users/@me', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Discord API error: ${response.status}`)
+    }
+
+    const profile = await response.json()
+
+    return {
+      id: profile.id,
+      login: profile.username,
+      email: profile.email,
+      name: profile.global_name || profile.username,
+      avatar_url: profile.avatar 
+        ? `https://cdn.discordapp.com/avatars/${profile.id}/${profile.avatar}.png`
+        : undefined,
+      provider: 'discord',
     }
   }
 
@@ -373,6 +703,22 @@ export const oauthService = new OAuthService({
         clientSecret: oauthConfig.providers.github.clientSecret,
         redirectUri: oauthConfig.providers.github.callbackUrl,
         scope: oauthConfig.providers.github.scope,
+      }
+    : undefined,
+  google: oauthConfig.providers.google.enabled
+    ? {
+        clientId: oauthConfig.providers.google.clientId,
+        clientSecret: oauthConfig.providers.google.clientSecret,
+        redirectUri: oauthConfig.providers.google.callbackUrl,
+        scope: oauthConfig.providers.google.scope,
+      }
+    : undefined,
+  discord: oauthConfig.providers.discord.enabled
+    ? {
+        clientId: oauthConfig.providers.discord.clientId,
+        clientSecret: oauthConfig.providers.discord.clientSecret,
+        redirectUri: oauthConfig.providers.discord.callbackUrl,
+        scope: oauthConfig.providers.discord.scope,
       }
     : undefined,
 })
