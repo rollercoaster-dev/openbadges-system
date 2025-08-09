@@ -84,7 +84,7 @@ badgesRoutes.post('/verify', async c => {
 // Public assertion retrieval endpoint (no authentication required)
 badgesRoutes.get('/assertions/:id', async c => {
   const openbadgesUrl = process.env.OPENBADGES_SERVER_URL || 'http://localhost:3000'
-  const assertionId = c.req.param('id')
+  const assertionId = decodeURIComponent(c.req.param('id') || '')
 
   if (!assertionId) {
     return c.json({ error: 'Assertion ID is required' }, 400)
@@ -102,7 +102,10 @@ badgesRoutes.get('/assertions/:id', async c => {
       if (response.status === 404) {
         return c.json({ error: 'Assertion not found' }, 404)
       }
-      return c.json({ error: 'Failed to retrieve assertion' }, response.status)
+      return new Response(JSON.stringify({ error: 'Failed to retrieve assertion' }), {
+        status: response.status,
+        headers: { 'Content-Type': 'application/json' },
+      })
     }
 
     const contentType = response.headers.get('content-type')
@@ -119,10 +122,43 @@ badgesRoutes.get('/assertions/:id', async c => {
   }
 })
 
+// Public badge class listing endpoint (no authentication required)
+badgesRoutes.get('/badge-classes', async c => {
+  const openbadgesUrl = process.env.OPENBADGES_SERVER_URL || 'http://localhost:3000'
+  
+  try {
+    const response = await fetch(`${openbadgesUrl}/api/v2/badge-classes`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      return new Response(JSON.stringify({ error: 'Failed to retrieve badge classes' }), {
+        status: response.status,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    const contentType = response.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text()
+      return new Response(text, { status: response.status })
+    }
+
+    const data = await safeJsonResponse(response)
+    return c.json(data, response.status as 200 | 201 | 400 | 401 | 403 | 404 | 500)
+  } catch (error) {
+    console.error('Error retrieving badge classes:', error)
+    return c.json({ error: 'Failed to retrieve badge classes' }, 500)
+  }
+})
+
 // Public badge class retrieval endpoint (no authentication required)
 badgesRoutes.get('/badge-classes/:id', async c => {
   const openbadgesUrl = process.env.OPENBADGES_SERVER_URL || 'http://localhost:3000'
-  const badgeClassId = c.req.param('id')
+  const badgeClassId = decodeURIComponent(c.req.param('id') || '')
 
   if (!badgeClassId) {
     return c.json({ error: 'Badge class ID is required' }, 400)
@@ -140,7 +176,10 @@ badgesRoutes.get('/badge-classes/:id', async c => {
       if (response.status === 404) {
         return c.json({ error: 'Badge class not found' }, 404)
       }
-      return c.json({ error: 'Failed to retrieve badge class' }, response.status)
+      return new Response(JSON.stringify({ error: 'Failed to retrieve badge class' }), {
+        status: response.status,
+        headers: { 'Content-Type': 'application/json' },
+      })
     }
 
     const contentType = response.headers.get('content-type')

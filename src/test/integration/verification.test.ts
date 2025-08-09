@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { openBadgesService } from '@/services/openbadges'
-import type { OB2 } from 'openbadges-types'
+// NOTE: Avoid branded types in tests to prevent TS errors with mock data.
 
 describe('Badge Verification Integration Tests', () => {
   let mockFetch: ReturnType<typeof vi.fn>
 
   // Mock assertion data
-  const mockValidAssertion: OB2.Assertion = {
+  const mockValidAssertion = {
     '@context': 'https://w3id.org/openbadges/v2',
     id: 'https://example.org/assertions/12345',
     type: 'Assertion',
@@ -23,9 +23,9 @@ describe('Badge Verification Integration Tests', () => {
     expires: '2025-01-15T10:00:00Z',
     narrative: 'Completed the test course successfully',
     evidence: 'https://example.org/evidence/12345',
-  }
+  } as any
 
-  const mockBadgeClass: OB2.BadgeClass = {
+  const mockBadgeClass = {
     '@context': 'https://w3id.org/openbadges/v2',
     id: 'https://example.org/badges/test-badge',
     type: 'BadgeClass',
@@ -41,7 +41,7 @@ describe('Badge Verification Integration Tests', () => {
       email: 'issuer@example.org',
     },
     tags: ['test', 'verification'],
-  }
+  } as any
 
   const mockValidVerificationResponse = {
     valid: true,
@@ -114,7 +114,7 @@ describe('Badge Verification Integration Tests', () => {
       )
       expect(mockFetch).toHaveBeenNthCalledWith(
         2,
-        '/api/badges/badge-classes/https://example.org/badges/test-badge',
+        `/api/badges/badge-classes/${encodeURIComponent('https://example.org/badges/test-badge')}`,
         expect.any(Object)
       )
       expect(mockFetch).toHaveBeenNthCalledWith(

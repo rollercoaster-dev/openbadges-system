@@ -292,7 +292,7 @@ export class OpenBadgesService {
       response = await this.makeAuthenticatedRequest(user, '/api/v2/badge-classes')
     } else {
       // Public endpoint - no authentication required
-      response = await this.makePublicRequest('/api/v2/badge-classes')
+      response = await this.makePublicRequest('/api/badges/badge-classes')
     }
 
     return await response.json()
@@ -302,7 +302,9 @@ export class OpenBadgesService {
    * Get a specific badge class by ID (public endpoint)
    */
   async getBadgeClass(badgeClassId: string): Promise<BadgeClass> {
-    const response = await this.makePublicRequest(`/api/badges/badge-classes/${badgeClassId}`)
+    const response = await this.makePublicRequest(
+      `/api/badges/badge-classes/${encodeURIComponent(badgeClassId)}`
+    )
     return await response.json()
   }
 
@@ -310,7 +312,9 @@ export class OpenBadgesService {
    * Get a specific assertion by ID (public endpoint for verification)
    */
   async getAssertion(assertionId: string): Promise<BadgeAssertion> {
-    const response = await this.makePublicRequest(`/api/badges/assertions/${assertionId}`)
+    const response = await this.makePublicRequest(
+      `/api/badges/assertions/${encodeURIComponent(assertionId)}`
+    )
     return await response.json()
   }
 
@@ -372,20 +376,44 @@ export class OpenBadgesService {
         }),
       })
 
-      const verificationData = await response.json()
+      type VerifyResponse = {
+        valid?: boolean
+        issuerVerified?: boolean
+        signatureValid?: boolean
+        errors?: string[]
+        warnings?: string[]
+      }
+      const verificationData = (await response.json()) as VerifyResponse
+
+      // Safely narrow issuer (IRI | Profile) without violating types
+      const issuerRaw = badgeClass.issuer as string | Record<string, unknown>
+      const issuerObj =
+        typeof issuerRaw === 'string' ? undefined : (issuerRaw as Record<string, unknown>)
+      const issuerName =
+        issuerObj && typeof issuerObj.name === 'string'
+          ? (issuerObj.name as string)
+          : 'Unknown Issuer'
+      const issuerId =
+        typeof issuerRaw === 'string'
+          ? issuerRaw
+          : issuerObj && typeof issuerObj.id === 'string'
+            ? (issuerObj.id as string)
+            : ''
 
       // Structure the response according to our VerificationResult interface
       return {
         valid: verificationData.valid || false,
         verifiedAt: new Date().toISOString(),
         issuer: {
-          name: badgeClass.issuer?.name || 'Unknown Issuer',
-          id: badgeClass.issuer?.id || '',
+          name: issuerName,
+          id: issuerId,
           verified: verificationData.issuerVerified || false,
         },
         signature: {
           valid: verificationData.signatureValid || false,
-          type: assertion.verification?.type || 'unknown',
+          type: Array.isArray(assertion.verification)
+            ? assertion.verification[0]?.type ?? 'unknown'
+            : assertion.verification?.type ?? 'unknown',
         },
         assertion,
         badgeClass,
