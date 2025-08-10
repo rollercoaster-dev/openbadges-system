@@ -596,19 +596,19 @@ export class UserService {
 
   async getOAuthSession(state: string): Promise<OAuthSession | null> {
     const row = this.getQuery('SELECT * FROM oauth_sessions WHERE state = ?', [state])
-    
+
     if (!row) {
       return null
     }
-    
+
     const session = row as OAuthSession
-    
+
     // Check if session has been used (replay protection)
     if (session.used_at) {
       console.warn(`Replay attempt detected for OAuth session: ${state}`)
       return null
     }
-    
+
     // Check if session has expired
     if (new Date(session.expires_at) < new Date()) {
       console.warn(`Expired OAuth session accessed: ${state}`)
@@ -616,17 +616,35 @@ export class UserService {
       this.runQuery('DELETE FROM oauth_sessions WHERE state = ?', [state])
       return null
     }
-    
+
     return session
   }
 
   async markOAuthSessionAsUsed(state: string): Promise<boolean> {
     const now = new Date().toISOString()
-    const stmt = this.getDb().prepare(
-      'UPDATE oauth_sessions SET used_at = ? WHERE state = ? AND used_at IS NULL'
-    )
-    const result = stmt.run(now, state) // RunResult with `changes`
-    return result.changes > 0
+
+    // First check if the session exists and is not already used
+    const existingSession = this.getQuery('SELECT used_at FROM oauth_sessions WHERE state = ?', [
+      state,
+    ]) as { used_at: string | null } | null
+
+    if (!existingSession) {
+      // Session doesn't exist
+      return false
+    }
+
+    if (existingSession.used_at) {
+      // Session already used
+      return false
+    }
+
+    // Mark as used
+    this.runQuery('UPDATE oauth_sessions SET used_at = ? WHERE state = ? AND used_at IS NULL', [
+      now,
+      state,
+    ])
+
+    return true
   }
 
   async removeOAuthSession(state: string): Promise<boolean> {
