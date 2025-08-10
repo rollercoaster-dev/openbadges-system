@@ -49,15 +49,20 @@ export interface ApiErrorResponse {
   timestamp?: string
 }
 
+export interface RevocationListItem {
+  id: string
+  reason?: string
+  revokedAt?: string
+}
+
 export class OpenBadgesService {
   private badgeServerBaseUrl = import.meta.env.VITE_BADGE_SERVER_URL || 'http://localhost:3000'
-  private platformApiUrl = '/api' // Platform API endpoints
 
   /**
    * Get OAuth access token for badge server API
    */
   async getOAuthToken(user: User): Promise<string> {
-    const response = await fetch(`${this.platformApiUrl}/auth/oauth-token`, {
+    const response = await fetch('/api/auth/oauth-token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -82,7 +87,7 @@ export class OpenBadgesService {
    * Refresh OAuth token if needed
    */
   async refreshOAuthToken(user: User): Promise<string> {
-    const response = await fetch(`${this.platformApiUrl}/auth/oauth-token/refresh`, {
+    const response = await fetch('/api/auth/oauth-token/refresh', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -108,7 +113,9 @@ export class OpenBadgesService {
       const errorData = await response.json()
       return {
         error: errorData.error || 'Unknown error occurred',
-        details: errorData.details,
+        details:
+          errorData.details ||
+          (response.statusText ? `HTTP ${response.status}: ${response.statusText}` : undefined),
         code: errorData.code,
         timestamp: errorData.timestamp || new Date().toISOString(),
       }
@@ -118,14 +125,14 @@ export class OpenBadgesService {
       try {
         const responseText = await response.text()
         if (responseText && responseText.length > 0) {
-          debugDetails = debugDetails 
-            ? `${debugDetails}: ${responseText.substring(0, 100)}` 
+          debugDetails = debugDetails
+            ? `${debugDetails}: ${responseText.substring(0, 100)}`
             : responseText.substring(0, 100)
         }
       } catch {
         // Ignore additional error when reading response text
       }
-      
+
       return {
         error: `Request failed with status ${response.status}`,
         details: debugDetails,
@@ -221,11 +228,7 @@ export class OpenBadgesService {
    */
   async makePublicRequest(endpoint: string, options: RequestInit = {}): Promise<Response> {
     try {
-      const url =
-        endpoint.startsWith('/api') || endpoint.startsWith('http')
-          ? endpoint
-          : `${this.platformApiUrl}${endpoint}`
-      const response = await fetch(url, {
+      const response = await fetch(endpoint, {
         ...options,
         headers: {
           'Content-Type': 'application/json',
@@ -430,8 +433,8 @@ export class OpenBadgesService {
         signature: {
           valid: verificationData.signatureValid || false,
           type: Array.isArray(assertion.verification)
-            ? assertion.verification[0]?.type ?? 'unknown'
-            : assertion.verification?.type ?? 'unknown',
+            ? (assertion.verification[0]?.type ?? 'unknown')
+            : (assertion.verification?.type ?? 'unknown'),
         },
         assertion,
         badgeClass,
@@ -469,11 +472,7 @@ export class OpenBadgesService {
   }> {
     try {
       const response = await this.makePublicRequest('/api/badges/revocation-list')
-      const revocationList = (await response.json()) as Array<{
-        id: string
-        reason?: string
-        revokedAt?: string
-      }>
+      const revocationList = (await response.json()) as RevocationListItem[]
 
       // Check if the assertion is in the revocation list
       const revokedAssertion = revocationList.find(item => item.id === assertionId)

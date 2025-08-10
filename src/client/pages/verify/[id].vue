@@ -332,8 +332,13 @@ const urlCopied = ref(false)
 
 // Extract assertion ID from route parameter
 const assertionId = computed(() => {
-  const id = route.params.id
-  return Array.isArray(id) ? id[0] : id || ''
+  if ('id' in route.params && typeof route.params.id === 'string') {
+    return route.params.id
+  }
+  if ('id' in route.params && Array.isArray(route.params.id)) {
+    return route.params.id[0] || ''
+  }
+  return ''
 })
 
 // Formatted dates

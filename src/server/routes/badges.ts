@@ -13,6 +13,9 @@ type JSONValue =
   | { [key: string]: unknown }
   | unknown[]
 
+// Reusable HTTP status codes type for Hono responses
+type HttpStatusCode = 200 | 201 | 400 | 401 | 403 | 404 | 500
+
 async function safeJsonResponse(response: Response): Promise<JSONValue> {
   try {
     const data = await response.json()
@@ -63,11 +66,11 @@ badgesRoutes.post('/verify', async c => {
     const contentType = response.headers.get('content-type')
     if (!contentType || !contentType.includes('application/json')) {
       const text = await response.text()
-      return new Response(text, { status: response.status })
+      return c.text(text, response.status as HttpStatusCode)
     }
 
     const data = await safeJsonResponse(response)
-    return c.json(data, response.status as 200 | 201 | 400 | 401 | 403 | 404 | 500)
+    return c.json(data, response.status as HttpStatusCode)
   } catch (error) {
     console.error('Error processing verification request:', error)
     return c.json(
@@ -102,20 +105,17 @@ badgesRoutes.get('/assertions/:id', async c => {
       if (response.status === 404) {
         return c.json({ error: 'Assertion not found' }, 404)
       }
-      return new Response(JSON.stringify({ error: 'Failed to retrieve assertion' }), {
-        status: response.status,
-        headers: { 'Content-Type': 'application/json' },
-      })
+      return c.json({ error: 'Failed to retrieve assertion' }, response.status as HttpStatusCode)
     }
 
     const contentType = response.headers.get('content-type')
     if (!contentType || !contentType.includes('application/json')) {
       const text = await response.text()
-      return new Response(text, { status: response.status })
+      return c.text(text, response.status as HttpStatusCode)
     }
 
     const data = await safeJsonResponse(response)
-    return c.json(data, response.status as 200 | 201 | 400 | 401 | 403 | 404 | 500)
+    return c.json(data, response.status as HttpStatusCode)
   } catch (error) {
     console.error('Error retrieving assertion:', error)
     return c.json({ error: 'Failed to retrieve assertion' }, 500)
@@ -125,7 +125,7 @@ badgesRoutes.get('/assertions/:id', async c => {
 // Public badge class listing endpoint (no authentication required)
 badgesRoutes.get('/badge-classes', async c => {
   const openbadgesUrl = process.env.OPENBADGES_SERVER_URL || 'http://localhost:3000'
-  
+
   try {
     const response = await fetch(`${openbadgesUrl}/api/v2/badge-classes`, {
       method: 'GET',
@@ -144,11 +144,11 @@ badgesRoutes.get('/badge-classes', async c => {
     const contentType = response.headers.get('content-type')
     if (!contentType || !contentType.includes('application/json')) {
       const text = await response.text()
-      return new Response(text, { status: response.status })
+      return c.text(text, response.status as HttpStatusCode)
     }
 
     const data = await safeJsonResponse(response)
-    return c.json(data, response.status as 200 | 201 | 400 | 401 | 403 | 404 | 500)
+    return c.json(data, response.status as HttpStatusCode)
   } catch (error) {
     console.error('Error retrieving badge classes:', error)
     return c.json({ error: 'Failed to retrieve badge classes' }, 500)
@@ -185,11 +185,11 @@ badgesRoutes.get('/badge-classes/:id', async c => {
     const contentType = response.headers.get('content-type')
     if (!contentType || !contentType.includes('application/json')) {
       const text = await response.text()
-      return new Response(text, { status: response.status })
+      return c.text(text, response.status as HttpStatusCode)
     }
 
     const data = await safeJsonResponse(response)
-    return c.json(data, response.status as 200 | 201 | 400 | 401 | 403 | 404 | 500)
+    return c.json(data, response.status as HttpStatusCode)
   } catch (error) {
     console.error('Error retrieving badge class:', error)
     return c.json({ error: 'Failed to retrieve badge class' }, 500)
@@ -260,11 +260,11 @@ badgesRoutes.all('/*', async c => {
     const contentType = response.headers.get('content-type')
     if (!contentType || !contentType.includes('application/json')) {
       const text = await response.text()
-      return new Response(text, { status: response.status })
+      return c.text(text, response.status as HttpStatusCode)
     }
 
     const data = await safeJsonResponse(response)
-    return c.json(data, response.status as 200 | 201 | 400 | 401 | 403 | 404 | 500)
+    return c.json(data, response.status as HttpStatusCode)
   } catch (error) {
     console.error('Error proxying badges request:', error)
     return c.json({ error: 'Failed to communicate with OpenBadges server' }, 500)

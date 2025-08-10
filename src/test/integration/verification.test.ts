@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { openBadgesService } from '@/services/openbadges'
-// NOTE: Avoid branded types in tests to prevent TS errors with mock data.
+import { createIRI, createDateTime } from 'openbadges-types'
 
 describe('Badge Verification Integration Tests', () => {
   let mockFetch: ReturnType<typeof vi.fn>
@@ -8,21 +8,21 @@ describe('Badge Verification Integration Tests', () => {
   // Mock assertion data
   const mockValidAssertion = {
     '@context': 'https://w3id.org/openbadges/v2',
-    id: 'https://example.org/assertions/12345',
+    id: createIRI('https://example.org/assertions/12345'),
     type: 'Assertion',
     recipient: {
       type: 'email',
       identity: 'test@example.com',
       hashed: false,
     },
-    badge: 'https://example.org/badges/test-badge',
+    badge: createIRI('https://example.org/badges/test-badge'),
     verification: {
       type: 'hosted',
     },
-    issuedOn: '2024-01-15T10:00:00Z',
-    expires: '2025-01-15T10:00:00Z',
+    issuedOn: createDateTime('2024-01-15T10:00:00Z'),
+    expires: createDateTime('2025-01-15T10:00:00Z'),
     narrative: 'Completed the test course successfully',
-    evidence: 'https://example.org/evidence/12345',
+    evidence: createIRI('https://example.org/evidence/12345'),
   } as any
 
   const mockBadgeClass = {
