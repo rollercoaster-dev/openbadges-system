@@ -259,13 +259,13 @@ badgesRoutes.all('/*', async c => {
     })
     headersObj['Authorization'] = authHeader
 
-    const init: RequestInit = {
+    const init: globalThis.RequestInit = {
       method: c.req.method,
       headers: headersObj,
     }
     // Only include body for methods that support it
     if (c.req.method !== 'GET' && c.req.method !== 'HEAD') {
-      init.body = c.req.raw.body as BodyInit | null | undefined
+      init.body = c.req.raw.body as globalThis.BodyInit | null | undefined
     }
 
     const response = await fetch(url.toString(), init)

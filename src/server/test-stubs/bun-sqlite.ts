@@ -9,11 +9,8 @@ export class Database {
 
   prepare(_sql: string) {
     return {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       run: (..._params: unknown[]) => {},
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       get: (..._params: unknown[]) => undefined,
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       all: (..._params: unknown[]) => [],
       finalize: () => {},
     }
@@ -21,4 +18,3 @@ export class Database {
 
   close(): void {}
 }
-

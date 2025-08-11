@@ -13,7 +13,7 @@
 
 const { execSync } = require('child_process');
 const fs = require('fs');
-const path = require('path');
+const _path = require('path');
 
 // Configuration
 const CONFIG = {
@@ -166,7 +166,7 @@ class CodeRabbitReviewAutomation {
 `;
 
     // Add category statistics
-    for (const [category, config] of Object.entries(CONFIG.CATEGORIES)) {
+    for (const [category, _config] of Object.entries(CONFIG.CATEGORIES)) {
       const comments = this.categorizedComments[category] || [];
       const total = comments.length;
       const resolved = comments.filter(c => c.status === 'resolved').length;

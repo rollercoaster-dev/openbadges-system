@@ -32,8 +32,8 @@ if (typeof window !== 'undefined') {
 
 // Mock WebAuthn API safely
 if (typeof window !== 'undefined') {
-  const existingNavigator = window.navigator || ({} as Navigator)
-  const credentials = existingNavigator.credentials || ({} as CredentialsContainer)
+  const existingNavigator = window.navigator || ({} as globalThis.Navigator)
+  const credentials = existingNavigator.credentials || ({} as globalThis.CredentialsContainer)
   if (!('create' in credentials)) {
     // @ts-expect-error partial mock is fine for tests
     credentials.create = vi.fn()
@@ -42,7 +42,6 @@ if (typeof window !== 'undefined') {
     // @ts-expect-error partial mock is fine for tests
     credentials.get = vi.fn()
   }
-  // @ts-expect-error redefine navigator with credentials
   Object.defineProperty(window, 'navigator', {
     value: {
       ...existingNavigator,

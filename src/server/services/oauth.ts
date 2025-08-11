@@ -3,7 +3,7 @@ import { URLSearchParams } from 'url'
 import { webcrypto } from 'crypto'
 import { TextEncoder } from 'util'
 import { userService, User, OAuthProvider, OAuthSession } from './user'
-import { oauthConfig, validateOAuthConfig } from '../config/oauth'
+import { oauthConfig } from '../config/oauth'
 
 export interface OAuthProviderConfig {
   github?: {
@@ -323,13 +323,6 @@ export class OAuthService {
 
     await userService.cleanupExpiredOAuthSessions()
   }
-}
-
-// Validate OAuth configuration on startup
-try {
-  validateOAuthConfig()
-} catch (error) {
-  console.error('OAuth configuration validation failed:', error)
 }
 
 // Create OAuth service instance
