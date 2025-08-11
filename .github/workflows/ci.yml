@@ -7,9 +7,9 @@ on:
     branches: [main, develop]
 
 jobs:
-  lint-and-type-check:
+  quality-checks:
     runs-on: ubuntu-latest
-    name: Lint and Type Check
+    name: Code Quality
 
     steps:
       - name: Checkout
