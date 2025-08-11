@@ -50,8 +50,8 @@
     "src/**/*.vue",
     "vite.config.ts",
     "index.ts",
-    "src/client/typed-router.d.ts",
     "src/client/auto-imports.d.ts",
-    "src/client/components.d.ts"
+    "src/client/components.d.ts",
+    "src/client/typed-router.d.ts"
   ]
 }
