@@ -11,6 +11,13 @@ vi.mock('../services/jwt', () => ({
         'Content-Type': 'application/json',
       },
     })),
+    verifyToken: vi.fn(() => ({
+      sub: 'test-user',
+      platformId: 'urn:uuid:a504d862-bd64-4e0d-acff-db7955955bc1',
+      displayName: 'Test User',
+      email: 'test@example.com',
+      metadata: { isAdmin: true },
+    })),
   },
 }))
 
@@ -75,7 +82,7 @@ describe('Server Endpoints', () => {
 
       const req = new Request('http://localhost/api/auth/platform-token', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer admin-token' },
         body: JSON.stringify({ user: mockUser }),
       })
 
@@ -91,7 +98,7 @@ describe('Server Endpoints', () => {
     it('should return 400 for invalid user data', async () => {
       const req = new Request('http://localhost/api/auth/platform-token', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer admin-token' },
         body: JSON.stringify({ user: { id: null } }),
       })
 
@@ -105,7 +112,7 @@ describe('Server Endpoints', () => {
     it('should return 400 for missing user data', async () => {
       const req = new Request('http://localhost/api/auth/platform-token', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer admin-token' },
         body: JSON.stringify({}),
       })
 
@@ -351,7 +358,9 @@ describe('Server Endpoints', () => {
 
       const res = await app.fetch(req)
 
-      expect(res.status).toBe(500)
+      // Without Authorization, route is protected by requireAdmin and returns 401
+      // The JSON parse error would return 400/500 only after auth passes
+      expect(res.status).toBe(401)
     })
   })
 

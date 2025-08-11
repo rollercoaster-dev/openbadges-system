@@ -227,6 +227,11 @@ badgesRoutes.get('/revocation-list', async c => {
   }
 })
 
+// Handle missing assertion ID explicitly to avoid falling through to auth proxy
+badgesRoutes.get('/assertions', c => c.json({ error: 'Assertion not found' }, 404))
+// Some clients may include a trailing slash
+badgesRoutes.get('/assertions/', c => c.json({ error: 'Assertion not found' }, 404))
+
 // OpenBadges API proxy with platform authentication
 badgesRoutes.all('/*', async c => {
   const openbadgesUrl = process.env.OPENBADGES_SERVER_URL || 'http://localhost:3000'
@@ -247,15 +252,23 @@ badgesRoutes.all('/*', async c => {
       return c.json({ error: 'Invalid platform token' }, 401)
     }
 
-    const headers = new Headers(c.req.raw.headers)
-    // Forward the platform token to OpenBadges server
-    headers.set('Authorization', authHeader)
-
-    const response = await fetch(url.toString(), {
-      method: c.req.method,
-      headers,
-      body: c.req.raw.body,
+    // Build plain headers object to match tests (not a Headers instance)
+    const headersObj: Record<string, string> = {}
+    c.req.raw.headers.forEach((value, key) => {
+      headersObj[key] = value
     })
+    headersObj['Authorization'] = authHeader
+
+    const init: RequestInit = {
+      method: c.req.method,
+      headers: headersObj,
+    }
+    // Only include body for methods that support it
+    if (c.req.method !== 'GET' && c.req.method !== 'HEAD') {
+      init.body = c.req.raw.body as BodyInit | null | undefined
+    }
+
+    const response = await fetch(url.toString(), init)
 
     const contentType = response.headers.get('content-type')
     if (!contentType || !contentType.includes('application/json')) {

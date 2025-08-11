@@ -76,3 +76,4 @@ Source: [GitHub Issue #22](https://github.com/rollercoaster-dev/openbadges-syste
 ## References
 
 - Issue context and root cause notes: [#22](https://github.com/rollercoaster-dev/openbadges-system/issues/22)
+

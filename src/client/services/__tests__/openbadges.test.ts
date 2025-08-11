@@ -373,8 +373,11 @@ describe('OpenBadgesService', () => {
       const badgeClasses = await service.getBadgeClasses()
 
       expect(badgeClasses).toEqual(mockBadgeClasses)
+      // Note: Unauthenticated reads go through the platform proxy endpoints
+      // (/api/badges/*) rather than direct badge server routes (/api/v2/*).
+      // This keeps CORS and error handling centralized on the platform API.
       expect(mockFetch).toHaveBeenCalledWith(
-        '/api/v2/badge-classes',
+        '/api/badges/badge-classes',
         expect.objectContaining({
           headers: { 'Content-Type': 'application/json' },
         })
