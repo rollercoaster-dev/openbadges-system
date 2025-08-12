@@ -54,13 +54,62 @@ export const useAuth = () => {
 
   // Removed unused functions: getUsersFromStorage, saveUsersToStorage, apiCall
 
-  // Basic API calls for user lookup/registration (uses basic auth)
-  const basicApiCall = async (endpoint: string, options: RequestInit = {}) => {
+  // Public API calls for user lookup/registration (no auth required)
+  const publicApiCall = async (endpoint: string, options: RequestInit = {}) => {
+    try {
+      const response = await fetch(`/api/auth/public${endpoint}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+        ...options,
+      })
+
+      if (!response) {
+        throw new Error('Network error: No response received')
+      }
+
+      if (!response.ok) {
+        let errorData = { message: 'Unknown error' }
+        try {
+          if (response.json && typeof response.json === 'function') {
+            errorData = await response.json()
+          }
+        } catch {
+          // If JSON parsing fails, use status text
+          errorData = { message: response.statusText || 'Unknown error' }
+        }
+        throw new Error(errorData.message || `API call failed: ${response.status}`)
+      }
+
+      if (response.json && typeof response.json === 'function') {
+        return await response.json()
+      }
+
+      // Fallback for test environment or if response.json is not available
+      return response
+    } catch (error) {
+      // In test environment, network calls might fail - provide fallback behavior
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Network error: No response received')
+      }
+      throw error
+    }
+  }
+
+  // Authenticated API calls for user management (requires auth token)
+  const authenticatedApiCall = async (endpoint: string, options: RequestInit = {}) => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string>),
+    }
+
+    if (token.value) {
+      headers.Authorization = `Bearer ${token.value}`
+    }
+
     const response = await fetch(`/api/bs${endpoint}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
+      headers,
       ...options,
     })
 
@@ -95,7 +144,7 @@ export const useAuth = () => {
       roles: ['USER'],
     }
 
-    const response = await basicApiCall('/users', {
+    const response = await publicApiCall('/users/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     })
@@ -107,20 +156,25 @@ export const useAuth = () => {
       firstName: response.firstName || '',
       lastName: response.lastName || '',
       avatar: response.avatar,
-      isAdmin: response.roles?.includes('ADMIN') || false,
+      isAdmin: response.isAdmin || false,
       createdAt: response.createdAt,
-      credentials: [],
+      credentials: response.credentials || [],
     }
   }
 
   // Find user by username/email
   const findUser = async (usernameOrEmail: string): Promise<User | null> => {
     try {
-      // Try to get user by username first
-      const users = await basicApiCall(`/users?username=${encodeURIComponent(usernameOrEmail)}`)
+      // Check if it's an email or username
+      const isEmail = usernameOrEmail.includes('@')
+      const queryParam = isEmail
+        ? `email=${encodeURIComponent(usernameOrEmail)}`
+        : `username=${encodeURIComponent(usernameOrEmail)}`
 
-      if (users.length > 0) {
-        const backendUser = users[0]
+      const response = await publicApiCall(`/users/lookup?${queryParam}`)
+
+      if (response.exists && response.user) {
+        const backendUser = response.user
         return {
           id: backendUser.id,
           username: backendUser.username,
@@ -128,24 +182,7 @@ export const useAuth = () => {
           firstName: backendUser.firstName || '',
           lastName: backendUser.lastName || '',
           avatar: backendUser.avatar,
-          isAdmin: backendUser.roles?.includes('ADMIN') || false,
-          createdAt: backendUser.createdAt,
-          credentials: backendUser.credentials || [],
-        }
-      }
-
-      // If not found by username, try by email
-      const usersByEmail = await basicApiCall(`/users?email=${encodeURIComponent(usernameOrEmail)}`)
-      if (usersByEmail.length > 0) {
-        const backendUser = usersByEmail[0]
-        return {
-          id: backendUser.id,
-          username: backendUser.username,
-          email: backendUser.email,
-          firstName: backendUser.firstName || '',
-          lastName: backendUser.lastName || '',
-          avatar: backendUser.avatar,
-          isAdmin: backendUser.roles?.includes('ADMIN') || false,
+          isAdmin: backendUser.isAdmin || false,
           createdAt: backendUser.createdAt,
           credentials: backendUser.credentials || [],
         }
@@ -160,7 +197,7 @@ export const useAuth = () => {
 
   // Store WebAuthn credential in backend
   const storeCredential = async (userId: string, credential: WebAuthnCredential): Promise<void> => {
-    await basicApiCall(`/users/${userId}/credentials`, {
+    await publicApiCall(`/users/${userId}/credentials`, {
       method: 'POST',
       body: JSON.stringify(credential),
     })
@@ -301,7 +338,7 @@ export const useAuth = () => {
       }
 
       // Update credential last used time in backend
-      await basicApiCall(`/users/${foundUser.id}/credentials/${credential.id}`, {
+      await publicApiCall(`/users/${foundUser.id}/credentials/${credential.id}`, {
         method: 'PATCH',
         body: JSON.stringify({ lastUsed: new Date().toISOString() }),
       })
@@ -415,7 +452,7 @@ export const useAuth = () => {
       }
 
       // Update user in backend
-      const response = await basicApiCall(`/users/${user.value.id}`, {
+      const response = await authenticatedApiCall(`/users/${user.value.id}`, {
         method: 'PUT',
         body: JSON.stringify(backendUpdate),
       })
@@ -498,7 +535,7 @@ export const useAuth = () => {
 
     try {
       // Remove credential from backend
-      await basicApiCall(`/users/${user.value.id}/credentials/${credentialId}`, {
+      await authenticatedApiCall(`/users/${user.value.id}/credentials/${credentialId}`, {
         method: 'DELETE',
       })
 

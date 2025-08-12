@@ -5,6 +5,7 @@ import { userRoutes } from './routes/users'
 import { authRoutes } from './routes/auth'
 import { badgesRoutes } from './routes/badges'
 import { oauthRoutes } from './routes/oauth'
+import { publicAuthRoutes } from './routes/public-auth'
 import { requireAuth } from './middleware/auth'
 import { oauthConfig, validateOAuthConfig } from './config/oauth'
 import { jwtService } from './services/jwt'
@@ -74,6 +75,7 @@ app.get('/.well-known/jwks.json', async c => {
 // Mount routes
 app.route('/api/bs/users', userRoutes)
 app.route('/api/auth', authRoutes)
+app.route('/api/auth/public', publicAuthRoutes)
 app.route('/api/badges', badgesRoutes)
 app.route('/api/oauth', oauthRoutes)
 
