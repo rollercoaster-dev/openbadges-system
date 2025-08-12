@@ -5,7 +5,10 @@ import { userRoutes } from './routes/users'
 import { authRoutes } from './routes/auth'
 import { badgesRoutes } from './routes/badges'
 import { oauthRoutes } from './routes/oauth'
+import { publicAuthRoutes } from './routes/public-auth'
 import { requireAuth } from './middleware/auth'
+import { oauthConfig, validateOAuthConfig } from './config/oauth'
+import { jwtService } from './services/jwt'
 
 // Define a simpler JSON value type to avoid deep type recursion
 type JSONValue =
@@ -36,9 +39,43 @@ app.get('/api/health', c => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
+// JWKS endpoint for OAuth2 verification
+app.get('/.well-known/jwks.json', async c => {
+  try {
+    const { readFileSync } = await import('fs')
+    const { join } = await import('path')
+    const crypto = await import('crypto')
+
+    // Read the public key
+    const publicKeyPem = readFileSync(join(process.cwd(), 'keys', 'platform-public.pem'), 'utf8')
+
+    // Convert PEM to JWK format
+    const publicKey = crypto.createPublicKey(publicKeyPem)
+    const jwk = publicKey.export({ format: 'jwk' })
+
+    // Add required JWK fields
+    const jwks = {
+      keys: [
+        {
+          ...jwk,
+          kid: 'platform-key-1',
+          alg: 'RS256',
+          use: 'sig',
+        },
+      ],
+    }
+
+    return c.json(jwks)
+  } catch (error) {
+    console.error('Error generating JWKS:', error)
+    return c.json({ error: 'Failed to generate JWKS' }, 500)
+  }
+})
+
 // Mount routes
 app.route('/api/bs/users', userRoutes)
 app.route('/api/auth', authRoutes)
+app.route('/api/auth/public', publicAuthRoutes)
 app.route('/api/badges', badgesRoutes)
 app.route('/api/oauth', oauthRoutes)
 
@@ -71,7 +108,7 @@ async function safeJsonResponse(response: Response): Promise<JSONValue> {
 // Proxy endpoint for OpenBadges server (excluding user routes)
 const proxyRequiresAuth = (process.env.OPENBADGES_PROXY_PUBLIC ?? 'false') !== 'true'
 
-app.all('/api/bs/*', proxyRequiresAuth ? requireAuth : (c, next) => next(), async c => {
+app.all('/api/bs/*', proxyRequiresAuth ? requireAuth : (_c, next) => next(), async c => {
   // Skip user management endpoints - they are handled by userRoutes
   if (c.req.path.startsWith('/api/bs/users')) {
     return c.json({ error: 'Route not found' }, 404)
@@ -89,9 +126,26 @@ app.all('/api/bs/*', proxyRequiresAuth ? requireAuth : (c, next) => next(), asyn
     const authMode = process.env.OPENBADGES_AUTH_MODE || 'docker'
 
     if (authEnabled) {
-      if (authMode === 'docker') {
-        // Docker mode: use Basic Auth
-        headers.set('Authorization', 'Basic ' + btoa('admin:admin-user'))
+      if (authMode === 'oauth') {
+        // OAuth mode: use JWT tokens for service-to-service communication
+        const systemUser = {
+          id: 'system-service',
+          username: 'system',
+          email: 'system@openbadges.local',
+          firstName: 'System',
+          lastName: 'Service',
+          isAdmin: true,
+        }
+        const jwtToken = jwtService.generatePlatformToken(systemUser)
+        headers.set('Authorization', `Bearer ${jwtToken}`)
+      } else if (authMode === 'docker') {
+        // Docker mode: use Basic Auth with environment variables
+        const basicUser = process.env.OPENBADGES_BASIC_AUTH_USER || 'admin'
+        const basicPass = process.env.OPENBADGES_BASIC_AUTH_PASS || 'admin-user'
+        headers.set(
+          'Authorization',
+          'Basic ' + Buffer.from(`${basicUser}:${basicPass}`).toString('base64')
+        )
       } else if (authMode === 'local') {
         // Local mode: add API key or basic auth if provided
         const apiKey = process.env.OPENBADGES_API_KEY
@@ -101,7 +155,10 @@ app.all('/api/bs/*', proxyRequiresAuth ? requireAuth : (c, next) => next(), asyn
         if (apiKey) {
           headers.set('X-API-Key', apiKey)
         } else if (basicUser && basicPass) {
-          headers.set('Authorization', 'Basic ' + btoa(`${basicUser}:${basicPass}`))
+          headers.set(
+            'Authorization',
+            'Basic ' + Buffer.from(`${basicUser}:${basicPass}`).toString('base64')
+          )
         }
       }
     }
@@ -128,6 +185,19 @@ app.all('/api/bs/*', proxyRequiresAuth ? requireAuth : (c, next) => next(), asyn
     return c.json({ error: 'Failed to communicate with local OpenBadges server' }, 500)
   }
 })
+
+// Validate OAuth configuration if enabled
+if (oauthConfig.enabled) {
+  try {
+    validateOAuthConfig()
+    console.log('OAuth configuration validated successfully')
+  } catch (error) {
+    console.error('OAuth configuration validation failed:', error)
+    process.exit(1)
+  }
+} else {
+  console.log('OAuth is disabled - skipping OAuth configuration validation')
+}
 
 // Start the server
 const port = parseInt(process.env.PORT || '8888')

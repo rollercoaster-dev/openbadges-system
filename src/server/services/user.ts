@@ -456,6 +456,41 @@ export class UserService {
     return true
   }
 
+  async updateUserCredential(
+    userId: string,
+    credentialId: string,
+    updates: Partial<UserCredential>
+  ): Promise<boolean> {
+    const updateFields: string[] = []
+    const params: unknown[] = []
+
+    if (updates.counter !== undefined) {
+      updateFields.push('counter = ?')
+      params.push(updates.counter)
+    }
+
+    if (updates.lastUsed !== undefined) {
+      updateFields.push('lastUsed = ?')
+      params.push(updates.lastUsed)
+    }
+
+    if (updates.name !== undefined) {
+      updateFields.push('name = ?')
+      params.push(updates.name)
+    }
+
+    if (updateFields.length === 0) {
+      return false
+    }
+
+    params.push(credentialId, userId)
+
+    const sql = `UPDATE user_credentials SET ${updateFields.join(', ')} WHERE id = ? AND userId = ?`
+    this.runQuery(sql, params)
+
+    return true
+  }
+
   // OAuth provider management
   async createOAuthProvider(
     oauthProvider: Omit<OAuthProvider, 'id' | 'created_at' | 'updated_at'>

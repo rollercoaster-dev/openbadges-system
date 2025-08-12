@@ -13,7 +13,9 @@ type JSONValue =
   | { [key: string]: unknown }
   | unknown[]
 
-// Helper function to safely parse JSON
+// Reusable HTTP status codes type for Hono responses
+type HttpStatusCode = 200 | 201 | 400 | 401 | 403 | 404 | 500
+
 async function safeJsonResponse(response: Response): Promise<JSONValue> {
   try {
     const data = await response.json()
@@ -35,9 +37,200 @@ async function safeJsonResponse(response: Response): Promise<JSONValue> {
     return {}
   } catch (error) {
     console.error('Error parsing JSON response:', error)
+
     return {}
   }
 }
+
+// Public verification endpoint (no authentication required)
+badgesRoutes.post('/verify', async c => {
+  const openbadgesUrl = process.env.OPENBADGES_SERVER_URL || 'http://localhost:3000'
+
+  try {
+    let body: unknown
+    try {
+      body = await c.req.json()
+    } catch {
+      return c.json({ error: 'Invalid JSON body' }, 400)
+    }
+
+    // Forward verification request to OpenBadges server
+    const response = await fetch(`${openbadgesUrl}/api/v1/verify`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    })
+
+    const contentType = response.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text()
+      return c.text(text, response.status as HttpStatusCode)
+    }
+
+    const data = await safeJsonResponse(response)
+    return c.json(data, response.status as HttpStatusCode)
+  } catch (error) {
+    console.error('Error processing verification request:', error)
+    return c.json(
+      {
+        valid: false,
+        errors: ['Verification service temporarily unavailable'],
+        verifiedAt: new Date().toISOString(),
+      },
+      500
+    )
+  }
+})
+
+// Public assertion retrieval endpoint (no authentication required)
+badgesRoutes.get('/assertions/:id', async c => {
+  const openbadgesUrl = process.env.OPENBADGES_SERVER_URL || 'http://localhost:3000'
+  const assertionId = decodeURIComponent(c.req.param('id') || '')
+
+  if (!assertionId) {
+    return c.json({ error: 'Assertion ID is required' }, 400)
+  }
+
+  try {
+    const response = await fetch(`${openbadgesUrl}/api/v1/assertions/${assertionId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return c.json({ error: 'Assertion not found' }, 404)
+      }
+      return c.json({ error: 'Failed to retrieve assertion' }, response.status as HttpStatusCode)
+    }
+
+    const contentType = response.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text()
+      return c.text(text, response.status as HttpStatusCode)
+    }
+
+    const data = await safeJsonResponse(response)
+    return c.json(data, response.status as HttpStatusCode)
+  } catch (error) {
+    console.error('Error retrieving assertion:', error)
+    return c.json({ error: 'Failed to retrieve assertion' }, 500)
+  }
+})
+
+// Public badge class listing endpoint (no authentication required)
+badgesRoutes.get('/badge-classes', async c => {
+  const openbadgesUrl = process.env.OPENBADGES_SERVER_URL || 'http://localhost:3000'
+
+  try {
+    const response = await fetch(`${openbadgesUrl}/api/v2/badge-classes`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      return new Response(JSON.stringify({ error: 'Failed to retrieve badge classes' }), {
+        status: response.status,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    const contentType = response.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text()
+      return c.text(text, response.status as HttpStatusCode)
+    }
+
+    const data = await safeJsonResponse(response)
+    return c.json(data, response.status as HttpStatusCode)
+  } catch (error) {
+    console.error('Error retrieving badge classes:', error)
+    return c.json({ error: 'Failed to retrieve badge classes' }, 500)
+  }
+})
+
+// Public badge class retrieval endpoint (no authentication required)
+badgesRoutes.get('/badge-classes/:id', async c => {
+  const openbadgesUrl = process.env.OPENBADGES_SERVER_URL || 'http://localhost:3000'
+  const badgeClassId = decodeURIComponent(c.req.param('id') || '')
+
+  if (!badgeClassId) {
+    return c.json({ error: 'Badge class ID is required' }, 400)
+  }
+
+  try {
+    const response = await fetch(`${openbadgesUrl}/api/v2/badge-classes/${badgeClassId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return c.json({ error: 'Badge class not found' }, 404)
+      }
+      return new Response(JSON.stringify({ error: 'Failed to retrieve badge class' }), {
+        status: response.status,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    const contentType = response.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text()
+      return c.text(text, response.status as HttpStatusCode)
+    }
+
+    const data = await safeJsonResponse(response)
+    return c.json(data, response.status as HttpStatusCode)
+  } catch (error) {
+    console.error('Error retrieving badge class:', error)
+    return c.json({ error: 'Failed to retrieve badge class' }, 500)
+  }
+})
+
+// Public revocation list endpoint (no authentication required)
+badgesRoutes.get('/revocation-list', async c => {
+  const openbadgesUrl = process.env.OPENBADGES_SERVER_URL || 'http://localhost:3000'
+
+  try {
+    const response = await fetch(`${openbadgesUrl}/api/v1/revocation-list`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      // If revocation list is not available, return empty list
+      return c.json([])
+    }
+
+    const contentType = response.headers.get('content-type')
+    if (!contentType || !contentType.includes('application/json')) {
+      return c.json([])
+    }
+
+    const data = await safeJsonResponse(response)
+    return c.json(data, response.status as 200)
+  } catch (error) {
+    console.error('Error retrieving revocation list:', error)
+    // If revocation service is unavailable, return empty list (fail open)
+    return c.json([])
+  }
+})
+
+// Handle missing assertion ID explicitly to avoid falling through to auth proxy
+badgesRoutes.get('/assertions', c => c.json({ error: 'Assertion not found' }, 404))
+// Some clients may include a trailing slash
+badgesRoutes.get('/assertions/', c => c.json({ error: 'Assertion not found' }, 404))
 
 // OpenBadges API proxy with platform authentication
 badgesRoutes.all('/*', async c => {
@@ -59,24 +252,32 @@ badgesRoutes.all('/*', async c => {
       return c.json({ error: 'Invalid platform token' }, 401)
     }
 
-    const headers = new Headers(c.req.raw.headers)
-    // Forward the platform token to OpenBadges server
-    headers.set('Authorization', authHeader)
-
-    const response = await fetch(url.toString(), {
-      method: c.req.method,
-      headers,
-      body: c.req.raw.body,
+    // Build plain headers object to match tests (not a Headers instance)
+    const headersObj: Record<string, string> = {}
+    c.req.raw.headers.forEach((value, key) => {
+      headersObj[key] = value
     })
+    headersObj['Authorization'] = authHeader
+
+    const init: globalThis.RequestInit = {
+      method: c.req.method,
+      headers: headersObj,
+    }
+    // Only include body for methods that support it
+    if (c.req.method !== 'GET' && c.req.method !== 'HEAD') {
+      init.body = c.req.raw.body as globalThis.BodyInit | null | undefined
+    }
+
+    const response = await fetch(url.toString(), init)
 
     const contentType = response.headers.get('content-type')
     if (!contentType || !contentType.includes('application/json')) {
       const text = await response.text()
-      return new Response(text, { status: response.status })
+      return c.text(text, response.status as HttpStatusCode)
     }
 
     const data = await safeJsonResponse(response)
-    return c.json(data, response.status as 200 | 201 | 400 | 401 | 403 | 404 | 500)
+    return c.json(data, response.status as HttpStatusCode)
   } catch (error) {
     console.error('Error proxying badges request:', error)
     return c.json({ error: 'Failed to communicate with OpenBadges server' }, 500)

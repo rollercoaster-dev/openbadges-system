@@ -41,6 +41,8 @@
 </template>
 
 <script setup lang="ts">
+import { useRoute } from 'vue-router'
+
 const route = useRoute()
 // Badge details logic will go here
 </script>

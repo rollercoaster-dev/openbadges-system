@@ -249,7 +249,6 @@ export default [
       '*.min.js',
       'public/**',
       'coverage/**',
-      '*.d.ts',
       'openbadges_server_data/**',
       'data/**',
       'eslint.config.js',
@@ -258,7 +257,26 @@ export default [
       'tailwind.config.js',
       'postcss.config.cjs',
       'commitlint.config.js',
+      // Auto-generated files
+      'src/client/auto-imports.d.ts',
+      'src/client/components.d.ts',
+      'src/client/typed-router.d.ts',
     ],
+  },
+
+  // Test files configuration - allow any type for mocking and test data
+  {
+    files: [
+      '**/*.test.ts',
+      '**/*.test.js',
+      '**/test/**/*.ts',
+      '**/test/**/*.js',
+      '**/__tests__/**/*.ts',
+      '**/__tests__/**/*.js',
+    ],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off', // Allow any type in tests for flexibility with mocks
+    },
   },
 
   // Prettier config at the end to override any conflicting rules

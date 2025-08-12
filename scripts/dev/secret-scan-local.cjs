@@ -54,7 +54,7 @@ function scanDirectory(dir) {
             findings.push({ file: relativePath, type: name, line, snippet: match[0] });
           }
         }
-      } catch (e) {
+      } catch {
         // ignore unreadable files
       }
     }

@@ -54,13 +54,37 @@ export const useAuth = () => {
 
   // Removed unused functions: getUsersFromStorage, saveUsersToStorage, apiCall
 
-  // Basic API calls for user lookup/registration (uses basic auth)
-  const basicApiCall = async (endpoint: string, options: RequestInit = {}) => {
-    const response = await fetch(`/api/bs${endpoint}`, {
+  // Public API calls for user lookup/registration (no auth required)
+  const publicApiCall = async (endpoint: string, options: RequestInit = {}) => {
+    const response = await fetch(`/api/auth/public${endpoint}`, {
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
       },
+      ...options,
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
+      throw new Error(errorData.message || `API call failed: ${response.status}`)
+    }
+
+    return response.json()
+  }
+
+  // Authenticated API calls for user management (requires auth token)
+  const authenticatedApiCall = async (endpoint: string, options: RequestInit = {}) => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string>),
+    }
+
+    if (token.value) {
+      headers.Authorization = `Bearer ${token.value}`
+    }
+
+    const response = await fetch(`/api/bs${endpoint}`, {
+      headers,
       ...options,
     })
 
@@ -95,7 +119,7 @@ export const useAuth = () => {
       roles: ['USER'],
     }
 
-    const response = await basicApiCall('/users', {
+    const response = await publicApiCall('/users/register', {
       method: 'POST',
       body: JSON.stringify(userData),
     })
@@ -107,20 +131,25 @@ export const useAuth = () => {
       firstName: response.firstName || '',
       lastName: response.lastName || '',
       avatar: response.avatar,
-      isAdmin: response.roles?.includes('ADMIN') || false,
+      isAdmin: response.isAdmin || false,
       createdAt: response.createdAt,
-      credentials: [],
+      credentials: response.credentials || [],
     }
   }
 
   // Find user by username/email
   const findUser = async (usernameOrEmail: string): Promise<User | null> => {
     try {
-      // Try to get user by username first
-      const users = await basicApiCall(`/users?username=${encodeURIComponent(usernameOrEmail)}`)
+      // Check if it's an email or username
+      const isEmail = usernameOrEmail.includes('@')
+      const queryParam = isEmail
+        ? `email=${encodeURIComponent(usernameOrEmail)}`
+        : `username=${encodeURIComponent(usernameOrEmail)}`
 
-      if (users.length > 0) {
-        const backendUser = users[0]
+      const response = await publicApiCall(`/users/lookup?${queryParam}`)
+
+      if (response.exists && response.user) {
+        const backendUser = response.user
         return {
           id: backendUser.id,
           username: backendUser.username,
@@ -128,24 +157,7 @@ export const useAuth = () => {
           firstName: backendUser.firstName || '',
           lastName: backendUser.lastName || '',
           avatar: backendUser.avatar,
-          isAdmin: backendUser.roles?.includes('ADMIN') || false,
-          createdAt: backendUser.createdAt,
-          credentials: backendUser.credentials || [],
-        }
-      }
-
-      // If not found by username, try by email
-      const usersByEmail = await basicApiCall(`/users?email=${encodeURIComponent(usernameOrEmail)}`)
-      if (usersByEmail.length > 0) {
-        const backendUser = usersByEmail[0]
-        return {
-          id: backendUser.id,
-          username: backendUser.username,
-          email: backendUser.email,
-          firstName: backendUser.firstName || '',
-          lastName: backendUser.lastName || '',
-          avatar: backendUser.avatar,
-          isAdmin: backendUser.roles?.includes('ADMIN') || false,
+          isAdmin: backendUser.isAdmin || false,
           createdAt: backendUser.createdAt,
           credentials: backendUser.credentials || [],
         }
@@ -160,7 +172,7 @@ export const useAuth = () => {
 
   // Store WebAuthn credential in backend
   const storeCredential = async (userId: string, credential: WebAuthnCredential): Promise<void> => {
-    await basicApiCall(`/users/${userId}/credentials`, {
+    await publicApiCall(`/users/${userId}/credentials`, {
       method: 'POST',
       body: JSON.stringify(credential),
     })
@@ -228,14 +240,11 @@ export const useAuth = () => {
 
       // Request real platform token from backend for this user
       try {
-        const platformRes = await fetch('/api/auth/platform-token', {
+        const platformRes = await publicApiCall(`/users/${newUser.id}/token`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user: newUser }),
         })
-        if (platformRes && 'ok' in platformRes && platformRes.ok) {
-          const platformData = await platformRes.json()
-          token.value = platformData.token
+        if (platformRes && platformRes.success) {
+          token.value = platformRes.token
         } else {
           // Fallback: create a temporary session token
           token.value = `local-session-${Date.now()}`
@@ -301,21 +310,18 @@ export const useAuth = () => {
       }
 
       // Update credential last used time in backend
-      await basicApiCall(`/users/${foundUser.id}/credentials/${credential.id}`, {
+      await publicApiCall(`/users/${foundUser.id}/credentials/${credential.id}`, {
         method: 'PATCH',
         body: JSON.stringify({ lastUsed: new Date().toISOString() }),
       })
 
       // Exchange for real platform token
       try {
-        const platformRes = await fetch('/api/auth/platform-token', {
+        const platformRes = await publicApiCall(`/users/${foundUser.id}/token`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user: foundUser }),
         })
-        if (platformRes && 'ok' in platformRes && platformRes.ok) {
-          const platformData = await platformRes.json()
-          token.value = platformData.token
+        if (platformRes && platformRes.success) {
+          token.value = platformRes.token
         } else {
           token.value = `local-session-${Date.now()}`
         }
@@ -415,7 +421,7 @@ export const useAuth = () => {
       }
 
       // Update user in backend
-      const response = await basicApiCall(`/users/${user.value.id}`, {
+      const response = await authenticatedApiCall(`/users/${user.value.id}`, {
         method: 'PUT',
         body: JSON.stringify(backendUpdate),
       })
@@ -498,7 +504,7 @@ export const useAuth = () => {
 
     try {
       // Remove credential from backend
-      await basicApiCall(`/users/${user.value.id}/credentials/${credentialId}`, {
+      await authenticatedApiCall(`/users/${user.value.id}/credentials/${credentialId}`, {
         method: 'DELETE',
       })
 

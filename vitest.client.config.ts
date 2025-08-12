@@ -2,7 +2,6 @@ import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
 
-// Client-focused config; server tests use vitest.server.config.ts
 export default defineConfig({
   plugins: [vue()],
   resolve: {
@@ -14,7 +13,11 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    include: ['src/client/**/*.{test,spec}.ts?(x)', 'src/test/integration/**/*.{test,spec}.ts?(x)'],
+    include: [
+      'src/client/**/*.{test,spec}.ts?(x)',
+      'src/test/integration/**/*.{test,spec}.ts?(x)',
+    ],
     exclude: ['src/server/**'],
   },
 })
+

@@ -197,7 +197,10 @@ oauthRoutes.get('/github/callback', async c => {
 
       // Create a secure way to pass auth data to frontend
       // For now, we'll use URL params (in production, consider using encrypted cookies or session storage)
-      const callbackUrl = new URL('/auth/oauth/callback', c.req.url)
+      const frontendUrl = process.env.VITE_PORT
+        ? `http://localhost:${process.env.VITE_PORT}`
+        : 'http://localhost:7777'
+      const callbackUrl = new URL('/auth/oauth/callback', frontendUrl)
       callbackUrl.searchParams.set('success', 'true')
       callbackUrl.searchParams.set('token', jwtToken)
       callbackUrl.searchParams.set('user', encodeURIComponent(JSON.stringify(userData)))
@@ -207,10 +210,25 @@ oauthRoutes.get('/github/callback', async c => {
     }
   } catch (error) {
     console.error('GitHub OAuth callback failed:', error)
+
+    // Provide more specific error messages for debugging
+    let errorMessage = 'OAuth authentication failed'
+    if (error instanceof Error) {
+      if (error.message.includes('GitHub token exchange failed')) {
+        errorMessage = 'GitHub token exchange failed - check client credentials'
+      } else if (error.message.includes('GitHub API error')) {
+        errorMessage = 'GitHub API error - check access token'
+      } else if (error.message.includes('User service not available')) {
+        errorMessage = 'User service not available'
+      } else {
+        errorMessage = `OAuth error: ${error.message}`
+      }
+    }
+
     return c.json(
       {
         success: false,
-        error: 'OAuth authentication failed',
+        error: errorMessage,
       },
       500
     )

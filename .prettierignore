@@ -33,9 +33,10 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Generated types
-*.d.ts
-!src/**/*.d.ts
+# Generated types and auto-imports
+src/client/auto-imports.d.ts
+src/client/components.d.ts
+src/client/typed-router.d.ts
 
 # Assets
 public/

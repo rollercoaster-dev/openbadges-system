@@ -17,7 +17,22 @@ An implementation of the OpenBadges standard for managing digital credentials.
 
 - [Bun](https://bun.sh) (v1.2.10+)
 - [pnpm](https://pnpm.io/)
-- [Docker](https://www.docker.com/) (optional, for containerized development)
+- [Docker](https://www.docker.com/) (for badge server integration)
+
+### OAuth Integration
+
+This system integrates with the OpenBadges modular server for badge management. The integration uses OAuth2 with JWT tokens for secure service-to-service communication.
+
+**Quick Setup:**
+
+1. Start the badge server: `docker-compose up -d`
+2. Configure OAuth settings in `.env` (see `.env.example`)
+3. Start the main application: `pnpm dev`
+
+For detailed OAuth configuration and troubleshooting, see:
+
+- [OAuth Integration Guide](docs/OAUTH_INTEGRATION_GUIDE.md)
+- [OAuth Troubleshooting](docs/OAUTH_TROUBLESHOOTING.md)
 
 ### Installation
 
