@@ -43,3 +43,6 @@ openbadges_server_data/
 auto-imports.d.ts
 components.d.ts
 typed-router.d.ts
+
+# AI working directory artifacts
+.claude/working/
