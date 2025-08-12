@@ -3,6 +3,29 @@ import { z } from 'zod'
 import { userService } from '../services/user'
 import { jwtService } from '../services/jwt'
 
+// Simple rate limiting for user enumeration protection
+const rateLimiter = new Map<string, { count: number; resetTime: number }>()
+const RATE_LIMIT_WINDOW = 15 * 60 * 1000 // 15 minutes
+const MAX_REQUESTS = 10 // Max 10 requests per window per IP
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const record = rateLimiter.get(ip)
+
+  if (!record || now > record.resetTime) {
+    // Reset or create new record
+    rateLimiter.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW })
+    return true
+  }
+
+  if (record.count >= MAX_REQUESTS) {
+    return false // Rate limit exceeded
+  }
+
+  record.count++
+  return true
+}
+
 const publicAuthRoutes = new Hono()
 
 // Schemas
@@ -38,6 +61,12 @@ const credentialSchema = z.object({
 
 // Public endpoint to check if user exists (for WebAuthn registration)
 publicAuthRoutes.get('/users/lookup', async c => {
+  // Rate limiting to prevent user enumeration attacks
+  const clientIP = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown'
+  if (!checkRateLimit(clientIP)) {
+    return c.json({ error: 'Too many requests. Please try again later.' }, 429)
+  }
+
   if (!userService) {
     return c.json({ error: 'User service unavailable' }, 503)
   }
@@ -86,6 +115,12 @@ publicAuthRoutes.get('/users/lookup', async c => {
 
 // Public endpoint to create new user (for WebAuthn registration)
 publicAuthRoutes.post('/users/register', async c => {
+  // Rate limiting to prevent registration abuse
+  const clientIP = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown'
+  if (!checkRateLimit(clientIP)) {
+    return c.json({ error: 'Too many requests. Please try again later.' }, 429)
+  }
+
   if (!userService) {
     return c.json({ error: 'User service unavailable' }, 503)
   }
