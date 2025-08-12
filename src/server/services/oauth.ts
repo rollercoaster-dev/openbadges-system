@@ -47,13 +47,11 @@ export class OAuthService {
 
   // Create code challenge from verifier
   async createCodeChallenge(verifier: string): Promise<string> {
-    const encoder = new TextEncoder()
-    const data = encoder.encode(verifier)
+    const data = new TextEncoder().encode(verifier)
     const digest = await webcrypto.subtle.digest('SHA-256', data)
-    return btoa(String.fromCharCode(...new Uint8Array(digest)))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '')
+    // Convert to base64 then transform to URL-safe base64 without padding
+    const base64 = Buffer.from(digest).toString('base64')
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
   }
 
   // Create OAuth session
@@ -229,6 +227,14 @@ export class OAuthService {
         const primaryEmail = emails.find((e: { primary: boolean; email: string }) => e.primary)
         email = primaryEmail?.email || emails[0]?.email
       }
+    }
+
+    // Fallback for missing GitHub email
+    if (!email) {
+      // Use GitHub's noreply pattern as fallback
+      const id = profile.id?.toString() ?? nanoid(8)
+      const username = profile.login
+      email = `${id}+${username}@users.noreply.github.com`
     }
 
     return {

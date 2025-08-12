@@ -125,6 +125,8 @@ export class JWTService {
 
     const signOpts: SignOptions = {
       algorithm: 'RS256',
+      // Include a kid matching your JWKS entry
+      keyid: process.env.OPENBADGES_JWT_KID || 'platform-key-1',
       issuer: this.tokenIssuer,
       expiresIn: '1h',
       ...(this.tokenAudience ? { audience: this.tokenAudience } : {}),

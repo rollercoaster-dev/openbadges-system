@@ -251,8 +251,9 @@ CodeRabbit-Review: ${comment.url}`;
 
     try {
       // Add any changes and commit
-      execSync('git add .', { stdio: 'inherit' });
-      execSync(`git commit -m "${commitMessage}"`, { stdio: 'inherit' });
+      const { execFileSync } = require('child_process');
+      execFileSync('git', ['add', '--all'], { stdio: 'inherit' });
+      execFileSync('git', ['commit', '-F', '-'], { stdio: 'pipe', input: commitMessage });
       
       // Mark as resolved
       comment.status = 'resolved';
