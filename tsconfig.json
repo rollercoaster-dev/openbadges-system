@@ -53,5 +53,6 @@
     "src/client/auto-imports.d.ts",
     "src/client/components.d.ts",
     "src/client/typed-router.d.ts"
-  ]
+  ],
+  "exclude": ["src/**/*.bun.test.ts"]
 }
