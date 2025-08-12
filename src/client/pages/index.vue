@@ -141,6 +141,9 @@
 import { ref, onMounted } from 'vue'
 import type { OB2, Shared } from 'openbadges-types'
 import { BadgeDisplay } from 'openbadges-ui'
+import { useAuth } from '@/composables/useAuth'
+
+const { token, isAuthenticated } = useAuth()
 
 const loading = ref(true)
 const serverStatus = ref(false)
@@ -192,7 +195,17 @@ onMounted(async () => {
 
   const modularServerHealthCheck = async () => {
     try {
-      const bsResponse = await fetch('/api/bs/health')
+      // Prepare headers with authentication if available
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      }
+
+      if (isAuthenticated.value && token.value) {
+        headers.Authorization = `Bearer ${token.value}`
+      }
+
+      const bsResponse = await fetch('/api/bs/health', { headers })
+
       if (bsResponse.ok) {
         const bsData = await bsResponse.json()
         // Check for valid health response structure
@@ -203,6 +216,8 @@ onMounted(async () => {
         } else {
           modularServerStatus.value = `Unexpected response: ${JSON.stringify(bsData).substring(0, 100)}`
         }
+      } else if (bsResponse.status === 401) {
+        modularServerStatus.value = 'Authentication required - please log in to view server status'
       } else {
         modularServerStatus.value = `Error: ${bsResponse.status} ${bsResponse.statusText}`
       }
@@ -214,8 +229,18 @@ onMounted(async () => {
 
   const fetchFeaturedBadge = async () => {
     try {
+      // Prepare headers with authentication if available
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      }
+
+      if (isAuthenticated.value && token.value) {
+        headers.Authorization = `Bearer ${token.value}`
+      }
+
       // Try to fetch badge classes from the modular server
-      const response = await fetch('/api/bs/v2/badge-classes')
+      const response = await fetch('/api/bs/v2/badge-classes', { headers })
+
       if (response.ok) {
         const badgeClasses = await response.json()
 
@@ -227,6 +252,10 @@ onMounted(async () => {
           featuredBadge.value = mockBadge
         }
         badgeError.value = null
+      } else if (response.status === 401) {
+        console.warn('Authentication required for badge classes, using mock badge')
+        featuredBadge.value = mockBadge
+        badgeError.value = 'Please log in to view real badge classes'
       } else {
         console.warn('Failed to fetch badge classes, using mock badge')
         featuredBadge.value = mockBadge
