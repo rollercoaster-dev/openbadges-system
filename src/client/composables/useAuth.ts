@@ -279,9 +279,12 @@ export const useAuth = () => {
     error.value = null
 
     try {
+      // Normalize input (trim) before lookup to avoid stray spaces causing misses
+      const normalized = username.trim()
+
       // Find user in backend
-      console.log('Looking for user:', username)
-      const foundUser = await findUser(username)
+      console.log('Looking for user:', normalized)
+      const foundUser = await findUser(normalized)
       if (!foundUser) {
         error.value = 'User not found'
         return false
@@ -344,6 +347,83 @@ export const useAuth = () => {
       } else {
         error.value =
           err instanceof Error ? err.message : 'Authentication failed. Please try again.'
+      }
+      return false
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Set up a WebAuthn passkey for an existing user (used when user exists but has no credentials)
+  const setupPasskeyForUser = async (usernameOrEmail: string): Promise<boolean> => {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const identifier = usernameOrEmail.trim()
+      const existingUser = await findUser(identifier)
+      if (!existingUser) {
+        error.value = 'User not found'
+        return false
+      }
+
+      const registrationOptions = WebAuthnUtils.createRegistrationOptions(
+        existingUser.id,
+        existingUser.username,
+        `${existingUser.firstName} ${existingUser.lastName}`,
+        existingUser.credentials
+      )
+
+      const credentialData = await WebAuthnUtils.register(registrationOptions)
+
+      const newCredential: WebAuthnCredential = {
+        id: credentialData.id,
+        publicKey: credentialData.publicKey,
+        transports: credentialData.transports,
+        counter: 0,
+        createdAt: new Date().toISOString(),
+        lastUsed: new Date().toISOString(),
+        name: WebAuthnUtils.getAuthenticatorName(
+          credentialData.authenticatorAttachment,
+          credentialData.transports
+        ),
+        type: credentialData.authenticatorAttachment === 'platform' ? 'platform' : 'cross-platform',
+      }
+
+      await storeCredential(existingUser.id, newCredential)
+
+      // Try to exchange for a platform token
+      try {
+        const platformRes = await publicApiCall(`/users/${existingUser.id}/token`, {
+          method: 'POST',
+        })
+        if (platformRes && platformRes.success) {
+          token.value = platformRes.token
+        } else {
+          token.value = `local-session-${Date.now()}`
+        }
+      } catch (e) {
+        console.error('Token exchange failed:', e)
+        token.value = `local-session-${Date.now()}`
+      }
+
+      user.value = {
+        ...existingUser,
+        credentials: [...(existingUser.credentials || []), newCredential],
+      }
+      if (token.value !== null) {
+        localStorage.setItem('auth_token', token.value)
+      }
+      localStorage.setItem('user_data', JSON.stringify(user.value))
+
+      return true
+    } catch (err) {
+      console.error('Passkey setup error:', err)
+      if (err instanceof WebAuthnError) {
+        error.value = err.userMessage
+      } else {
+        error.value =
+          err instanceof Error ? err.message : 'Failed to set up passkey. Please try again.'
       }
       return false
     } finally {
@@ -707,6 +787,7 @@ export const useAuth = () => {
     register,
     authenticateWithWebAuthn,
     registerWithWebAuthn,
+    setupPasskeyForUser,
     authenticateWithOAuth,
     processOAuthCallback,
     logout,

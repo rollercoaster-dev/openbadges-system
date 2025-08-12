@@ -37,13 +37,23 @@
         </div>
       </div>
 
-      <!-- Error Message -->
+      <!-- Error Message / Recovery CTA -->
       <div v-if="authError" class="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
-        <div class="flex">
-          <ExclamationTriangleIcon class="w-5 h-5 text-red-400 mr-2 flex-shrink-0" />
-          <p class="text-sm text-red-700">
-            {{ authError }}
-          </p>
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex-1 flex">
+            <ExclamationTriangleIcon class="w-5 h-5 text-red-400 mr-2 flex-shrink-0" />
+            <p class="text-sm text-red-700">
+              {{ authError }}
+            </p>
+          </div>
+          <button
+            v-if="authError.includes('No credentials found')"
+            type="button"
+            class="text-sm font-medium text-red-700 underline hover:text-red-800"
+            @click="handleSetupPasskey"
+          >
+            Set up a passkey
+          </button>
         </div>
       </div>
 
@@ -219,6 +229,7 @@ const {
 // Auth composable
 const {
   authenticateWithWebAuthn,
+  setupPasskeyForUser,
   isLoading,
   error: authError,
   clearError,
@@ -270,6 +281,19 @@ const handleSubmit = async () => {
 
   if (success) {
     // Redirect to dashboard or intended page
+    const redirectPath = (router.currentRoute.value.query.redirect as string) || '/'
+    router.push(redirectPath)
+  }
+}
+
+// Setup passkey CTA handler
+const handleSetupPasskey = async () => {
+  clearError()
+  const identifier = getFieldValue('usernameOrEmail')
+  if (!identifier || !identifier.trim()) return
+
+  const success = await setupPasskeyForUser(identifier)
+  if (success) {
     const redirectPath = (router.currentRoute.value.query.redirect as string) || '/'
     router.push(redirectPath)
   }

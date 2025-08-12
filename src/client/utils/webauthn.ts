@@ -50,7 +50,14 @@ export class WebAuthnError extends Error {
 
 export class WebAuthnUtils {
   private static readonly RP_NAME = 'OpenBadges Demo'
-  private static readonly RP_ID = 'localhost' // In production, use your domain
+  // Use the current hostname for RP ID so dev/prod just work; fallback to 'localhost'
+  private static get RP_ID(): string {
+    try {
+      return window.location.hostname || 'localhost'
+    } catch {
+      return 'localhost'
+    }
+  }
   private static readonly TIMEOUT = 60000 // 60 seconds
 
   /**
