@@ -60,7 +60,8 @@ publicAuthRoutes.get('/users/lookup', async c => {
     }
 
     if (user) {
-      // Return minimal user info for lookup
+      // Return minimal user info for lookup (removed sensitive fields for security)
+      const userCredentials = await userService.getUserCredentials(user.id)
       return c.json({
         exists: true,
         user: {
@@ -70,9 +71,8 @@ publicAuthRoutes.get('/users/lookup', async c => {
           firstName: user.firstName,
           lastName: user.lastName,
           avatar: user.avatar,
-          isAdmin: user.roles.includes('ADMIN'),
           createdAt: user.createdAt,
-          credentials: await userService.getUserCredentials(user.id),
+          hasCredentials: userCredentials.length > 0,
         },
       })
     } else {
@@ -125,9 +125,8 @@ publicAuthRoutes.post('/users/register', async c => {
         firstName: newUser.firstName,
         lastName: newUser.lastName,
         avatar: newUser.avatar,
-        isAdmin: newUser.roles.includes('ADMIN'),
         createdAt: newUser.createdAt,
-        credentials: [],
+        hasCredentials: false,
       },
       201
     )
