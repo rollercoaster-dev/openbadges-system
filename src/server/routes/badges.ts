@@ -259,13 +259,50 @@ badgesRoutes.all('/*', async c => {
     })
     headersObj['Authorization'] = authHeader
 
-    const init: globalThis.RequestInit = {
-      method: c.req.method,
-      headers: headersObj,
+    // OB2 validation for creation/issuance endpoints
+    const method = c.req.method.toUpperCase()
+    const isJsonMethod = method !== 'GET' && method !== 'HEAD'
+
+    let bodyToForward: globalThis.BodyInit | null | undefined = undefined
+    if (isJsonMethod) {
+      // Only parse and validate for specific OB2 endpoints
+      const isCreateBadgeClass = method === 'POST' && path.startsWith('/api/v2/badge-classes')
+      const isIssueAssertion = method === 'POST' && path.startsWith('/api/v2/assertions')
+
+      if (isCreateBadgeClass || isIssueAssertion) {
+        try {
+          const incoming = await c.req.json()
+          if (isCreateBadgeClass) {
+            const { validateBadgeClassPayload } = await import('../middleware/ob2Validation')
+            const result = validateBadgeClassPayload(incoming)
+            if (!result.valid) {
+              return c.json(
+                { error: 'Invalid OB2 BadgeClass payload', details: result.errors },
+                400
+              )
+            }
+            bodyToForward = JSON.stringify(result.data)
+          } else if (isIssueAssertion) {
+            const { validateAssertionPayload } = await import('../middleware/ob2Validation')
+            const result = validateAssertionPayload(incoming)
+            if (!result.valid) {
+              return c.json({ error: 'Invalid OB2 Assertion payload', details: result.errors }, 400)
+            }
+            bodyToForward = JSON.stringify(result.data)
+          }
+        } catch {
+          return c.json({ error: 'Invalid JSON body' }, 400)
+        }
+      } else {
+        // Pass raw body as-is for other endpoints
+        bodyToForward = c.req.raw.body as globalThis.BodyInit | null | undefined
+      }
     }
-    // Only include body for methods that support it
-    if (c.req.method !== 'GET' && c.req.method !== 'HEAD') {
-      init.body = c.req.raw.body as globalThis.BodyInit | null | undefined
+
+    const init: globalThis.RequestInit = {
+      method,
+      headers: headersObj,
+      ...(isJsonMethod ? { body: bodyToForward } : {}),
     }
 
     const response = await fetch(url.toString(), init)
