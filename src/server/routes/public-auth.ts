@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { userService } from '../services/user'
+import { jwtService } from '../services/jwt'
 
 const publicAuthRoutes = new Hono()
 
@@ -209,6 +210,44 @@ publicAuthRoutes.patch('/users/:userId/credentials/:credentialId', async c => {
   } catch (err) {
     console.error('Error updating credential:', err)
     return c.json({ error: 'Failed to update credential' }, 500)
+  }
+})
+
+// Public endpoint to generate JWT token for WebAuthn authenticated users
+publicAuthRoutes.post('/users/:id/token', async c => {
+  if (!userService) {
+    return c.json({ error: 'User service unavailable' }, 503)
+  }
+
+  try {
+    const userId = c.req.param('id')
+
+    // Verify user exists
+    const user = await userService.getUserById(userId)
+    if (!user) {
+      return c.json({ error: 'User not found' }, 404)
+    }
+
+    // Generate JWT token for this user
+    const platformUser = {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      isAdmin: user.roles.includes('ADMIN'),
+    }
+
+    const token = jwtService.generatePlatformToken(platformUser)
+
+    return c.json({
+      success: true,
+      token,
+      platformId: 'urn:uuid:a504d862-bd64-4e0d-acff-db7955955bc1',
+    })
+  } catch (err) {
+    console.error('Error generating token:', err)
+    return c.json({ error: 'Failed to generate token' }, 500)
   }
 })
 

@@ -56,45 +56,20 @@ export const useAuth = () => {
 
   // Public API calls for user lookup/registration (no auth required)
   const publicApiCall = async (endpoint: string, options: RequestInit = {}) => {
-    try {
-      const response = await fetch(`/api/auth/public${endpoint}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers,
-        },
-        ...options,
-      })
+    const response = await fetch(`/api/auth/public${endpoint}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    })
 
-      if (!response) {
-        throw new Error('Network error: No response received')
-      }
-
-      if (!response.ok) {
-        let errorData = { message: 'Unknown error' }
-        try {
-          if (response.json && typeof response.json === 'function') {
-            errorData = await response.json()
-          }
-        } catch {
-          // If JSON parsing fails, use status text
-          errorData = { message: response.statusText || 'Unknown error' }
-        }
-        throw new Error(errorData.message || `API call failed: ${response.status}`)
-      }
-
-      if (response.json && typeof response.json === 'function') {
-        return await response.json()
-      }
-
-      // Fallback for test environment or if response.json is not available
-      return response
-    } catch (error) {
-      // In test environment, network calls might fail - provide fallback behavior
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        throw new Error('Network error: No response received')
-      }
-      throw error
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
+      throw new Error(errorData.message || `API call failed: ${response.status}`)
     }
+
+    return response.json()
   }
 
   // Authenticated API calls for user management (requires auth token)
@@ -265,14 +240,11 @@ export const useAuth = () => {
 
       // Request real platform token from backend for this user
       try {
-        const platformRes = await fetch('/api/auth/platform-token', {
+        const platformRes = await publicApiCall(`/users/${newUser.id}/token`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user: newUser }),
         })
-        if (platformRes && 'ok' in platformRes && platformRes.ok) {
-          const platformData = await platformRes.json()
-          token.value = platformData.token
+        if (platformRes && platformRes.success) {
+          token.value = platformRes.token
         } else {
           // Fallback: create a temporary session token
           token.value = `local-session-${Date.now()}`
@@ -345,14 +317,11 @@ export const useAuth = () => {
 
       // Exchange for real platform token
       try {
-        const platformRes = await fetch('/api/auth/platform-token', {
+        const platformRes = await publicApiCall(`/users/${foundUser.id}/token`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user: foundUser }),
         })
-        if (platformRes && 'ok' in platformRes && platformRes.ok) {
-          const platformData = await platformRes.json()
-          token.value = platformData.token
+        if (platformRes && platformRes.success) {
+          token.value = platformRes.token
         } else {
           token.value = `local-session-${Date.now()}`
         }
