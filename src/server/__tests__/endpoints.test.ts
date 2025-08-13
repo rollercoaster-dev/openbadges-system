@@ -650,4 +650,741 @@ describe('Server Endpoints', () => {
       })
     })
   })
+
+  describe('Badge Creation and Issuance Integration Flow', () => {
+    it('should support complete badge lifecycle: create → issue → verify → retrieve', async () => {
+      // Step 1: Create badge class
+      const mockBadgeClass = {
+        id: 'https://example.org/badges/new-badge',
+        type: 'BadgeClass',
+        name: 'Integration Test Badge',
+        description: 'A badge for testing the complete flow',
+        image: 'https://example.org/images/test-badge.png',
+        criteria: {
+          narrative: 'Complete the integration test successfully',
+          id: 'https://example.org/criteria/integration-test',
+        },
+        issuer: {
+          id: 'https://example.org/issuers/test-issuer',
+          type: 'Profile',
+          name: 'Test User',
+          email: 'test@example.com',
+        },
+        alignment: [
+          {
+            targetName: 'Testing Standards',
+            targetUrl: 'https://example.org/standards/testing',
+            targetFramework: 'Open Badges',
+          },
+        ],
+      }
+
+      // Mock badge class creation
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: vi.fn().mockResolvedValue(mockBadgeClass),
+      })
+
+      // Step 2: Issue badge (assertion)
+      const mockAssertion = {
+        id: 'https://example.org/assertions/new-assertion',
+        type: 'Assertion',
+        recipient: { type: 'email', identity: 'recipient@example.com', hashed: false },
+        badge: mockBadgeClass.id,
+        verification: { type: 'hosted' },
+        issuedOn: '2024-01-15T10:00:00Z',
+        evidence: 'https://example.org/evidence/test-evidence',
+        narrative: 'Awarded for completing integration testing',
+      }
+
+      // Mock assertion creation
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: vi.fn().mockResolvedValue(mockAssertion),
+      })
+
+      // Step 3: Mock verification response
+      const mockVerificationResponse = {
+        valid: true,
+        signatureValid: true,
+        issuerVerified: true,
+        errors: [],
+        warnings: [],
+      }
+
+      // Mock verification call
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: vi.fn().mockResolvedValue(mockVerificationResponse),
+      })
+
+      // Step 4: Mock retrieval of assertion
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: vi.fn().mockResolvedValue(mockAssertion),
+      })
+
+      // Step 5: Mock backpack retrieval showing the new assertion
+      const mockBackpack = {
+        assertions: [mockAssertion],
+        total: 1,
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: vi.fn().mockResolvedValue(mockBackpack),
+      })
+
+      // Execute the flow
+
+      // 1. Create badge class
+      const createReq = new Request('http://localhost/api/badges/api/v2/badge-classes', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer test-platform-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(mockBadgeClass),
+      })
+
+      const createRes = await app.fetch(createReq)
+      expect(createRes.status).toBe(200)
+      const createdBadge = await createRes.json()
+      expect(createdBadge.id).toBe(mockBadgeClass.id)
+
+      // 2. Issue badge (create assertion)
+      const issueReq = new Request('http://localhost/api/badges/api/v2/assertions', {
+        method: 'POST',
+        headers: {
+          Authorization: 'Bearer test-platform-token',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          badge: mockBadgeClass.id,
+          recipient: { type: 'email', identity: 'recipient@example.com' },
+          evidence: 'https://example.org/evidence/test-evidence',
+          narrative: 'Awarded for completing integration testing',
+        }),
+      })
+
+      const issueRes = await app.fetch(issueReq)
+      expect(issueRes.status).toBe(200)
+      const issuedAssertion = await issueRes.json()
+      expect(issuedAssertion.id).toBe(mockAssertion.id)
+
+      // 3. Verify the issued badge
+      const verifyReq = new Request('http://localhost/api/badges/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assertion: mockAssertion,
+          badgeClass: mockBadgeClass,
+        }),
+      })
+
+      const verifyRes = await app.fetch(verifyReq)
+      expect(verifyRes.status).toBe(200)
+      const verificationResult = await verifyRes.json()
+      expect(verificationResult.valid).toBe(true)
+      expect(verificationResult.signatureValid).toBe(true)
+      expect(verificationResult.issuerVerified).toBe(true)
+
+      // 4. Retrieve assertion by ID
+      const retrieveReq = new Request(
+        `http://localhost/api/badges/assertions/${encodeURIComponent(mockAssertion.id)}`
+      )
+      const retrieveRes = await app.fetch(retrieveReq)
+      expect(retrieveRes.status).toBe(200)
+      const retrievedAssertion = await retrieveRes.json()
+      expect(retrievedAssertion.id).toBe(mockAssertion.id)
+
+      // 5. Check that assertion appears in backpack
+      const backpackReq = new Request('http://localhost/api/badges/api/v1/assertions', {
+        headers: { Authorization: 'Bearer test-platform-token' },
+      })
+      const backpackRes = await app.fetch(backpackReq)
+      expect(backpackRes.status).toBe(200)
+      const backpack = await backpackRes.json()
+      expect(backpack.assertions).toHaveLength(1)
+      expect(backpack.assertions[0].id).toBe(mockAssertion.id)
+
+      // Verify all expected API calls were made
+      expect(mockFetch).toHaveBeenCalledTimes(5)
+
+      // Verify correct endpoints were called
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        1,
+        'http://localhost:3000/api/v2/badge-classes',
+        expect.any(Object)
+      )
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
+        'http://localhost:3000/api/v2/assertions',
+        expect.any(Object)
+      )
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        3,
+        'http://localhost:3000/api/v1/verify',
+        expect.any(Object)
+      )
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        4,
+        `http://localhost:3000/api/v1/assertions/${encodeURIComponent(mockAssertion.id)}`,
+        expect.any(Object)
+      )
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        5,
+        'http://localhost:3000/api/v1/assertions',
+        expect.any(Object)
+      )
+    })
+
+    it('should handle verification failure for invalid badges', async () => {
+      const mockInvalidAssertion = {
+        id: 'https://example.org/assertions/invalid',
+        type: 'Assertion',
+        recipient: { type: 'email', identity: 'test@example.com' },
+        badge: 'https://example.org/badges/invalid',
+        verification: { type: 'hosted' },
+        issuedOn: '2024-01-15T10:00:00Z',
+      }
+
+      const mockInvalidVerification = {
+        valid: false,
+        signatureValid: false,
+        issuerVerified: false,
+        errors: ['Invalid signature', 'Issuer not verified'],
+        warnings: ['Badge may be expired'],
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: vi.fn().mockResolvedValue(mockInvalidVerification),
+      })
+
+      const verifyReq = new Request('http://localhost/api/badges/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assertion: mockInvalidAssertion,
+          badgeClass: { id: 'invalid-badge' },
+        }),
+      })
+
+      const verifyRes = await app.fetch(verifyReq)
+      expect(verifyRes.status).toBe(200)
+      const result = await verifyRes.json()
+
+      expect(result.valid).toBe(false)
+      expect(result.errors).toContain('Invalid signature')
+      expect(result.errors).toContain('Issuer not verified')
+      expect(result.warnings).toContain('Badge may be expired')
+    })
+
+    it('should handle verification after badge issuance with OB2 compliance', async () => {
+      // Test OB2-compliant badge with criteria.id and alignment
+      const ob2BadgeClass = {
+        id: 'https://example.org/badges/ob2-compliant',
+        type: 'BadgeClass',
+        name: 'OB2 Compliant Badge',
+        description: 'A fully OB2-compliant badge',
+        image: 'https://example.org/images/ob2-badge.png',
+        criteria: {
+          narrative: 'Demonstrate OB2 compliance understanding',
+          id: 'https://example.org/criteria/ob2-compliance',
+        },
+        issuer: {
+          id: 'https://example.org/issuers/ob2-issuer',
+          type: 'Profile',
+          name: 'OB2 Test Issuer',
+          email: 'issuer@example.com',
+        },
+        alignment: [
+          {
+            targetName: 'OpenBadges 2.0 Standard',
+            targetUrl:
+              'https://www.imsglobal.org/sites/default/files/Badges/OBv2p0Final/index.html',
+            targetDescription: 'Official OB2 specification',
+            targetFramework: 'IMS Global',
+          },
+        ],
+      }
+
+      const ob2Assertion = {
+        id: 'https://example.org/assertions/ob2-assertion',
+        type: 'Assertion',
+        recipient: {
+          type: 'email',
+          identity: 'recipient@example.com',
+          hashed: false,
+        },
+        badge: ob2BadgeClass.id,
+        verification: { type: 'hosted' },
+        issuedOn: '2024-01-15T10:00:00Z',
+        evidence: 'https://example.org/evidence/ob2-evidence',
+        narrative: 'Successfully demonstrated OB2 compliance',
+      }
+
+      const mockOB2Verification = {
+        valid: true,
+        signatureValid: true,
+        issuerVerified: true,
+        errors: [],
+        warnings: [],
+      }
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        headers: new Headers({ 'content-type': 'application/json' }),
+        json: vi.fn().mockResolvedValue(mockOB2Verification),
+      })
+
+      const verifyReq = new Request('http://localhost/api/badges/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assertion: ob2Assertion,
+          badgeClass: ob2BadgeClass,
+        }),
+      })
+
+      const verifyRes = await app.fetch(verifyReq)
+      expect(verifyRes.status).toBe(200)
+      const result = await verifyRes.json()
+
+      expect(result.valid).toBe(true)
+      expect(result.signatureValid).toBe(true)
+      expect(result.issuerVerified).toBe(true)
+      expect(result.errors).toHaveLength(0)
+
+      // Verify the request body contains OB2-compliant structures
+      const verifyCall = mockFetch.mock.calls.find(
+        call => call[0] === 'http://localhost:3000/api/v1/verify'
+      )
+      expect(verifyCall).toBeDefined()
+      const requestBody = JSON.parse(verifyCall![1].body as string)
+
+      // Check OB2 compliance
+      expect(requestBody.badgeClass.criteria.id).toBe('https://example.org/criteria/ob2-compliance')
+      expect(requestBody.badgeClass.alignment).toHaveLength(1)
+      expect(requestBody.badgeClass.alignment[0].targetUrl).toBe(
+        'https://www.imsglobal.org/sites/default/files/Badges/OBv2p0Final/index.html'
+      )
+      expect(requestBody.assertion.evidence).toBe('https://example.org/evidence/ob2-evidence')
+      expect(requestBody.assertion.narrative).toBe('Successfully demonstrated OB2 compliance')
+    })
+  })
+
+  describe('Negative Validation Tests', () => {
+    describe('Badge Creation Validation', () => {
+      it('should return 400 for badge creation with missing criteria narrative', async () => {
+        const invalidBadgeClass = {
+          type: 'BadgeClass',
+          name: 'Test Badge',
+          description: 'A test badge',
+          image: 'https://example.org/images/test-badge.png',
+          criteria: {
+            // Missing narrative
+            id: 'https://example.org/criteria/test',
+          },
+          issuer: {
+            id: 'https://example.org/issuers/test',
+            type: 'Profile',
+            name: 'Test Issuer',
+          },
+        }
+
+        mockFetch.mockResolvedValueOnce({
+          ok: false,
+          status: 400,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: vi.fn().mockResolvedValue({
+            error: 'Validation failed',
+            details: 'criteria.narrative is required',
+            code: 'VALIDATION_ERROR',
+          }),
+        })
+
+        const req = new Request('http://localhost/api/badges/api/v2/badge-classes', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer test-platform-token',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(invalidBadgeClass),
+        })
+
+        const res = await app.fetch(req)
+        expect(res.status).toBe(400)
+        const data = await res.json()
+        expect(data.error).toBe('Validation failed')
+        expect(data.details).toBe('criteria.narrative is required')
+        expect(data.code).toBe('VALIDATION_ERROR')
+      })
+
+      it('should return 400 for badge creation with invalid criteria URL', async () => {
+        const invalidBadgeClass = {
+          type: 'BadgeClass',
+          name: 'Test Badge',
+          description: 'A test badge',
+          image: 'https://example.org/images/test-badge.png',
+          criteria: {
+            narrative: 'Valid criteria narrative',
+            id: 'not-a-valid-url', // Invalid URL
+          },
+          issuer: {
+            id: 'https://example.org/issuers/test',
+            type: 'Profile',
+            name: 'Test Issuer',
+          },
+        }
+
+        mockFetch.mockResolvedValueOnce({
+          ok: false,
+          status: 400,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: vi.fn().mockResolvedValue({
+            error: 'Validation failed',
+            details: 'criteria.id must be a valid URL',
+            code: 'INVALID_URL',
+          }),
+        })
+
+        const req = new Request('http://localhost/api/badges/api/v2/badge-classes', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer test-platform-token',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(invalidBadgeClass),
+        })
+
+        const res = await app.fetch(req)
+        expect(res.status).toBe(400)
+        const data = await res.json()
+        expect(data.error).toBe('Validation failed')
+        expect(data.details).toBe('criteria.id must be a valid URL')
+        expect(data.code).toBe('INVALID_URL')
+      })
+
+      it('should return 400 for badge creation with invalid alignment URLs', async () => {
+        const invalidBadgeClass = {
+          type: 'BadgeClass',
+          name: 'Test Badge',
+          description: 'A test badge',
+          image: 'https://example.org/images/test-badge.png',
+          criteria: {
+            narrative: 'Valid criteria narrative',
+          },
+          issuer: {
+            id: 'https://example.org/issuers/test',
+            type: 'Profile',
+            name: 'Test Issuer',
+          },
+          alignment: [
+            {
+              targetName: 'Invalid Standard',
+              targetUrl: 'not-a-valid-url', // Invalid URL
+              targetDescription: 'A standard with invalid URL',
+            },
+          ],
+        }
+
+        mockFetch.mockResolvedValueOnce({
+          ok: false,
+          status: 400,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: vi.fn().mockResolvedValue({
+            error: 'Validation failed',
+            details: 'alignment[0].targetUrl must be a valid URL',
+            code: 'INVALID_ALIGNMENT_URL',
+          }),
+        })
+
+        const req = new Request('http://localhost/api/badges/api/v2/badge-classes', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer test-platform-token',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(invalidBadgeClass),
+        })
+
+        const res = await app.fetch(req)
+        expect(res.status).toBe(400)
+        const data = await res.json()
+        expect(data.error).toBe('Validation failed')
+        expect(data.details).toBe('alignment[0].targetUrl must be a valid URL')
+        expect(data.code).toBe('INVALID_ALIGNMENT_URL')
+      })
+    })
+
+    describe('Badge Issuance Validation', () => {
+      it('should return 400 for badge issuance with invalid recipient email', async () => {
+        const invalidIssuanceData = {
+          badge: 'https://example.org/badges/test-badge',
+          recipient: {
+            type: 'email',
+            identity: 'not-an-email', // Invalid email
+            hashed: false,
+          },
+          evidence: 'https://example.org/evidence/test',
+          narrative: 'Test narrative',
+        }
+
+        mockFetch.mockResolvedValueOnce({
+          ok: false,
+          status: 400,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: vi.fn().mockResolvedValue({
+            error: 'Validation failed',
+            details: 'recipient.identity must be a valid email address',
+            code: 'INVALID_EMAIL',
+          }),
+        })
+
+        const req = new Request('http://localhost/api/badges/api/v2/assertions', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer test-platform-token',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(invalidIssuanceData),
+        })
+
+        const res = await app.fetch(req)
+        expect(res.status).toBe(400)
+        const data = await res.json()
+        expect(data.error).toBe('Validation failed')
+        expect(data.details).toBe('recipient.identity must be a valid email address')
+        expect(data.code).toBe('INVALID_EMAIL')
+      })
+
+      it('should return 400 for badge issuance with invalid evidence URL', async () => {
+        const invalidIssuanceData = {
+          badge: 'https://example.org/badges/test-badge',
+          recipient: {
+            type: 'email',
+            identity: 'test@example.com',
+            hashed: false,
+          },
+          evidence: 'not-a-valid-url', // Invalid URL
+          narrative: 'Test narrative',
+        }
+
+        mockFetch.mockResolvedValueOnce({
+          ok: false,
+          status: 400,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: vi.fn().mockResolvedValue({
+            error: 'Validation failed',
+            details: 'evidence must be a valid URL',
+            code: 'INVALID_EVIDENCE_URL',
+          }),
+        })
+
+        const req = new Request('http://localhost/api/badges/api/v2/assertions', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer test-platform-token',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(invalidIssuanceData),
+        })
+
+        const res = await app.fetch(req)
+        expect(res.status).toBe(400)
+        const data = await res.json()
+        expect(data.error).toBe('Validation failed')
+        expect(data.details).toBe('evidence must be a valid URL')
+        expect(data.code).toBe('INVALID_EVIDENCE_URL')
+      })
+
+      it('should return 400 for badge issuance with missing badge reference', async () => {
+        const invalidIssuanceData = {
+          // Missing badge reference
+          recipient: {
+            type: 'email',
+            identity: 'test@example.com',
+            hashed: false,
+          },
+          evidence: 'https://example.org/evidence/test',
+          narrative: 'Test narrative',
+        }
+
+        mockFetch.mockResolvedValueOnce({
+          ok: false,
+          status: 400,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: vi.fn().mockResolvedValue({
+            error: 'Validation failed',
+            details: 'badge is required',
+            code: 'MISSING_BADGE_REFERENCE',
+          }),
+        })
+
+        const req = new Request('http://localhost/api/badges/api/v2/assertions', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer test-platform-token',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(invalidIssuanceData),
+        })
+
+        const res = await app.fetch(req)
+        expect(res.status).toBe(400)
+        const data = await res.json()
+        expect(data.error).toBe('Validation failed')
+        expect(data.details).toBe('badge is required')
+        expect(data.code).toBe('MISSING_BADGE_REFERENCE')
+      })
+
+      it('should return 400 for badge issuance with invalid expiration date', async () => {
+        const invalidIssuanceData = {
+          badge: 'https://example.org/badges/test-badge',
+          recipient: {
+            type: 'email',
+            identity: 'test@example.com',
+            hashed: false,
+          },
+          expires: 'not-a-date', // Invalid date
+          evidence: 'https://example.org/evidence/test',
+        }
+
+        mockFetch.mockResolvedValueOnce({
+          ok: false,
+          status: 400,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: vi.fn().mockResolvedValue({
+            error: 'Validation failed',
+            details: 'expires must be a valid ISO date',
+            code: 'INVALID_DATE',
+          }),
+        })
+
+        const req = new Request('http://localhost/api/badges/api/v2/assertions', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer test-platform-token',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(invalidIssuanceData),
+        })
+
+        const res = await app.fetch(req)
+        expect(res.status).toBe(400)
+        const data = await res.json()
+        expect(data.error).toBe('Validation failed')
+        expect(data.details).toBe('expires must be a valid ISO date')
+        expect(data.code).toBe('INVALID_DATE')
+      })
+    })
+
+    describe('Comprehensive Validation Error Handling', () => {
+      it('should return structured error responses with clear messages', async () => {
+        const multipleErrorsBadge = {
+          type: 'BadgeClass',
+          // Missing name
+          // Missing description
+          image: 'not-a-valid-url',
+          criteria: {
+            // Missing narrative
+            id: 'also-not-a-url',
+          },
+          issuer: {
+            // Missing id
+            type: 'Profile',
+            // Missing name
+          },
+          alignment: [
+            {
+              targetName: 'Valid Name',
+              targetUrl: 'invalid-url',
+            },
+          ],
+        }
+
+        mockFetch.mockResolvedValueOnce({
+          ok: false,
+          status: 400,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: vi.fn().mockResolvedValue({
+            error: 'Multiple validation errors',
+            details: [
+              'name is required',
+              'description is required',
+              'image must be a valid URL',
+              'criteria.narrative is required',
+              'criteria.id must be a valid URL',
+              'issuer.id is required',
+              'issuer.name is required',
+              'alignment[0].targetUrl must be a valid URL',
+            ],
+            code: 'MULTIPLE_VALIDATION_ERRORS',
+          }),
+        })
+
+        const req = new Request('http://localhost/api/badges/api/v2/badge-classes', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer test-platform-token',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(multipleErrorsBadge),
+        })
+
+        const res = await app.fetch(req)
+        expect(res.status).toBe(400)
+        const data = await res.json()
+        expect(data.error).toBe('Multiple validation errors')
+        expect(Array.isArray(data.details)).toBe(true)
+        expect(data.details).toContain('name is required')
+        expect(data.details).toContain('criteria.narrative is required')
+        expect(data.details).toContain('alignment[0].targetUrl must be a valid URL')
+        expect(data.code).toBe('MULTIPLE_VALIDATION_ERRORS')
+      })
+
+      it('should maintain consistent error response structure', async () => {
+        mockFetch.mockResolvedValueOnce({
+          ok: false,
+          status: 400,
+          headers: new Headers({ 'content-type': 'application/json' }),
+          json: vi.fn().mockResolvedValue({
+            error: 'Validation failed',
+            details: 'Field validation error',
+            code: 'VALIDATION_ERROR',
+            timestamp: '2024-01-15T10:00:00Z',
+            path: '/api/v2/badge-classes',
+          }),
+        })
+
+        const req = new Request('http://localhost/api/badges/api/v2/badge-classes', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer test-platform-token',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ invalid: 'data' }),
+        })
+
+        const res = await app.fetch(req)
+        expect(res.status).toBe(400)
+        const data = await res.json()
+
+        // Verify consistent error response structure
+        expect(data).toHaveProperty('error')
+        expect(data).toHaveProperty('details')
+        expect(data).toHaveProperty('code')
+        expect(typeof data.error).toBe('string')
+        expect(data.error).not.toBe('')
+      })
+    })
+  })
 })
