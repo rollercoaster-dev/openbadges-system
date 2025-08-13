@@ -5,8 +5,8 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
       <!-- Badge Creation Form -->
       <div class="space-y-6">
-        <!-- Image Upload Section -->
-        <div class="bg-gray-50 rounded-lg p-6">
+        <!-- Badge creation form handled by BadgeIssuerForm component -->
+        <div v-if="false" style="display: none" class="bg-gray-50 rounded-lg p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">Badge Image</h3>
 
           <!-- Image Preview -->
@@ -98,7 +98,7 @@
         </div>
 
         <!-- Criteria Definition Section -->
-        <div class="bg-gray-50 rounded-lg p-6">
+        <div v-if="false" style="display: none" class="bg-gray-50 rounded-lg p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">Badge Criteria</h3>
 
           <div class="space-y-4">
@@ -199,6 +199,15 @@
                       @input="clearMessages"
                     />
                   </div>
+                  <input
+                    v-model="alignment.targetFramework"
+                    type="text"
+                    class="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Framework (optional)"
+                    :aria-label="`Alignment ${index + 1} framework`"
+                    @input="clearMessages"
+                  />
+
                   <button
                     type="button"
                     class="p-2 text-red-600 hover:text-red-800"
@@ -343,34 +352,7 @@
       </div>
     </div>
 
-    <!-- Upload Error Display -->
-    <div
-      v-if="uploadError"
-      class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
-      role="alert"
-    >
-      <div class="flex items-center">
-        <svg
-          class="w-5 h-5 mr-3 text-yellow-600"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.313 16.5c-.77.833.192 2.5 1.732 2.5z"
-          />
-        </svg>
-        <div>
-          <p class="text-yellow-800 font-medium">Upload Error</p>
-          <p class="text-yellow-700">
-            {{ uploadError }}
-          </p>
-        </div>
-      </div>
-    </div>
+    <!-- Upload errors now handled by BadgeIssuerForm -->
   </div>
 </template>
 
@@ -378,17 +360,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { BadgeIssuerForm, BadgeDisplay } from 'openbadges-ui'
-import type { OB2, Shared } from 'openbadges-types'
+import type { OB2 } from 'openbadges-types'
 import { createIRI } from 'openbadges-types'
 import { useAuth } from '@/composables/useAuth'
 import { useBadges, type CreateBadgeData } from '@/composables/useBadges'
-import { useFormValidation } from '@/composables/useFormValidation'
-import { useImageUpload } from '@/composables/useImageUpload'
+// Form validation and image upload now handled by BadgeIssuerForm
 
-// Extended criteria type that includes optional id field for OB2 compatibility
-interface CriteriaWithId extends NonNullable<CreateBadgeData['criteria']> {
-  id?: Shared.IRI
-}
+// Types now handled by BadgeIssuerForm
 
 // Preview-specific interfaces to avoid type assertions
 interface PreviewIssuer {
@@ -418,26 +396,13 @@ interface PreviewBadgeData {
 const router = useRouter()
 const { user } = useAuth()
 const { createBadge } = useBadges()
-const { createField, updateField, touchField, validateAll, getFieldError, rules } =
-  useFormValidation()
-const {
-  uploadImage,
-  isUploading,
-  error: uploadError,
-  clearError,
-} = useImageUpload({
-  maxSize: 2 * 1024 * 1024, // 2MB
-  allowedTypes: ['image/jpeg', 'image/png', 'image/gif', 'image/webp'],
-})
 
 // Component state
 const error = ref<string | null>(null)
 const successMessage = ref<string | null>(null)
 const isSubmitting = ref(false)
-const validationErrors = ref<Record<string, string>>({})
-const isFormDirty = ref(false)
 
-// Badge form data
+// Badge form data - now managed by BadgeIssuerForm
 const badgeData = ref<Partial<CreateBadgeData>>({
   name: '',
   description: '',
@@ -452,9 +417,6 @@ const badgeData = ref<Partial<CreateBadgeData>>({
 // Available issuers (for now, just create a default issuer)
 const availableIssuers = ref<OB2.Profile[]>([])
 
-// Criteria URL (separate from narrative)
-const criteriaUrl = ref('')
-
 // Create preview badge for display
 // Using PreviewBadgeData interface to avoid type assertions
 const previewBadge = computed(
@@ -466,11 +428,10 @@ const previewBadge = computed(
     image: badgeData.value.image || '/placeholder-badge.png',
     criteria: {
       narrative: badgeData.value.criteria?.narrative || 'Badge criteria will appear here',
-      ...(criteriaUrl.value ? { id: criteriaUrl.value } : {}),
     },
     issuer: badgeData.value.issuer || {
       id: '', // preview only
-      type: 'Issuer',
+      type: 'Profile',
       name: 'Default Issuer',
       url: window.location.origin,
       email: user.value?.email || 'admin@example.com',
@@ -482,20 +443,11 @@ const previewBadge = computed(
 
 // Initialize component
 onMounted(async () => {
-  // Initialize form validation fields
-  createField('name', '', [rules.required('Badge name is required'), rules.minLength(3)])
-  createField('description', '', [
-    rules.required('Badge description is required'),
-    rules.minLength(10),
-  ])
-  createField('criteria', '', [rules.required('Badge criteria is required'), rules.minLength(10)])
-  createField('criteriaUrl', '', [])
-
   // Create default issuer if user is available
   if (user.value) {
     const defaultIssuer: OB2.Profile = {
-      id: createIRI(''), // preview only - will be set by server
-      type: 'Issuer',
+      id: createIRI(`${window.location.origin}/api/v1/profiles/${user.value.id}`),
+      type: 'Profile',
       name: `${user.value.firstName} ${user.value.lastName}`,
       url: createIRI(window.location.origin),
       email: user.value.email,
@@ -521,43 +473,7 @@ const handleSubmit = async (formData: CreateBadgeData) => {
   isSubmitting.value = true
 
   try {
-    // Update form fields with current values
-    updateField('name', badgeData.value.name || '')
-    updateField('description', badgeData.value.description || '')
-    updateField('criteria', badgeData.value.criteria?.narrative || '')
-    updateField('criteriaUrl', criteriaUrl.value)
-
-    // Validate all fields
-    if (!validateAll()) {
-      error.value = 'Please fix the errors in the form'
-      return
-    }
-
-    // Additional validation for required fields
-    if (
-      !badgeData.value.name ||
-      !badgeData.value.description ||
-      !badgeData.value.criteria?.narrative
-    ) {
-      error.value = 'Please fill in all required fields'
-      return
-    }
-
-    // Validate image
-    if (!badgeData.value.image) {
-      error.value = 'Please upload a badge image'
-      return
-    }
-
-    // Update criteria with URL if provided
-    if (criteriaUrl.value) {
-      formData.criteria = {
-        ...formData.criteria,
-        id: createIRI(criteriaUrl.value),
-      } as CriteriaWithId
-    }
-
-    // Create the badge
+    // BadgeIssuerForm handles validation and OB2 compliance, so we can proceed directly
     const newBadge = await createBadge(user.value, formData)
 
     if (newBadge) {
@@ -592,43 +508,7 @@ const handleSubmit = async (formData: CreateBadgeData) => {
   }
 }
 
-// Handle cancel
-const handleCancel = () => {
-  router.push('/badges')
-}
-
-// Handle image upload
-const handleImageUpload = async (event: Event) => {
-  clearError()
-  clearMessages()
-  const target = event.target as globalThis.HTMLInputElement
-  const file = target.files?.[0]
-  if (!file) return
-  const result = await uploadImage(file)
-  if (result) {
-    badgeData.value.image = result.dataUrl
-  } else if (uploadError.value) {
-    error.value = uploadError.value
-  }
-}
-
-// Handle drag and drop for image
-const handleImageDrop = async (event: globalThis.DragEvent) => {
-  event.preventDefault()
-  clearError()
-  clearMessages()
-  const file = event.dataTransfer?.files[0]
-  if (!file) return
-  const result = await uploadImage(file)
-  if (result) {
-    badgeData.value.image = result.dataUrl
-  } else if (uploadError.value) {
-    error.value = uploadError.value
-  }
-}
-const handleDragOver = (event: globalThis.DragEvent) => {
-  event.preventDefault()
-}
+// Validation now handled by BadgeIssuerForm
 
 // Add alignment object
 const addAlignment = () => {
@@ -647,33 +527,9 @@ const removeAlignment = (index: number) => {
   }
 }
 
-// Handle field updates with validation
-const handleFieldUpdate = (fieldName: string, value: string) => {
-  isFormDirty.value = true
-  updateField(fieldName, value)
-
-  // Update badgeData reactive values
-  if (fieldName === 'name') {
-    badgeData.value.name = value
-  } else if (fieldName === 'description') {
-    badgeData.value.description = value
-  } else if (fieldName === 'criteria') {
-    badgeData.value.criteria = { narrative: value }
-  } else if (fieldName === 'criteriaUrl') {
-    criteriaUrl.value = value
-  }
-
-  // Clear specific field error when user starts typing
-  if (validationErrors.value[fieldName]) {
-    delete validationErrors.value[fieldName]
-  }
-
-  clearMessages()
-}
-
-// Handle field blur (touch)
-const handleFieldBlur = (fieldName: string) => {
-  touchField(fieldName)
+// Handle cancel
+const handleCancel = () => {
+  router.push('/badges')
 }
 
 // Clear messages when user starts typing
