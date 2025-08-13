@@ -30,6 +30,20 @@ export const useFormValidation = () => {
       message,
     }),
 
+    url: (message = 'Please enter a valid URL'): ValidationRule => ({
+      validate: (value: string) => {
+        const v = value.trim()
+        if (v === '') return true // allow empty for optional fields
+        try {
+          const u = new URL(v)
+          return u.protocol === 'http:' || u.protocol === 'https:'
+        } catch {
+          return false
+        }
+      },
+      message,
+    }),
+
     minLength: (min: number, message?: string): ValidationRule => ({
       validate: (value: string) => value.length >= min,
       message: message || `Must be at least ${min} characters`,
@@ -149,7 +163,7 @@ export const useFormValidation = () => {
   // Check if form is valid
   const isFormValid = computed(() => {
     return Object.values(fields.value).every(
-      field => field.error === '' && (field.rules.length === 0 || field.value !== '')
+      field => field.rules.every(rule => rule.validate(field.value)) && field.error === ''
     )
   })
 

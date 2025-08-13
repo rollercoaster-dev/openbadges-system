@@ -12,7 +12,6 @@ export default defineConfig({
     environment: 'node',
     setupFiles: ['./src/server/test.setup.ts'],
     include: ['src/server/**/*.{test,spec}.ts?(x)'],
-    exclude: ['src/client/**', 'src/test/integration/**'],
+    exclude: ['src/client/**', 'src/test/integration/**', '**/*.bun.test.ts'],
   },
 })
-
