@@ -9,7 +9,11 @@ const mockIssueBadge = vi.fn()
 const mockGetBadgeById = vi.fn()
 
 vi.mock('@/composables/useAuth', () => ({
-  useAuth: () => ({ user: { value: { id: 'test', email: 'test@example.com' } } }),
+  useAuth: () => ({
+    user: { value: { id: 'test', email: 'test@example.com' } },
+    token: { value: 'test-token' },
+    isTokenValid: vi.fn(() => true),
+  }),
 }))
 
 vi.mock('@/composables/useBadges', () => ({
