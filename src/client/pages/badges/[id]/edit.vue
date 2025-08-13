@@ -269,12 +269,12 @@
           </div>
 
           <BadgeIssuerForm
-            :badge="badgeData"
-            :issuers="availableIssuers"
+            :initial-badge-class="badgeData"
             :loading="isSubmitting"
             :accessible="true"
-            @submit="handleSubmit"
-            @cancel="handleCancel"
+            @badge-issued="handleBadgeIssued"
+            @reset="handleReset"
+            @update="handleFormUpdate"
           />
         </div>
 
@@ -414,9 +414,8 @@ import { useImageUpload } from '@/composables/useImageUpload'
 const route = useRoute()
 const router = useRouter()
 const { user } = useAuth()
-const { updateBadge, getBadgeById } = useBadges()
-const { createField, updateField, touchField, validateAll, getFieldError, rules } =
-  useFormValidation()
+const { getBadgeById } = useBadges()
+const { createField, updateField, touchField, getFieldError, rules } = useFormValidation()
 
 // Helper function to ensure criteria is always an object with proper IRI types
 function ensureCriteriaObject(
@@ -572,91 +571,73 @@ onMounted(async () => {
   }
 })
 
-// Handle form submission
-const handleSubmit = async (formData: UpdateBadgeData) => {
-  if (!user.value) {
-    error.value = 'You must be logged in to edit a badge'
-    return
-  }
+// Handle badge issued event from BadgeIssuerForm
+const handleBadgeIssued = async (_assertion: any) => {
+  successMessage.value = 'Badge updated successfully!'
+  isFormDirty.value = false
 
-  error.value = null
-  successMessage.value = null
-  isSubmitting.value = true
-
-  try {
-    // Update form fields with current values
-    updateField('name', badgeData.value.name || '')
-    updateField('description', badgeData.value.description || '')
-    updateField('criteria', badgeData.value.criteria?.narrative || '')
-    updateField('criteriaUrl', criteriaUrl.value)
-
-    // Validate all fields
-    if (!validateAll()) {
-      error.value = 'Please fix the errors in the form'
-      return
-    }
-
-    // Additional validation for required fields
-    if (
-      !badgeData.value.name ||
-      !badgeData.value.description ||
-      !badgeData.value.criteria?.narrative
-    ) {
-      error.value = 'Please fill in all required fields'
-      return
-    }
-
-    // Update criteria with URL if provided (OB2: criteria.id?: string is supported)
-    if (criteriaUrl.value && formData.criteria) {
-      formData.criteria.id = criteriaUrl.value
-    }
-
-    // Update the badge
-    const updatedBadge = await updateBadge(user.value, badgeId.value, formData)
-
-    if (updatedBadge) {
-      successMessage.value = 'Badge updated successfully!'
-      isFormDirty.value = false
-
-      // Update original badge reference
-      originalBadge.value = updatedBadge
-
-      // Redirect to badge detail page after a short delay
-      setTimeout(() => {
-        router.push(`/badges/${updatedBadge.id}`)
-      }, 2000)
-    } else {
-      error.value = 'Failed to update badge. Please try again.'
-    }
-  } catch (err) {
-    console.error('Badge update error:', err)
-
-    if (err instanceof Error) {
-      // Handle specific error types
-      if (err.message.includes('network') || err.message.includes('fetch')) {
-        error.value = 'Network error. Please check your connection and try again.'
-      } else if (err.message.includes('unauthorized') || err.message.includes('auth')) {
-        error.value = 'Authentication error. Please log in again.'
-      } else if (err.message.includes('validation')) {
-        error.value = 'Please check your input and try again.'
-      } else {
-        error.value = err.message
-      }
-    } else {
-      error.value = 'An unexpected error occurred. Please try again.'
-    }
-  } finally {
-    isSubmitting.value = false
-  }
+  // Redirect to badge detail page after a short delay
+  setTimeout(() => {
+    router.push(`/badges/${badgeId.value}`)
+  }, 2000)
 }
 
-// Handle cancel
-const handleCancel = () => {
-  if (isFormDirty.value) {
-    const confirmed = confirm('You have unsaved changes. Are you sure you want to leave?')
-    if (!confirmed) return
+// Handle form reset
+const handleReset = () => {
+  error.value = null
+  successMessage.value = null
+  isFormDirty.value = false
+}
+
+// Handle real-time form updates for preview
+const handleFormUpdate = (payload: { badge: Partial<OB2.BadgeClass> }) => {
+  console.log('🔄 Form update received:', payload)
+
+  // Update badgeData with the new form values for real-time preview
+  if (payload.badge.name !== undefined) {
+    console.log('📝 Updating name:', payload.badge.name)
+    badgeData.value.name = payload.badge.name
+    updateField('name', payload.badge.name)
   }
-  router.push(`/badges/${badgeId.value}`)
+  if (payload.badge.description !== undefined) {
+    console.log('📝 Updating description:', payload.badge.description)
+    badgeData.value.description = payload.badge.description
+    updateField('description', payload.badge.description)
+  }
+  if (payload.badge.image !== undefined) {
+    console.log('🖼️ Updating image:', payload.badge.image)
+    // Handle both string and Image object types
+    if (typeof payload.badge.image === 'string') {
+      badgeData.value.image = payload.badge.image
+    } else if (typeof payload.badge.image === 'object' && payload.badge.image.id) {
+      badgeData.value.image = payload.badge.image.id
+    }
+  }
+  if (
+    payload.badge.criteria !== undefined &&
+    typeof payload.badge.criteria === 'object' &&
+    'narrative' in payload.badge.criteria
+  ) {
+    console.log('📋 Updating criteria:', payload.badge.criteria.narrative)
+    if (!badgeData.value.criteria) {
+      badgeData.value.criteria = { narrative: '' }
+    }
+    badgeData.value.criteria.narrative = payload.badge.criteria.narrative || ''
+    updateField('criteria', payload.badge.criteria.narrative || '')
+  }
+  if (payload.badge.tags !== undefined) {
+    console.log('🏷️ Updating tags:', payload.badge.tags)
+    badgeData.value.tags = payload.badge.tags
+  }
+
+  // Mark form as dirty when updates come from the form
+  isFormDirty.value = true
+
+  // Clear any existing messages
+  error.value = null
+  successMessage.value = null
+
+  console.log('✅ Updated badgeData:', badgeData.value)
 }
 
 // Handle image upload
