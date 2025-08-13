@@ -7,7 +7,7 @@ Owner: TBD
 Status legend:
 
 - [ ] Not started
-- [/] In progress
+- [ ] In progress
 - [x] Complete
 
 ---
@@ -42,7 +42,10 @@ Endpoints used (externally proxied/consumed):
   - POST /api/v2/badge-classes (create)
   - GET /api/v2/badge-classes (list)
   - POST /api/v2/assertions (issue)
-  - GET /api/v1/assertions (backpack)
+  - GET /api/v1/assertions (backpack & single‐assertion retrieval)
+
+# Note: assertion retrieval remains on v1; v2 is used for create/issue endpoints.
+
 - Public verification proxy: POST /api/badges/verify (for spec validation)
 
 ---
@@ -100,14 +103,14 @@ Goal: Complete accessible, validated form covering OB2 fields.
     - Cannot save with invalid alignment URLs; can add/remove items
   - Links: src/client/pages/badges/create.vue
 
-- [ ] B3. Issuer selection defaults
+- [x] B3. Issuer selection defaults
   - Deliverables:
     - Default issuer profile using current user (already scaffolded), ensure correct type/name/url
   - Acceptance:
     - Form initializes issuer; can be overridden if multiple issuers supported
   - Links: src/client/pages/badges/create.vue
 
-- [ ] B4. Submit handler wiring to createBadgeClass
+- [x] B4. Submit handler wiring to createBadgeClass
   - Deliverables:
     - Map form model to OB2 BadgeClass object and call OpenBadgesService.createBadgeClass
   - Acceptance:
@@ -201,7 +204,7 @@ Dependencies: D1 and D2 depend on Phases A–C tasks; D3 depends on A1 and B1/B2
   - Tests: src/server/**tests**/endpoints.test.ts
 - Client
   - src/client/pages/badges/create.vue
-  - New issuance UI: src/client/pages/badges/issue.vue (or component)
+  - New issuance UI: src/client/pages/badges/[id]/issue.vue (or component)
   - Services: src/client/services/openbadges.ts (payload mapping/typing)
   - Tests: src/client/services/**tests**/openbadges.test.ts
 - Docs

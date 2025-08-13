@@ -269,6 +269,8 @@ const handleSubmit = async (formData: CreateBadgeData) => {
 
 // Handle cancel
 const handleCancel = () => {
-  router.push('/badges')
+  router.push('/badges').catch(err => {
+    console.error('Navigation failed:', err)
+  })
 }
 </script>

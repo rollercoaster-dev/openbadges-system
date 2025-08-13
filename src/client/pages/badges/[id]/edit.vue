@@ -416,6 +416,15 @@ const { user } = useAuth()
 const { updateBadge, getBadgeById } = useBadges()
 const { createField, updateField, touchField, validateAll, getFieldError, rules } =
   useFormValidation()
+
+// Helper function to ensure criteria is always an object
+function ensureCriteriaObject(c: string | OB2.Criteria | undefined): OB2.Criteria {
+  if (typeof c === 'string') {
+    return { id: c as string, narrative: '' }
+  }
+  return c || { narrative: 'Badge criteria' }
+}
+
 const {
   uploadImage,
   isUploading,
@@ -464,7 +473,7 @@ const previewBadge = computed(
       type: 'BadgeClass',
       issuer: {
         id: 'default-issuer' as Shared.IRI,
-        type: 'Issuer',
+        type: 'Profile',
         name: 'Default Issuer',
         url: window.location.origin as Shared.IRI,
         email: user.value?.email || 'admin@example.com',
@@ -476,8 +485,9 @@ const previewBadge = computed(
     image: (badgeData.value.image ||
       getImageSrc(originalBadge.value?.image) ||
       '/placeholder-badge.png') as Shared.IRI,
-    criteria: (badgeData.value.criteria ||
-      originalBadge.value?.criteria || { narrative: 'Badge criteria' }) as OB2.Criteria,
+    criteria: ensureCriteriaObject(
+      badgeData.value.criteria ?? originalBadge.value?.criteria ?? { narrative: 'Badge criteria' }
+    ),
     tags: badgeData.value.tags || originalBadge.value?.tags || [],
     alignment: badgeData.value.alignment || originalBadge.value?.alignment || [],
   })
@@ -502,8 +512,11 @@ onMounted(async () => {
       image: getImageSrc(badge.image) || '',
       criteria:
         typeof badge.criteria === 'string'
-          ? { narrative: '' }
-          : { narrative: badge.criteria?.narrative || '' },
+          ? { narrative: '', id: badge.criteria as string }
+          : {
+              narrative: badge.criteria?.narrative || '',
+              id: (badge.criteria as any)?.id as string | undefined,
+            },
       tags: badge.tags || [],
       alignment: Array.isArray(badge.alignment)
         ? badge.alignment
@@ -528,14 +541,14 @@ onMounted(async () => {
       (typeof badge.criteria === 'object' ? badge.criteria?.narrative : '') || '',
       [rules.required('Badge criteria is required'), rules.minLength(10)]
     )
-    createField('criteriaUrl', criteriaUrl.value, [])
+    createField('criteriaUrl', criteriaUrl.value, [rules.url('Please enter a valid URL')])
 
     // Create default issuer
     if (user.value) {
       availableIssuers.value = [
         {
           id: `issuer-${user.value.id}` as Shared.IRI,
-          type: 'Issuer',
+          type: 'Profile',
           name: `${user.value.firstName} ${user.value.lastName}`,
           url: window.location.origin as Shared.IRI,
           email: user.value.email,
@@ -584,14 +597,9 @@ const handleSubmit = async (formData: UpdateBadgeData) => {
       return
     }
 
-    // Update criteria with URL if provided
-    // Note: The UpdateBadgeData interface only supports narrative, not full OB2.Criteria
-    // The URL would need to be handled separately by the backend
+    // Update criteria with URL if provided (OB2: criteria.id?: string is supported)
     if (criteriaUrl.value && formData.criteria) {
-      // Keep the narrative, the backend should handle the URL
-      formData.criteria = {
-        narrative: formData.criteria.narrative || '',
-      }
+      formData.criteria.id = criteriaUrl.value
     }
 
     // Update the badge

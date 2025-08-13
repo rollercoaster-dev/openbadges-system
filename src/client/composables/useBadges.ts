@@ -108,6 +108,10 @@ export const useBadges = () => {
       throw new Error(errorData.message || `API call failed: ${response.status}`)
     }
 
+    // Gracefully handle no-content and non-JSON responses
+    if (response.status === 204) return null
+    const ct = response.headers.get('content-type') || ''
+    if (!ct.includes('application/json')) return null
     return response.json()
   }
 
@@ -126,6 +130,9 @@ export const useBadges = () => {
       throw new Error(errorData.message || `API call failed: ${response.status}`)
     }
 
+    if (response.status === 204) return null
+    const ct = response.headers.get('content-type') || ''
+    if (!ct.includes('application/json')) return null
     return response.json()
   }
 

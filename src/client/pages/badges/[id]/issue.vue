@@ -360,23 +360,35 @@ const validateField = (field: string) => {
     case 'recipientEmail':
       if (!issueForm.value.recipientEmail.trim()) {
         validationErrors.value[field] = 'Recipient email is required'
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(issueForm.value.recipientEmail)) {
+      } else if (
+        !/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/.test(
+          issueForm.value.recipientEmail
+        )
+      ) {
         validationErrors.value[field] = 'Please enter a valid email address'
       }
       break
     case 'evidence':
-      if (issueForm.value.evidence && !/^https?:\/\/.+/.test(issueForm.value.evidence)) {
-        validationErrors.value[field] =
-          'Please enter a valid URL (must start with http:// or https://)'
+      if (issueForm.value.evidence) {
+        try {
+          new URL(issueForm.value.evidence)
+        } catch {
+          validationErrors.value[field] = 'Please enter a valid URL'
+          break
+        }
+        if (!/^https?:\/\//.test(issueForm.value.evidence)) {
+          validationErrors.value[field] =
+            'Please enter a valid URL (must start with http:// or https://)'
+        }
       }
       break
     case 'expires':
       if (issueForm.value.expires) {
-        const expiryDate = new Date(issueForm.value.expires)
-        const today = new Date()
-        today.setHours(0, 0, 0, 0)
+        // Compare date strings directly to avoid timezone issues
+        const todayStr = new Date().toISOString().split('T')[0]
+        const expiryStr = issueForm.value.expires
 
-        if (expiryDate <= today) {
+        if (expiryStr <= todayStr) {
           validationErrors.value[field] = 'Expiration date must be in the future'
         }
       }
@@ -415,6 +427,12 @@ const loadBadge = async () => {
 const handleIssue = async () => {
   if (!user.value) {
     issueError.value = 'You must be logged in to issue badges'
+    return
+  }
+
+  // Validate that the user session is still active
+  if (!user.value.email || !user.value.id) {
+    issueError.value = 'Invalid session. Please log in again.'
     return
   }
 
@@ -470,6 +488,10 @@ const handleIssue = async () => {
         issueError.value = 'Network error. Please check your connection and try again.'
       } else if (err.message.includes('unauthorized') || err.message.includes('auth')) {
         issueError.value = 'Authentication error. Please log in again.'
+      } else if (err.message.includes('409') || err.message.includes('conflict')) {
+        issueError.value = 'This badge has already been issued to this recipient.'
+      } else if (err.message.includes('400') || err.message.includes('bad request')) {
+        issueError.value = 'Invalid badge data. Please check all fields and try again.'
       } else if (err.message.includes('validation')) {
         issueError.value = 'Please check your input and try again.'
       } else {
@@ -498,7 +520,7 @@ const verifyIssuedBadge = async () => {
 
     // Check if the issued assertion appears in the backpack
     const foundAssertion = backpack.assertions.find(
-      assertion => assertion.id === issuedAssertion.value?.id
+      assertion => String(assertion.id) === String(issuedAssertion.value?.id)
     )
 
     verificationStatus.value = !!foundAssertion

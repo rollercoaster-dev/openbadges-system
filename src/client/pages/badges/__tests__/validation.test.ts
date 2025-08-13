@@ -58,9 +58,7 @@ describe('Badge Issuance Validation', () => {
 
     const errorElement = wrapper.find('#evidence-url-error')
     expect(errorElement.exists()).toBe(true)
-    expect(errorElement.text()).toBe(
-      'Please enter a valid URL (must start with http:// or https://)'
-    )
+    expect(errorElement.text()).toBe('Please enter a valid URL')
   })
 
   it('should prevent submission with validation errors', async () => {

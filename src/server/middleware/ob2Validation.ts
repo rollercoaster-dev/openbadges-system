@@ -3,9 +3,19 @@ import { z } from 'zod'
 // Shared helpers
 const iriSchema = z.string().url({ message: 'Must be a valid IRI (URL)' })
 const nonEmpty = (msg: string) => z.string().min(1, { message: msg })
-const isoDateSchema = z.string().refine(v => !v || !Number.isNaN(new Date(v).getTime()), {
-  message: 'Must be a valid ISO date string',
-})
+const isoDateSchema = z.string().refine(
+  v => {
+    if (!v) return true
+    // ISO 8601 datetime pattern
+    const isoPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z?$/
+    if (!isoPattern.test(v)) return false
+    const date = new Date(v)
+    return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(v.slice(0, 10))
+  },
+  {
+    message: 'Must be a valid ISO 8601 date string',
+  }
+)
 
 // OB2 AlignmentObject (subset we use)
 const alignmentSchema = z.object({
@@ -72,6 +82,21 @@ export const assertionSchema = z.object({
 
 export type ValidationResult<T> = { valid: true; data: T } | { valid: false; errors: string[] }
 
+function formatValidationErrors(issues: z.ZodIssue[]): string[] {
+  return issues.map(e => {
+    const path =
+      (e.path as (string | number)[])
+        .map((p, i) => {
+          if (typeof p === 'number' && i > 0) {
+            return `[${p}]`
+          }
+          return i === 0 ? p : `.${p}`
+        })
+        .join('') || 'root'
+    return `${path}: ${e.message}`
+  })
+}
+
 export function validateBadgeClassPayload(
   payload: unknown
 ): ValidationResult<z.infer<typeof badgeClassSchema>> {
@@ -79,9 +104,7 @@ export function validateBadgeClassPayload(
   if (res.success) return { valid: true, data: res.data }
   return {
     valid: false,
-    errors: res.error.issues.map(
-      e => `${(e.path as (string | number)[]).join('.') || 'root'}: ${e.message}`
-    ),
+    errors: formatValidationErrors(res.error.issues),
   }
 }
 
@@ -92,8 +115,6 @@ export function validateAssertionPayload(
   if (res.success) return { valid: true, data: res.data }
   return {
     valid: false,
-    errors: res.error.issues.map(
-      e => `${(e.path as (string | number)[]).join('.') || 'root'}: ${e.message}`
-    ),
+    errors: formatValidationErrors(res.error.issues),
   }
 }

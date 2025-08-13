@@ -163,7 +163,7 @@ export const useFormValidation = () => {
   // Check if form is valid
   const isFormValid = computed(() => {
     return Object.values(fields.value).every(
-      field => field.error === '' && (field.rules.length === 0 || field.value !== '')
+      field => field.rules.every(rule => rule.validate(field.value)) && field.error === ''
     )
   })
 
