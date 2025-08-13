@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { jwtDecode } from 'jwt-decode'
 import { WebAuthnUtils, WebAuthnError, type WebAuthnCredential } from '@/utils/webauthn'
 
 // Re-export WebAuthnCredential for use in other modules
@@ -43,8 +44,19 @@ export const useAuth = () => {
   const isWebAuthnSupported = ref(WebAuthnUtils.isSupported())
   const isPlatformAuthAvailable = ref(false)
 
+  // Helper function to check if JWT token is valid and not expired
+  const isTokenValid = (tokenValue: string | null): boolean => {
+    if (!tokenValue) return false
+    try {
+      const decoded = jwtDecode<{ exp: number }>(tokenValue)
+      return decoded.exp * 1000 > Date.now()
+    } catch {
+      return false
+    }
+  }
+
   // Computed
-  const isAuthenticated = computed(() => !!user.value && !!token.value)
+  const isAuthenticated = computed(() => !!user.value && !!token.value && isTokenValid(token.value))
   const isAdmin = computed(() => user.value?.isAdmin || false)
 
   // Check platform authenticator availability
@@ -796,6 +808,9 @@ export const useAuth = () => {
     updateProfile,
     addCredential,
     removeCredential,
+
+    // Utilities
+    isTokenValid,
 
     // OpenBadges integration
     getUserBackpack,

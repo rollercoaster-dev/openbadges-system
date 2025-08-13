@@ -304,7 +304,7 @@ import { openBadgesService } from '@/services/openbadges'
 
 const route = useRoute()
 const router = useRouter()
-const { user } = useAuth()
+const { user, token, isTokenValid } = useAuth()
 const { getBadgeById, issueBadge } = useBadges()
 
 // Component state
@@ -431,8 +431,8 @@ const handleIssue = async () => {
   }
 
   // Validate that the user session is still active
-  if (!user.value.email || !user.value.id) {
-    issueError.value = 'Invalid session. Please log in again.'
+  if (!user.value.email || !user.value.id || !token.value || !isTokenValid(token.value)) {
+    issueError.value = 'Session expired. Please log in again.'
     return
   }
 
@@ -461,7 +461,9 @@ const handleIssue = async () => {
       recipientEmail: issueForm.value.recipientEmail.trim(),
       evidence: issueForm.value.evidence.trim() || undefined,
       narrative: issueForm.value.narrative.trim() || undefined,
-      expires: issueForm.value.expires || undefined,
+      expires: issueForm.value.expires
+        ? new Date(issueForm.value.expires).toISOString()
+        : undefined,
     }
 
     const assertion = await issueBadge(user.value, issueData)
