@@ -405,6 +405,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { BadgeIssuerForm, BadgeDisplay } from 'openbadges-ui'
 import type { OB2, Shared } from 'openbadges-types'
+import { createIRI } from 'openbadges-types'
 import { useAuth } from '@/composables/useAuth'
 import { useBadges, type UpdateBadgeData } from '@/composables/useBadges'
 import { useFormValidation } from '@/composables/useFormValidation'
@@ -417,10 +418,18 @@ const { updateBadge, getBadgeById } = useBadges()
 const { createField, updateField, touchField, validateAll, getFieldError, rules } =
   useFormValidation()
 
-// Helper function to ensure criteria is always an object
-function ensureCriteriaObject(c: string | OB2.Criteria | undefined): OB2.Criteria {
+// Helper function to ensure criteria is always an object with proper IRI types
+function ensureCriteriaObject(
+  c: string | OB2.Criteria | { narrative: string; id?: string } | undefined
+): OB2.Criteria {
   if (typeof c === 'string') {
-    return { id: c as string, narrative: '' }
+    return { id: createIRI(c), narrative: '' }
+  }
+  if (c && 'narrative' in c) {
+    return {
+      narrative: c.narrative,
+      id: c.id ? createIRI(c.id) : undefined,
+    }
   }
   return c || { narrative: 'Badge criteria' }
 }
@@ -512,10 +521,10 @@ onMounted(async () => {
       image: getImageSrc(badge.image) || '',
       criteria:
         typeof badge.criteria === 'string'
-          ? { narrative: '', id: badge.criteria as string }
+          ? { narrative: '', id: createIRI(badge.criteria) }
           : {
               narrative: badge.criteria?.narrative || '',
-              id: (badge.criteria as any)?.id as string | undefined,
+              id: (badge.criteria as any)?.id ? createIRI((badge.criteria as any).id) : undefined,
             },
       tags: badge.tags || [],
       alignment: Array.isArray(badge.alignment)

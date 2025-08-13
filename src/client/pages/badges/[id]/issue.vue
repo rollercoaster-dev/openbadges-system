@@ -388,7 +388,7 @@ const validateField = (field: string) => {
         const todayStr = new Date().toISOString().split('T')[0]
         const expiryStr = issueForm.value.expires
 
-        if (expiryStr <= todayStr) {
+        if (todayStr && expiryStr <= todayStr) {
           validationErrors.value[field] = 'Expiration date must be in the future'
         }
       }
