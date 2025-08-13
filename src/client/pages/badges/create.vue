@@ -6,12 +6,12 @@
       <!-- Badge Creation Form -->
       <div class="space-y-6">
         <BadgeIssuerForm
-          :initial-badge-class="badgeData"
+          :badge="badgeData"
+          :issuers="availableIssuers"
           :loading="isSubmitting"
           :accessible="true"
-          @badge-issued="handleBadgeIssued"
-          @reset="handleReset"
-          @update="handleFormUpdate"
+          @submit="handleSubmit"
+          @cancel="handleCancel"
         />
       </div>
 
@@ -20,17 +20,14 @@
         <h2 class="text-lg font-semibold text-gray-900">Preview</h2>
         <div class="bg-gray-50 rounded-lg p-4">
           <BadgeDisplay
-            :key="`${previewBadge.name}-${previewBadge.description}`"
+            v-if="badgeData.name || badgeData.description"
             :badge="previewBadge"
             :theme="'default'"
             :accessible="true"
             :show-details="true"
           />
-          <div
-            v-if="!badgeData.name && !badgeData.description"
-            class="text-center text-gray-500 py-2 mt-4"
-          >
-            <p class="text-sm">Preview will update as you fill out the form</p>
+          <div v-else class="text-center text-gray-500 py-8">
+            <p>Badge preview will appear here as you fill out the form</p>
           </div>
         </div>
       </div>
@@ -123,7 +120,7 @@ import { BadgeIssuerForm, BadgeDisplay } from 'openbadges-ui'
 import type { OB2 } from 'openbadges-types'
 import { createIRI } from 'openbadges-types'
 import { useAuth } from '@/composables/useAuth'
-// Badge creation now handled by BadgeIssuerForm component
+import { useBadges, type CreateBadgeData } from '@/composables/useBadges'
 // Form validation and image upload now handled by BadgeIssuerForm
 
 // Types now handled by BadgeIssuerForm
@@ -155,6 +152,7 @@ interface PreviewBadgeData {
 
 const router = useRouter()
 const { user } = useAuth()
+const { createBadge } = useBadges()
 
 // Component state
 const error = ref<string | null>(null)
@@ -162,18 +160,15 @@ const successMessage = ref<string | null>(null)
 const isSubmitting = ref(false)
 
 // Badge form data - now managed by BadgeIssuerForm
-const badgeData = ref({
+const badgeData = ref<Partial<CreateBadgeData>>({
   name: '',
   description: '',
   image: '',
   criteria: {
     narrative: '',
   },
-  tags: [] as string[],
-  issuer: {
-    name: '',
-    url: '',
-  },
+  tags: [],
+  alignment: [],
 })
 
 // Available issuers (for now, just create a default issuer)
@@ -181,29 +176,27 @@ const availableIssuers = ref<OB2.Profile[]>([])
 
 // Create preview badge for display
 // Using PreviewBadgeData interface to avoid type assertions
-const previewBadge = computed((): PreviewBadgeData => {
-  const preview = {
+const previewBadge = computed(
+  (): PreviewBadgeData => ({
     id: '', // preview only - empty string for preview
-    type: 'BadgeClass' as const,
+    type: 'BadgeClass',
     name: badgeData.value.name || 'Badge Name',
     description: badgeData.value.description || 'Badge description will appear here',
     image: badgeData.value.image || '/placeholder-badge.png',
     criteria: {
       narrative: badgeData.value.criteria?.narrative || 'Badge criteria will appear here',
     },
-    issuer: {
+    issuer: badgeData.value.issuer || {
       id: '', // preview only
       type: 'Profile',
-      name: badgeData.value.issuer?.name || 'Default Issuer',
-      url: badgeData.value.issuer?.url || window.location.origin,
+      name: 'Default Issuer',
+      url: window.location.origin,
       email: user.value?.email || 'admin@example.com',
     },
     tags: badgeData.value.tags || [],
-    alignment: [],
-  }
-  console.log('🎯 Preview badge computed:', preview)
-  return preview
-})
+    alignment: badgeData.value.alignment || [],
+  })
+)
 
 // Initialize component
 onMounted(async () => {
@@ -221,71 +214,63 @@ onMounted(async () => {
     availableIssuers.value = [defaultIssuer]
 
     // Set default issuer
-    badgeData.value.issuer = {
-      name: defaultIssuer.name,
-      url: defaultIssuer.url || '',
-    }
+    badgeData.value.issuer = defaultIssuer
   }
 })
 
-// Handle badge issued event from BadgeIssuerForm
-const handleBadgeIssued = async (_assertion: any) => {
-  successMessage.value = 'Badge issued successfully!'
+// Handle form submission
+const handleSubmit = async (formData: CreateBadgeData) => {
+  if (!user.value) {
+    error.value = 'You must be logged in to create a badge'
+    return
+  }
 
-  // Redirect to badges list after a short delay
-  setTimeout(() => {
-    router.push('/badges').catch(err => {
-      console.error('Navigation failed:', err)
-    })
-  }, 2000)
-}
-
-// Handle form reset
-const handleReset = () => {
   error.value = null
   successMessage.value = null
+  isSubmitting.value = true
+
+  try {
+    // BadgeIssuerForm handles validation and OB2 compliance, so we can proceed directly
+    const newBadge = await createBadge(user.value, formData)
+
+    if (newBadge) {
+      successMessage.value = 'Badge created successfully!'
+
+      // Redirect to badge detail page after a short delay
+      setTimeout(() => {
+        router.push(`/badges/${newBadge.id}`)
+      }, 2000)
+    } else {
+      error.value = 'Failed to create badge. Please try again.'
+    }
+  } catch (err) {
+    console.error('Badge creation error:', err)
+
+    if (err instanceof Error) {
+      // Handle specific error types
+      if (err.message.includes('network') || err.message.includes('fetch')) {
+        error.value = 'Network error. Please check your connection and try again.'
+      } else if (err.message.includes('unauthorized') || err.message.includes('auth')) {
+        error.value = 'Authentication error. Please log in again.'
+      } else if (err.message.includes('validation')) {
+        error.value = 'Please check your input and try again.'
+      } else {
+        error.value = err.message
+      }
+    } else {
+      error.value = 'An unexpected error occurred. Please try again.'
+    }
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
-// Handle real-time form updates for preview
-const handleFormUpdate = (payload: { badge: Partial<OB2.BadgeClass> }) => {
-  console.log('🔄 Form update received:', payload)
+// Validation now handled by BadgeIssuerForm
 
-  // Update badgeData with the new form values for real-time preview
-  if (payload.badge.name !== undefined) {
-    console.log('📝 Updating name:', payload.badge.name)
-    badgeData.value.name = payload.badge.name
-  }
-  if (payload.badge.description !== undefined) {
-    console.log('📝 Updating description:', payload.badge.description)
-    badgeData.value.description = payload.badge.description
-  }
-  if (payload.badge.image !== undefined) {
-    console.log('🖼️ Updating image:', payload.badge.image)
-    // Handle both string and Image object types
-    if (typeof payload.badge.image === 'string') {
-      badgeData.value.image = payload.badge.image
-    } else if (typeof payload.badge.image === 'object' && payload.badge.image.id) {
-      badgeData.value.image = payload.badge.image.id
-    }
-  }
-  if (
-    payload.badge.criteria !== undefined &&
-    typeof payload.badge.criteria === 'object' &&
-    'narrative' in payload.badge.criteria
-  ) {
-    console.log('📋 Updating criteria:', payload.badge.criteria.narrative)
-    badgeData.value.criteria.narrative = payload.badge.criteria.narrative || ''
-  }
-  if (payload.badge.tags !== undefined) {
-    console.log('🏷️ Updating tags:', payload.badge.tags)
-    badgeData.value.tags = payload.badge.tags
-  }
-  if (payload.badge.issuer !== undefined && typeof payload.badge.issuer === 'object') {
-    console.log('👤 Updating issuer:', payload.badge.issuer)
-    badgeData.value.issuer.name = payload.badge.issuer.name || ''
-    badgeData.value.issuer.url = payload.badge.issuer.url || ''
-  }
-
-  console.log('✅ Updated badgeData:', badgeData.value)
+// Handle cancel
+const handleCancel = () => {
+  router.push('/badges').catch(err => {
+    console.error('Navigation failed:', err)
+  })
 }
 </script>

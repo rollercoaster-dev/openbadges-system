@@ -87,7 +87,7 @@
     "jwt-decode": "^4.0.0",
     "nanoid": "^5.1.5",
     "openbadges-types": "^3.2.3",
-    "openbadges-ui": "^1.2.0",
+    "openbadges-ui": "^1.0.3",
     "pinia": "^3.0.2",
     "sqlite3": "^5.1.7",
     "vue": "^3.4.0",

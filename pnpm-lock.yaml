@@ -42,8 +42,8 @@ importers:
         specifier: ^3.2.3
         version: 3.2.3(typescript@5.8.3)
       openbadges-ui:
-        specifier: ^1.2.0
-        version: 1.2.0(primevue@3.53.1(vue@3.5.14(typescript@5.8.3)))(typescript@5.8.3)(vue@3.5.14(typescript@5.8.3))
+        specifier: ^1.0.3
+        version: 1.0.3(primevue@3.53.1(vue@3.5.14(typescript@5.8.3)))(typescript@5.8.3)(vue@3.5.14(typescript@5.8.3))
       pinia:
         specifier: ^3.0.2
         version: 3.0.2(typescript@5.8.3)(vue@3.5.14(typescript@5.8.3))
@@ -2296,8 +2296,8 @@ packages:
     peerDependencies:
       typescript: '>=4.0.0'
 
-  openbadges-ui@1.2.0:
-    resolution: {integrity: sha512-MidV1/WS39tNobpAQmWWtWpTRf8WEYKCcve2CHPZ87nhYyWmkaYKmCF3hP5YoX0hjkCojXUV2abiFBGyE3XyTw==}
+  openbadges-ui@1.0.3:
+    resolution: {integrity: sha512-WdBfWhmq381WoyJvniUMJBxy5COw14tChktlGq/1kHShbqH1v5Hr4uzCVQIKlXhG0K82V9pt2+oRigpi/MXVow==}
     engines: {node: '>=20.8.1'}
     peerDependencies:
       primevue: ^3.0.0
@@ -5486,7 +5486,7 @@ snapshots:
       ajv: 8.17.1
       typescript: 5.8.3
 
-  openbadges-ui@1.2.0(primevue@3.53.1(vue@3.5.14(typescript@5.8.3)))(typescript@5.8.3)(vue@3.5.14(typescript@5.8.3)):
+  openbadges-ui@1.0.3(primevue@3.53.1(vue@3.5.14(typescript@5.8.3)))(typescript@5.8.3)(vue@3.5.14(typescript@5.8.3)):
     dependencies:
       openbadges-types: 3.2.3(typescript@5.8.3)
       primevue: 3.53.1(vue@3.5.14(typescript@5.8.3))
