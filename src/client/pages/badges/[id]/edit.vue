@@ -476,8 +476,8 @@ const previewBadge = computed(
     image: (badgeData.value.image ||
       getImageSrc(originalBadge.value?.image) ||
       '/placeholder-badge.png') as Shared.IRI,
-    criteria: badgeData.value.criteria ||
-      originalBadge.value?.criteria || { narrative: 'Badge criteria' },
+    criteria: (badgeData.value.criteria ||
+      originalBadge.value?.criteria || { narrative: 'Badge criteria' }) as OB2.Criteria,
     tags: badgeData.value.tags || originalBadge.value?.tags || [],
     alignment: badgeData.value.alignment || originalBadge.value?.alignment || [],
   })

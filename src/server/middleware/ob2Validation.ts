@@ -38,7 +38,7 @@ const criteriaSchema = z.union([
 
 // BadgeClass schema (subset sufficient for creation)
 export const badgeClassSchema = z.object({
-  type: z.literal('BadgeClass', { errorMap: () => ({ message: 'type must be BadgeClass' }) }),
+  type: z.literal('BadgeClass', { message: 'type must be BadgeClass' }),
   name: nonEmpty('Badge name is required'),
   description: nonEmpty('Badge description is required'),
   image: iriSchema,
@@ -51,7 +51,7 @@ export const badgeClassSchema = z.object({
 
 // Assertion issuance schema (subset)
 const recipientSchema = z.object({
-  type: z.literal('email', { errorMap: () => ({ message: 'recipient.type must be "email"' }) }),
+  type: z.literal('email', { message: 'recipient.type must be "email"' }),
   hashed: z.boolean().optional(),
   identity: z.string().email({ message: 'recipient.identity must be a valid email' }),
 })

@@ -386,7 +386,8 @@ const validateField = (field: string) => {
 
 // Load badge data
 const loadBadge = async () => {
-  const badgeId = route.params.id as string
+  const params = route.params as { id?: string | string[] }
+  const badgeId = Array.isArray(params.id) ? params.id[0] : params.id || ''
   if (!badgeId) {
     error.value = 'Badge ID is required'
     return
