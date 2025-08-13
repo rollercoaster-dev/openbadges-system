@@ -420,18 +420,18 @@ const { createField, updateField, touchField, validateAll, getFieldError, rules 
 
 // Helper function to ensure criteria is always an object with proper IRI types
 function ensureCriteriaObject(
-  c: string | OB2.Criteria | { narrative: string; id?: string } | undefined
+  c: string | OB2.Criteria | { narrative?: string; id?: string } | undefined
 ): OB2.Criteria {
   if (typeof c === 'string') {
     return { id: createIRI(c), narrative: '' }
   }
-  if (c && 'narrative' in c) {
-    return {
-      narrative: c.narrative,
-      id: c.id ? createIRI(c.id) : undefined,
-    }
+  if (c) {
+    const id = 'id' in c && c.id ? createIRI(c.id) : undefined
+    const narrative =
+      'narrative' in c && typeof (c as any).narrative === 'string' ? (c as any).narrative : ''
+    return { narrative, id }
   }
-  return c || { narrative: 'Badge criteria' }
+  return { narrative: 'Badge criteria' }
 }
 
 const {

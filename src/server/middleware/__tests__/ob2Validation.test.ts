@@ -20,7 +20,7 @@ describe('OB2 Validation Schemas', () => {
         },
         issuer: {
           id: 'https://example.org/issuer/1',
-          type: 'Issuer',
+          type: 'Profile',
           name: 'Example Issuer',
           url: 'https://example.org',
         },

@@ -331,7 +331,10 @@ const validationErrors = ref<Record<string, string>>({})
 
 const today = computed(() => {
   const now = new Date()
-  return now.toISOString().split('T')[0]
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 })
 
 const isFormValid = computed(() => {
@@ -384,11 +387,10 @@ const validateField = (field: string) => {
       break
     case 'expires':
       if (issueForm.value.expires) {
-        // Compare date strings directly to avoid timezone issues
-        const todayStr = new Date().toISOString().split('T')[0]
+        // Compare local date strings (YYYY-MM-DD) for consistency with <input type="date">
+        const todayStr = today.value
         const expiryStr = issueForm.value.expires
-
-        if (todayStr && expiryStr <= todayStr) {
+        if (expiryStr <= todayStr) {
           validationErrors.value[field] = 'Expiration date must be in the future'
         }
       }
