@@ -26,6 +26,7 @@ export interface CreateBadgeData {
   image: string
   criteria: {
     narrative: string
+    id?: string
   }
   issuer: OB2.Profile
   tags?: string[]
@@ -39,6 +40,7 @@ export interface UpdateBadgeData {
   image?: string
   criteria?: {
     narrative: string
+    id?: string
   }
   tags?: string[]
   alignment?: OB2.AlignmentObject[]
